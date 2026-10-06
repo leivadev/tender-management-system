@@ -49,7 +49,7 @@ Este proyecto **no usa** Durable Objects, Queues, Vectorize ni Workers AI — no
 
 ## Estado de testing
 
-`tests/api.test.ts` y `tests/cron.test.ts` — 65 casos con `@cloudflare/vitest-pool-workers` (corre dentro del runtime real de Workers, contra los bindings reales de `wrangler.jsonc` y el Supabase local). Cubren auth, roles, CRUD (incl. edición vía `PATCH` de clientes/productos/usuarios/licitaciones), presupuesto, las 10 transiciones inválidas + 4 válidas de la máquina de estados, bloqueo de productos en los 4 estados terminales, facturación, pagos (parcial/sobrepago/completo), cron (vencimiento + recordatorio + idempotencia), dashboard y auditoría. Si agregas lógica nueva, agrega su caso ahí — no asumas que compila = funciona.
+`tests/api.test.ts` y `tests/cron.test.ts` — 61 casos con `@cloudflare/vitest-pool-workers` (corre dentro del runtime real de Workers, contra los bindings reales de `wrangler.jsonc` y el Supabase local). Cubren auth, roles, CRUD (incl. edición vía `PATCH` de clientes/productos/usuarios/licitaciones), presupuesto, las 10 transiciones inválidas + 4 válidas de la máquina de estados, bloqueo de productos en los 4 estados terminales, facturación, pagos (parcial/sobrepago/completo), cron (vencimiento + recordatorio + idempotencia), dashboard y auditoría. Si agregas lógica nueva, agrega su caso ahí — no asumas que compila = funciona.
 
 El frontend (`client/`) no tiene tests automatizados — se verifica manualmente en navegador.
 

@@ -9,7 +9,7 @@ Full-stack app to draft, send, track, resolve and collect on commercial tenders 
 - **Data:** Supabase (Postgres + Auth) via Drizzle ORM and Hyperdrive
 - **Integrations:** Cloudflare R2 (proposal files), Resend (email with attachment), Cron Triggers (expiry + 48h reminder)
 - **Frontend:** Vite + React + TypeScript + Tailwind + TanStack Query, served by the same Worker through the `assets` binding
-- **Quality:** 65 end-to-end tests running inside the real Workers runtime against a real local Supabase
+- **Quality:** 61 end-to-end tests running inside the real Workers runtime against a real local Supabase
 
 ## Tender lifecycle
 
