@@ -11,6 +11,13 @@ Full-stack app to draft, send, track, resolve and collect on commercial tenders 
 - **Frontend:** Vite + React + TypeScript + Tailwind + TanStack Query, served by the same Worker through the `assets` binding
 - **Quality:** 61 end-to-end tests running inside the real Workers runtime against a real local Supabase
 
+![Dashboard](docs/screenshots/dashboard.png)
+
+| | |
+|---|---|
+| ![Tenders list](docs/screenshots/tenders-list.png) | ![Products](docs/screenshots/tender-products.png) |
+| ![Payments](docs/screenshots/tender-payments.png) | ![History](docs/screenshots/tender-history.png) |
+
 ## Tender lifecycle
 
 ```mermaid
