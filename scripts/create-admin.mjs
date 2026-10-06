@@ -3,7 +3,7 @@ import postgres from "postgres";
 
 const [, , email, password, role = "admin"] = process.argv;
 
-if (!email || !password || !["admin", "user"].includes(role)) {
+if (!email || !password || !["admin", "user", "viewer"].includes(role)) {
 	console.error("Uso: node scripts/create-admin.mjs <email> <password> [admin|user]");
 	process.exit(1);
 }

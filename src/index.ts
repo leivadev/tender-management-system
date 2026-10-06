@@ -32,7 +32,7 @@ import { UserUpdate } from "./endpoints/users/userUpdate";
 import { processExpiredTenders, processTenderReminders } from "./jobs/tenders";
 import { AppError, errorBody } from "./lib/errors";
 import { type AppBindings, loadProfile, supabaseAuth } from "./middleware/auth";
-import { requireRole } from "./middleware/roles";
+import { blockViewerWrites, requireRole } from "./middleware/roles";
 
 const app = new Hono<AppBindings>();
 
@@ -74,6 +74,11 @@ app.use("/api/*", async (c, next) => {
 app.use("/api/*", async (c, next) => {
 	if (c.req.path === "/api/auth/login") return next();
 	return loadProfile()(c, next);
+});
+
+app.use("/api/*", async (c, next) => {
+	if (c.req.path === "/api/auth/login") return next();
+	return blockViewerWrites()(c, next);
 });
 
 openapi.post("/api/auth/logout", Logout);

@@ -11,3 +11,18 @@ export function requireRole(role: AuthedUser["role"]): MiddlewareHandler<AppBind
 		await next();
 	};
 }
+
+const READ_ONLY_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+export function blockViewerWrites(): MiddlewareHandler<AppBindings> {
+	return async (c, next) => {
+		if (
+			c.var.user?.role === "viewer" &&
+			!READ_ONLY_METHODS.has(c.req.method) &&
+			c.req.path !== "/api/auth/logout"
+		) {
+			throw new AppError("FORBIDDEN", "Viewers have read-only access.");
+		}
+		await next();
+	};
+}

@@ -101,6 +101,39 @@ describe("auth", () => {
 	});
 });
 
+describe("viewer", () => {
+	it("lee pero no escribe", async () => {
+		const email = `viewer-${Date.now()}@example.com`;
+		const created = await api(
+			"/api/users",
+			{ method: "POST", body: JSON.stringify({ email, password: "ViewerPass123!", role: "viewer" }) },
+			admin,
+		);
+		expect(created.status).toBe(201);
+		expect(created.body.user.role).toBe("viewer");
+
+		const viewer = await login(email, "ViewerPass123!");
+		expect((await api("/api/tenders", {}, viewer)).status).toBe(200);
+		expect((await api("/api/dashboard", {}, viewer)).status).toBe(200);
+
+		const write = await api(
+			"/api/clients",
+			{
+				method: "POST",
+				body: JSON.stringify({ name: "X", companyName: "Y", email: "delivered@resend.dev" }),
+			},
+			viewer,
+		);
+		expect(write.status).toBe(403);
+		expect(write.body.error.code).toBe("FORBIDDEN");
+
+		const send = await api(`/api/tenders/${crypto.randomUUID()}/send`, { method: "POST" }, viewer);
+		expect(send.status).toBe(403);
+
+		expect((await api("/api/auth/logout", { method: "POST" }, viewer)).status).toBe(200);
+	});
+});
+
 describe("users", () => {
 	it("admin crea usuario, user no-admin no puede", async () => {
 		const email = `user-${Date.now()}@example.com`;

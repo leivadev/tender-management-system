@@ -29,7 +29,7 @@ async function getJwks(supabaseUrl: string): Promise<SupabaseEnv["jwks"]> {
 export type AuthedUser = {
 	id: string;
 	email: string;
-	role: "admin" | "user";
+	role: "admin" | "user" | "viewer";
 };
 
 export type AppBindings = {
@@ -81,7 +81,7 @@ export function loadProfile(): MiddlewareHandler<AppBindings> {
 		c.set("user", {
 			id: profile.id,
 			email: profile.email,
-			role: profile.role as "admin" | "user",
+			role: profile.role as AuthedUser["role"],
 		});
 
 		await next();

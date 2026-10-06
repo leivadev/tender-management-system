@@ -1,7 +1,7 @@
 import { relations } from "drizzle-orm";
 import { type AnyPgColumn, numeric, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
-export const roleEnum = ["admin", "user"] as const;
+export const roleEnum = ["admin", "user", "viewer"] as const;
 
 export const tenderStatusEnum = [
 	"draft",
