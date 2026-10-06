@@ -6,6 +6,9 @@ import { Field } from "../components/Field";
 import { useAuth } from "../lib/AuthContext";
 import { inputClass } from "../lib/formStyles";
 
+const DEMO_EMAIL = "demo@leivadev.com";
+const DEMO_PASSWORD = "Demo-Tenders-2026";
+
 export function LoginPage() {
 	const { isAuthenticated, login } = useAuth();
 	const navigate = useNavigate();
@@ -20,18 +23,28 @@ export function LoginPage() {
 		return <Navigate to={from} replace />;
 	}
 
-	async function handleSubmit(e: React.FormEvent) {
-		e.preventDefault();
+	async function submit(emailValue: string, passwordValue: string) {
 		setError(null);
 		setSubmitting(true);
 		try {
-			await login(email, password);
+			await login(emailValue, passwordValue);
 			navigate("/", { replace: true });
 		} catch (err) {
 			setError(err instanceof ApiError ? mapErrorToMessage(err) : "No se pudo iniciar sesión.");
 		} finally {
 			setSubmitting(false);
 		}
+	}
+
+	function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
+		e.preventDefault();
+		void submit(email, password);
+	}
+
+	function handleDemoLogin() {
+		setEmail(DEMO_EMAIL);
+		setPassword(DEMO_PASSWORD);
+		void submit(DEMO_EMAIL, DEMO_PASSWORD);
 	}
 
 	return (
@@ -75,6 +88,20 @@ export function LoginPage() {
 				<Button type="submit" loading={submitting} className="w-full">
 					{submitting ? "Ingresando…" : "Ingresar"}
 				</Button>
+				<div className="rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-900">
+					<p className="font-medium">Cuenta demo (solo lectura)</p>
+					<p className="mt-1 font-mono text-xs">{DEMO_EMAIL}</p>
+					<p className="font-mono text-xs">{DEMO_PASSWORD}</p>
+					<Button
+						type="button"
+						variant="secondary"
+						className="mt-2 w-full"
+						loading={submitting}
+						onClick={handleDemoLogin}
+					>
+						Ingresar con cuenta demo
+					</Button>
+				</div>
 			</form>
 		</div>
 	);
