@@ -1,4 +1,4 @@
-export type Role = "admin" | "user";
+export type Role = "admin" | "user" | "viewer";
 
 export type TenderStatus = "draft" | "active" | "finalized" | "for_collection" | "collected" | "lost";
 

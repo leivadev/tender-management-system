@@ -4,6 +4,7 @@ import { ErrorMessage } from "../../components/ErrorMessage";
 import { Field, FieldButtonSlot } from "../../components/Field";
 import { useProducts } from "../../hooks/useProducts";
 import { useAddTenderProduct, useRemoveTenderProduct } from "../../hooks/useTenders";
+import { useAuth } from "../../lib/AuthContext";
 import { confirmAction } from "../../lib/confirm";
 import { formatCurrency } from "../../lib/format";
 import { fieldClass, inputClass } from "../../lib/formStyles";
@@ -21,7 +22,9 @@ export function ProductsTab() {
 	const [quantity, setQuantity] = useState("1");
 	const [budgetError, setBudgetError] = useState<string | null>(null);
 
-	const editable = EDITABLE_STATUSES.has(tender.status);
+	const { canWrite } = useAuth();
+	const statusEditable = EDITABLE_STATUSES.has(tender.status);
+	const editable = canWrite && statusEditable;
 	const usedBudget = tender.products.reduce((sum, p) => sum + Number(p.subtotal), 0);
 	const remainingBudget = Number(tender.maxBudget) - usedBudget;
 	const selectedProduct = productsQuery.data?.find((p) => p.id === productId);
@@ -152,9 +155,11 @@ export function ProductsTab() {
 					</FieldButtonSlot>
 				</form>
 			) : (
-				<p className="text-sm text-gray-400">
-					Los productos solo se pueden editar mientras la licitación está en borrador o activa.
-				</p>
+				canWrite && (
+					<p className="text-sm text-gray-400">
+						Los productos solo se pueden editar mientras la licitación está en borrador o activa.
+					</p>
+				)
 			)}
 
 			<ErrorMessage error={addProduct.error || removeProduct.error} />

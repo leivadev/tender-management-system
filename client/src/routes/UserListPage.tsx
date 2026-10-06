@@ -10,11 +10,17 @@ import { confirmAction } from "../lib/confirm";
 import { inputClass } from "../lib/formStyles";
 import { pushToast } from "../lib/toast";
 
+const ROLE_LABELS: Record<Role, string> = {
+	admin: "Administrador",
+	user: "Usuario",
+	viewer: "Solo lectura",
+};
+
 function UserRow({ user, canEdit, onEdit }: { user: User; canEdit: boolean; onEdit: () => void }) {
 	return (
 		<tr className="border-t border-gray-100 hover:bg-gray-50">
 			<td className="px-4 py-2">{user.email}</td>
-			<td className="px-4 py-2">{user.role === "admin" ? "Administrador" : "Usuario"}</td>
+			<td className="px-4 py-2">{ROLE_LABELS[user.role]}</td>
 			<td className="px-4 py-2 text-right">
 				{canEdit && (
 					<Button variant="link" onClick={onEdit}>
@@ -31,7 +37,12 @@ function UserEditRow({ user, onDone }: { user: User; onDone: () => void }) {
 	const [role, setRole] = useState<Role>(user.role);
 
 	function handleSave() {
-		if (role === "user" && !confirmAction(`¿Quitarle el rol de administrador a ${user.email}?`)) return;
+		if (
+			user.role === "admin" &&
+			role !== "admin" &&
+			!confirmAction(`¿Quitarle el rol de administrador a ${user.email}?`)
+		)
+			return;
 		updateUser.mutate(
 			{ id: user.id, payload: { role } },
 			{
@@ -53,6 +64,7 @@ function UserEditRow({ user, onDone }: { user: User; onDone: () => void }) {
 					className={`${inputClass} py-1`}
 				>
 					<option value="user">Usuario</option>
+					<option value="viewer">Solo lectura</option>
 					<option value="admin">Administrador</option>
 				</select>
 			</td>
@@ -130,6 +142,7 @@ export function UserListPage() {
 							className={inputClass}
 						>
 							<option value="user">Usuario</option>
+							<option value="viewer">Solo lectura</option>
 							<option value="admin">Administrador</option>
 						</select>
 					</Field>

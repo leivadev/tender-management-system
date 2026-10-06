@@ -7,6 +7,7 @@ import { clearSession, getToken, isAuthenticated, setSession, subscribeSession }
 interface AuthContextValue {
 	isAuthenticated: boolean;
 	isAdmin: boolean;
+	canWrite: boolean;
 	userId: string | null;
 	email: string | null;
 	login: (email: string, password: string) => Promise<void>;
@@ -50,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	const value: AuthContextValue = {
 		isAuthenticated: authed,
 		isAdmin: meQuery.data?.role === "admin",
+		canWrite: meQuery.data?.role !== "viewer",
 		userId: meQuery.data?.id ?? null,
 		email: meQuery.data?.email ?? null,
 		login,

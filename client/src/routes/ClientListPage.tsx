@@ -5,19 +5,23 @@ import { ErrorMessage } from "../components/ErrorMessage";
 import { Field, FieldButtonSlot } from "../components/Field";
 import { PageLoader } from "../components/Spinner";
 import { useClients, useCreateClient, useUpdateClient } from "../hooks/useClients";
+import { useAuth } from "../lib/AuthContext";
 import { inputClass } from "../lib/formStyles";
 import { pushToast } from "../lib/toast";
 
 function ClientRow({ client, onEdit }: { client: Client; onEdit: () => void }) {
+	const { canWrite } = useAuth();
 	return (
 		<tr className="border-t border-gray-100 hover:bg-gray-50">
 			<td className="px-4 py-2">{client.name}</td>
 			<td className="px-4 py-2">{client.companyName}</td>
 			<td className="px-4 py-2">{client.email}</td>
 			<td className="px-4 py-2 text-right">
-				<Button variant="link" onClick={onEdit}>
-					Editar
-				</Button>
+				{canWrite && (
+					<Button variant="link" onClick={onEdit}>
+						Editar
+					</Button>
+				)}
 			</td>
 		</tr>
 	);
@@ -90,6 +94,7 @@ export function ClientListPage() {
 	const [name, setName] = useState("");
 	const [companyName, setCompanyName] = useState("");
 	const [email, setEmail] = useState("");
+	const { canWrite } = useAuth();
 	const [editingId, setEditingId] = useState<string | null>(null);
 
 	function handleSubmit(e: React.FormEvent) {
@@ -109,46 +114,48 @@ export function ClientListPage() {
 
 	return (
 		<div className="space-y-6">
-			<form
-				onSubmit={handleSubmit}
-				className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4"
-			>
-				<Field label="Nombre" htmlFor="name">
-					<input
-						id="name"
-						required
-						minLength={2}
-						value={name}
-						onChange={(e) => setName(e.target.value)}
-						className={inputClass}
-					/>
-				</Field>
-				<Field label="Empresa" htmlFor="companyName">
-					<input
-						id="companyName"
-						required
-						minLength={2}
-						value={companyName}
-						onChange={(e) => setCompanyName(e.target.value)}
-						className={inputClass}
-					/>
-				</Field>
-				<Field label="Correo" htmlFor="email">
-					<input
-						id="email"
-						type="email"
-						required
-						value={email}
-						onChange={(e) => setEmail(e.target.value)}
-						className={inputClass}
-					/>
-				</Field>
-				<FieldButtonSlot>
-					<Button type="submit" loading={createClient.isPending}>
-						Crear cliente
-					</Button>
-				</FieldButtonSlot>
-			</form>
+			{canWrite && (
+				<form
+					onSubmit={handleSubmit}
+					className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4"
+				>
+					<Field label="Nombre" htmlFor="name">
+						<input
+							id="name"
+							required
+							minLength={2}
+							value={name}
+							onChange={(e) => setName(e.target.value)}
+							className={inputClass}
+						/>
+					</Field>
+					<Field label="Empresa" htmlFor="companyName">
+						<input
+							id="companyName"
+							required
+							minLength={2}
+							value={companyName}
+							onChange={(e) => setCompanyName(e.target.value)}
+							className={inputClass}
+						/>
+					</Field>
+					<Field label="Correo" htmlFor="email">
+						<input
+							id="email"
+							type="email"
+							required
+							value={email}
+							onChange={(e) => setEmail(e.target.value)}
+							className={inputClass}
+						/>
+					</Field>
+					<FieldButtonSlot>
+						<Button type="submit" loading={createClient.isPending}>
+							Crear cliente
+						</Button>
+					</FieldButtonSlot>
+				</form>
+			)}
 
 			<ErrorMessage error={createClient.error} />
 

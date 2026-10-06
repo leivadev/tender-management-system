@@ -4,6 +4,7 @@ import { Button } from "../../components/Button";
 import { ErrorMessage } from "../../components/ErrorMessage";
 import { Field, FieldButtonSlot } from "../../components/Field";
 import { useCreateTenderPayment, useTenderPayments } from "../../hooks/useTenders";
+import { useAuth } from "../../lib/AuthContext";
 import { formatCurrency, formatDate } from "../../lib/format";
 import { inputClass } from "../../lib/formStyles";
 import { pushToast } from "../../lib/toast";
@@ -20,7 +21,8 @@ export function PaymentsTab() {
 	const invoiceAmount = Number(tender.invoiceAmount ?? 0);
 	const paid = (paymentsQuery.data ?? []).reduce((sum, p) => sum + Number(p.amount), 0);
 	const pendingBalance = Math.max(0, invoiceAmount - paid);
-	const canPay = tender.status === "for_collection";
+	const { canWrite } = useAuth();
+	const canPay = canWrite && tender.status === "for_collection";
 	const willComplete = canPay && Number(amount) > 0 && Number(amount) >= pendingBalance;
 
 	function handleSubmit(e: React.FormEvent) {
@@ -120,9 +122,11 @@ export function PaymentsTab() {
 					)}
 				</form>
 			) : (
-				<p className="text-sm text-gray-400">
-					Los pagos solo se pueden registrar mientras la licitación está por cobrar.
-				</p>
+				canWrite && (
+					<p className="text-sm text-gray-400">
+						Los pagos solo se pueden registrar mientras la licitación está por cobrar.
+					</p>
+				)
 			)}
 
 			<ErrorMessage error={createPayment.error} />

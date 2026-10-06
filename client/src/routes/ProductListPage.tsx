@@ -5,20 +5,24 @@ import { ErrorMessage } from "../components/ErrorMessage";
 import { Field, FieldButtonSlot } from "../components/Field";
 import { PageLoader } from "../components/Spinner";
 import { useCreateProduct, useProducts, useUpdateProduct } from "../hooks/useProducts";
+import { useAuth } from "../lib/AuthContext";
 import { formatCurrency } from "../lib/format";
 import { inputClass } from "../lib/formStyles";
 import { pushToast } from "../lib/toast";
 
 function ProductRow({ product, onEdit }: { product: Product; onEdit: () => void }) {
+	const { canWrite } = useAuth();
 	return (
 		<tr className="border-t border-gray-100 hover:bg-gray-50">
 			<td className="px-4 py-2">{product.name}</td>
 			<td className="px-4 py-2">{product.description || "—"}</td>
 			<td className="px-4 py-2">{formatCurrency(product.unitPrice)}</td>
 			<td className="px-4 py-2 text-right">
-				<Button variant="link" onClick={onEdit}>
-					Editar
-				</Button>
+				{canWrite && (
+					<Button variant="link" onClick={onEdit}>
+						Editar
+					</Button>
+				)}
 			</td>
 		</tr>
 	);
@@ -98,6 +102,7 @@ export function ProductListPage() {
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
 	const [unitPrice, setUnitPrice] = useState("");
+	const { canWrite } = useAuth();
 	const [editingId, setEditingId] = useState<string | null>(null);
 
 	function handleSubmit(e: React.FormEvent) {
@@ -117,46 +122,48 @@ export function ProductListPage() {
 
 	return (
 		<div className="space-y-6">
-			<form
-				onSubmit={handleSubmit}
-				className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4"
-			>
-				<Field label="Nombre" htmlFor="name">
-					<input
-						id="name"
-						required
-						minLength={2}
-						value={name}
-						onChange={(e) => setName(e.target.value)}
-						className={inputClass}
-					/>
-				</Field>
-				<Field label="Descripción" htmlFor="description">
-					<input
-						id="description"
-						value={description}
-						onChange={(e) => setDescription(e.target.value)}
-						className={inputClass}
-					/>
-				</Field>
-				<Field label="Precio unitario" htmlFor="unitPrice">
-					<input
-						id="unitPrice"
-						type="number"
-						min="0.01"
-						step="0.01"
-						required
-						value={unitPrice}
-						onChange={(e) => setUnitPrice(e.target.value)}
-						className={`w-32 ${inputClass}`}
-					/>
-				</Field>
-				<FieldButtonSlot>
-					<Button type="submit" loading={createProduct.isPending}>
-						Crear producto
-					</Button>
-				</FieldButtonSlot>
-			</form>
+			{canWrite && (
+				<form
+					onSubmit={handleSubmit}
+					className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4"
+				>
+					<Field label="Nombre" htmlFor="name">
+						<input
+							id="name"
+							required
+							minLength={2}
+							value={name}
+							onChange={(e) => setName(e.target.value)}
+							className={inputClass}
+						/>
+					</Field>
+					<Field label="Descripción" htmlFor="description">
+						<input
+							id="description"
+							value={description}
+							onChange={(e) => setDescription(e.target.value)}
+							className={inputClass}
+						/>
+					</Field>
+					<Field label="Precio unitario" htmlFor="unitPrice">
+						<input
+							id="unitPrice"
+							type="number"
+							min="0.01"
+							step="0.01"
+							required
+							value={unitPrice}
+							onChange={(e) => setUnitPrice(e.target.value)}
+							className={`w-32 ${inputClass}`}
+						/>
+					</Field>
+					<FieldButtonSlot>
+						<Button type="submit" loading={createProduct.isPending}>
+							Crear producto
+						</Button>
+					</FieldButtonSlot>
+				</form>
+			)}
 
 			<ErrorMessage error={createProduct.error} />
 

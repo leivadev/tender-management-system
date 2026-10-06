@@ -6,6 +6,7 @@ import { PageLoader } from "../components/Spinner";
 import { StatusBadge } from "../components/StatusBadge";
 import { useClients } from "../hooks/useClients";
 import { useTenders } from "../hooks/useTenders";
+import { useAuth } from "../lib/AuthContext";
 import { formatCurrency, formatDate } from "../lib/format";
 import { STATUS_LABELS } from "../lib/statusLabels";
 
@@ -14,6 +15,7 @@ function isTenderStatus(value: string | null): value is TenderStatus {
 }
 
 export function TenderListPage() {
+	const { canWrite } = useAuth();
 	const [searchParams, setSearchParams] = useSearchParams();
 	const statusParam = searchParams.get("status");
 	const status = isTenderStatus(statusParam) ? statusParam : undefined;
@@ -57,12 +59,14 @@ export function TenderListPage() {
 						</button>
 					))}
 				</div>
-				<Link
-					to="/tenders/new"
-					className="inline-flex items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-				>
-					Nueva licitación
-				</Link>
+				{canWrite && (
+					<Link
+						to="/tenders/new"
+						className="inline-flex items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+					>
+						Nueva licitación
+					</Link>
+				)}
 			</div>
 
 			{tendersQuery.error && <ErrorMessage error={tendersQuery.error} />}

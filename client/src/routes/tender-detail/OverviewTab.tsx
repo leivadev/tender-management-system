@@ -10,6 +10,7 @@ import {
 	useSendTender,
 	useUpdateTender,
 } from "../../hooks/useTenders";
+import { useAuth } from "../../lib/AuthContext";
 import { confirmAction } from "../../lib/confirm";
 import { formatCurrency, formatDate } from "../../lib/format";
 import { inputClass } from "../../lib/formStyles";
@@ -81,9 +82,10 @@ export function OverviewTab() {
 	const [isEditing, setIsEditing] = useState(false);
 
 	const usedBudget = tender.products.reduce((sum, p) => sum + Number(p.subtotal), 0);
-	const canSend = tender.status === "draft";
-	const canFinalizeOrLose = tender.status === "active";
-	const canInvoice = tender.status === "finalized";
+	const { canWrite } = useAuth();
+	const canSend = canWrite && tender.status === "draft";
+	const canFinalizeOrLose = canWrite && tender.status === "active";
+	const canInvoice = canWrite && tender.status === "finalized";
 
 	function handleSend() {
 		sendTender.mutate(undefined, {
@@ -130,11 +132,13 @@ export function OverviewTab() {
 						<p className="text-gray-500">Monto facturado</p>
 						<p>{tender.invoiceAmount ? formatCurrency(tender.invoiceAmount) : "—"}</p>
 					</div>
-					<div className="flex items-end sm:col-start-4 sm:row-start-1 sm:justify-self-end">
-						<Button variant="link" onClick={() => setIsEditing(true)}>
-							Editar título/descripción
-						</Button>
-					</div>
+					{canWrite && (
+						<div className="flex items-end sm:col-start-4 sm:row-start-1 sm:justify-self-end">
+							<Button variant="link" onClick={() => setIsEditing(true)}>
+								Editar título/descripción
+							</Button>
+						</div>
+					)}
 				</div>
 			)}
 
