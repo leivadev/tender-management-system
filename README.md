@@ -8,8 +8,11 @@ Full-stack app to draft, send, track, resolve and collect on commercial tenders 
 - **Backend:** Hono + chanfana (OpenAPI/Swagger at `/api/docs`) on Cloudflare Workers
 - **Data:** Supabase (Postgres + Auth) via Drizzle ORM and Hyperdrive
 - **Integrations:** Cloudflare R2 (proposal files), Resend (email with attachment), Cron Triggers (expiry + 48h reminder)
+- **Roles:** `admin` (manages users), `user` (full access to tenders) and `viewer` (read-only; every non-GET request is rejected by one middleware, and write actions are hidden in the UI)
 - **Frontend:** Vite + React + TypeScript + Tailwind + TanStack Query, served by the same Worker through the `assets` binding
-- **Quality:** 61 end-to-end tests running inside the real Workers runtime against a real local Supabase
+- **Quality:** 62 end-to-end tests running inside the real Workers runtime against a real local Supabase
+
+**Live demo:** https://tender-management-system.leivadev.com — sign in with `demo@leivadev.com` / `Demo-Tenders-2026` (read-only viewer account). Swagger UI at `/api/docs`.
 
 ![Dashboard](docs/screenshots/dashboard.png)
 
@@ -107,8 +110,8 @@ Only admins can create users, so the first one is bootstrapped directly against 
 ```bash
 set -a && source .dev.vars && source .env && set +a
 node scripts/create-admin.mjs admin@example.com "YourStrongPassword123!"
-# a non-admin user, e.g. for a public demo:
-node scripts/create-admin.mjs demo@example.com "DemoPassword123!" user
+# a read-only user, e.g. for a public demo:
+node scripts/create-admin.mjs demo@example.com "DemoPassword123!" viewer
 ```
 
 For demo data, `node scripts/seed-mock.mjs --confirm` wipes clients, products, tenders and payments and repopulates them with sample records (users are untouched).

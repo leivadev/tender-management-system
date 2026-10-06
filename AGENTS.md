@@ -24,7 +24,7 @@ Antes de dar por terminado cualquier cambio en `src/`, correr `npm run typecheck
 - `src/domain/tenders/` — la única capa que conoce las reglas de negocio de licitaciones: `state-machine.ts` (transiciones), `rules.ts` (presupuesto, propuesta obligatoria), `payments.ts` (saldo, pago atómico).
 - `src/services/` — integraciones externas: `storage.ts` (R2), `email.ts` (Resend), `auth.ts` (Supabase Admin API).
 - `src/jobs/tenders.ts` — lógica de vencimiento/recordatorio, invocada desde `scheduled()` en `src/index.ts`.
-- `src/middleware/` — `auth.ts` (verifica JWT de Supabase contra JWKS, carga el profile) y `roles.ts` (`requireRole`).
+- `src/middleware/` — `auth.ts` (verifica JWT de Supabase contra JWKS, carga el profile) y `roles.ts` (`requireRole`, `blockViewerWrites`: el rol `viewer` es de solo lectura).
 - `src/db/schema.ts` — único archivo de schema Drizzle, incluye las `relations()` inline.
 
 ## Invariantes que no se deben romper
@@ -49,7 +49,7 @@ Este proyecto **no usa** Durable Objects, Queues, Vectorize ni Workers AI — no
 
 ## Estado de testing
 
-`tests/api.test.ts` y `tests/cron.test.ts` — 61 casos con `@cloudflare/vitest-pool-workers` (corre dentro del runtime real de Workers, contra los bindings reales de `wrangler.jsonc` y el Supabase local). Cubren auth, roles, CRUD (incl. edición vía `PATCH` de clientes/productos/usuarios/licitaciones), presupuesto, las 10 transiciones inválidas + 4 válidas de la máquina de estados, bloqueo de productos en los 4 estados terminales, facturación, pagos (parcial/sobrepago/completo), cron (vencimiento + recordatorio + idempotencia), dashboard y auditoría. Si agregas lógica nueva, agrega su caso ahí — no asumas que compila = funciona.
+`tests/api.test.ts` y `tests/cron.test.ts` — 62 casos con `@cloudflare/vitest-pool-workers` (corre dentro del runtime real de Workers, contra los bindings reales de `wrangler.jsonc` y el Supabase local). Cubren auth, roles, CRUD (incl. edición vía `PATCH` de clientes/productos/usuarios/licitaciones), presupuesto, las 10 transiciones inválidas + 4 válidas de la máquina de estados, bloqueo de productos en los 4 estados terminales, facturación, pagos (parcial/sobrepago/completo), cron (vencimiento + recordatorio + idempotencia), dashboard y auditoría. Si agregas lógica nueva, agrega su caso ahí — no asumas que compila = funciona.
 
 El frontend (`client/`) no tiene tests automatizados — se verifica manualmente en navegador.
 
