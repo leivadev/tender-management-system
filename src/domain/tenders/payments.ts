@@ -4,6 +4,8 @@ import { payments } from "../../db/schema";
 import { AppError } from "../../lib/errors";
 import { transitionTender } from "./state-machine";
 
+const toCents = (value: number) => Math.round(value * 100);
+
 /**
  * Registers a payment atomically: locks the tender row, validates status and
  * balance, inserts the payment, and — if the balance reaches zero — transitions
@@ -32,19 +34,19 @@ export async function registerPayment(
 			);
 		}
 
-		const invoiceAmount = Number(tender.invoice_amount ?? 0);
+		const invoiceCents = toCents(Number(tender.invoice_amount ?? 0));
 
 		const [paidRow] = await tx
 			.select({ paid: sql<string>`coalesce(sum(${payments.amount}), 0)` })
 			.from(payments)
 			.where(eq(payments.tenderId, tenderId));
-		const alreadyPaid = Number(paidRow?.paid ?? 0);
-		const pendingBalance = invoiceAmount - alreadyPaid;
+		const pendingCents = invoiceCents - toCents(Number(paidRow?.paid ?? 0));
+		const amountCents = toCents(amount);
 
-		if (amount <= 0) {
+		if (amountCents <= 0) {
 			throw new AppError("VALIDATION_ERROR", "Payment amount must be greater than zero.");
 		}
-		if (amount > pendingBalance) {
+		if (amountCents > pendingCents) {
 			throw new AppError("BUSINESS_RULE_VIOLATION", "Payment amount exceeds the pending balance.");
 		}
 
@@ -52,18 +54,18 @@ export async function registerPayment(
 			.insert(payments)
 			.values({
 				tenderId,
-				amount: amount.toFixed(2),
+				amount: (amountCents / 100).toFixed(2),
 				reference: options.reference,
 				notes: options.notes,
 				createdBy: actorId,
 			})
 			.returning();
 
-		const newBalance = pendingBalance - amount;
-		if (newBalance === 0) {
+		const newBalanceCents = pendingCents - amountCents;
+		if (newBalanceCents === 0) {
 			await transitionTender(tx as unknown as Database, tenderId, "collected", actorId);
 		}
 
-		return { payment, pendingBalance: newBalance };
+		return { payment, pendingBalance: newBalanceCents / 100 };
 	});
 }

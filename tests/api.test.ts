@@ -640,6 +640,57 @@ describe("full lifecycle: send -> finalize -> invoice -> payments -> collected",
 	});
 });
 
+describe("payments with non-round amounts", () => {
+	let tenderId: string;
+
+	beforeAll(async () => {
+		const deadline = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+		const create = await api(
+			"/api/tenders",
+			{
+				method: "POST",
+				body: JSON.stringify({ clientId, title: "Licitacion Pagos Decimales", maxBudget: 1000, deadline }),
+			},
+			admin,
+		);
+		tenderId = create.body.tender.id;
+		await api(
+			`/api/tenders/${tenderId}/products`,
+			{ method: "POST", body: JSON.stringify({ productId, quantity: 1 }) },
+			admin,
+		);
+		await uploadPdf(tenderId, admin);
+		await api(`/api/tenders/${tenderId}/send`, { method: "POST" }, admin);
+		await api(`/api/tenders/${tenderId}/finalize`, { method: "POST" }, admin);
+		await api(
+			`/api/tenders/${tenderId}/invoice`,
+			{ method: "POST", body: JSON.stringify({ invoiceAmount: 1000 }) },
+			admin,
+		);
+	});
+
+	it("1000 pagado como 333.33 + 666.67 -> collected", async () => {
+		const first = await api(
+			`/api/tenders/${tenderId}/payments`,
+			{ method: "POST", body: JSON.stringify({ amount: 333.33 }) },
+			admin,
+		);
+		expect(first.status).toBe(201);
+		expect(first.body.pendingBalance).toBe(666.67);
+
+		const last = await api(
+			`/api/tenders/${tenderId}/payments`,
+			{ method: "POST", body: JSON.stringify({ amount: 666.67 }) },
+			admin,
+		);
+		expect(last.status).toBe(201);
+		expect(last.body.pendingBalance).toBe(0);
+
+		const detail = await api(`/api/tenders/${tenderId}`, {}, admin);
+		expect(detail.body.tender.status).toBe("collected");
+	});
+});
+
 describe("lost tender", () => {
 	let tenderId: string;
 
