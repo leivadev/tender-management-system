@@ -159,9 +159,9 @@ npm run check      # Biome lint + format
 npm run test       # needs local Supabase running
 ```
 
-The suite uses `@cloudflare/vitest-pool-workers`, so tests run inside the real Workers runtime with the bindings from `wrangler.jsonc`. It covers auth, roles, CRUD (including edits), budget validation, the full state machine (valid and invalid transitions), product locking, invoicing, payments (partial, overpayment, full), cron (expiry, reminder, idempotency), dashboard and audit trail. Tests that send email use the Resend test recipient `delivered@resend.dev` and need a valid `RESEND_API_KEY` in `.dev.vars`.
+The suite uses `@cloudflare/vitest-pool-workers`, so tests run inside the real Workers runtime with the bindings from `wrangler.jsonc`. It covers auth, roles, CRUD (including edits), budget validation, the full state machine (valid and invalid transitions), product locking, invoicing, payments (partial, overpayment, full), cron (expiry, reminder, idempotency), dashboard and audit trail. Outgoing Resend requests are stubbed in `tests/setup.ts`, so tests never send real email and any non-empty `RESEND_API_KEY` works.
 
-CI (`.github/workflows/ci.yml`) runs typecheck, Biome and the full suite on every push and pull request. It expects a `RESEND_API_KEY` repository secret.
+CI (`.github/workflows/ci.yml`) runs typecheck, Biome and the full suite on every push and pull request.
 
 ## Deploy
 

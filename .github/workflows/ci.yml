@@ -28,8 +28,6 @@ jobs:
         run: supabase start -x realtime,storage-api,imgproxy,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
 
       - name: Configure environment
-        env:
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         run: |
           supabase status -o env > supabase.env
           set -a && source supabase.env && set +a
@@ -37,7 +35,7 @@ jobs:
             echo "SUPABASE_URL=$API_URL"
             echo "SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY"
             echo "SUPABASE_SECRET_KEY=$SECRET_KEY"
-            echo "RESEND_API_KEY=$RESEND_API_KEY"
+            echo "RESEND_API_KEY=re_test_key"
             echo "MAIL_FROM=onboarding@resend.dev"
             echo "APP_BASE_URL=http://localhost:8787"
           } > .dev.vars
