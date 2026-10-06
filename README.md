@@ -112,7 +112,7 @@ npx wrangler hyperdrive create tender-management-db \
   --connection-string="<your DATABASE_URL from the pooler>"
 ```
 
-Put the returned `id` in `wrangler.jsonc` (`hyperdrive[0].id`, currently the placeholder `<your-hyperdrive-id>`). It is not a secret, but deploying requires a real one. Local development doesn't: it uses `localConnectionString`.
+Put the returned `id` in `wrangler.jsonc` (`hyperdrive[0].id`). It is an identifier, not a secret. Local development ignores it and uses `localConnectionString`.
 
 ### 7. Run locally
 
@@ -156,6 +156,8 @@ CI (`.github/workflows/ci.yml`) runs typecheck, Biome and the full suite on ever
 ```bash
 npm run deploy   # builds client/ then wrangler deploy
 ```
+
+The Worker is served on the custom domain declared in `wrangler.jsonc` (`routes`); change `pattern` to a hostname on a zone in your Cloudflare account.
 
 Set production secrets (each prompts for the value):
 

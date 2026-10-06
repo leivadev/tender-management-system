@@ -31,8 +31,15 @@
 	"hyperdrive": [
 		{
 			"binding": "HYPERDRIVE",
-			"id": "<your-hyperdrive-id>",
+			"id": "7b94c7d43e1e48d7be18455b8423ea3e",
 			"localConnectionString": "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+		}
+	],
+
+	"routes": [
+		{
+			"pattern": "tender-management-system.leivadev.com",
+			"custom_domain": true
 		}
 	],
 
