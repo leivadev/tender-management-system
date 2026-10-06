@@ -1,0 +1,37 @@
+{
+  "name": "tender-management-system",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "deploy": "cd client && npm run build && cd .. && wrangler deploy",
+    "build": "cd client && npm run build && cd .. && wrangler deploy --dry-run --outdir dist",
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "cf-typegen": "wrangler types",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "typecheck": "tsc --noEmit",
+    "check": "biome check .",
+    "check:fix": "biome check --write .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@supabase/server": "^0.1.0",
+    "@supabase/supabase-js": "^2.58.0",
+    "chanfana": "^3.3.0",
+    "drizzle-orm": "^0.44.0",
+    "hono": "^4.12.12",
+    "postgres": "^3.4.5",
+    "resend": "^4.0.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.10",
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@types/node": "^25.9.5",
+    "drizzle-kit": "^0.31.0",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.125.0"
+  }
+}
