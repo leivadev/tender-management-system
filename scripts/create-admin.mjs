@@ -1,10 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 
-const [, , email, password] = process.argv;
+const [, , email, password, role = "admin"] = process.argv;
 
-if (!email || !password) {
-	console.error("Uso: node scripts/create-admin.mjs <email> <password>");
+if (!email || !password || !["admin", "user"].includes(role)) {
+	console.error("Uso: node scripts/create-admin.mjs <email> <password> [admin|user]");
 	process.exit(1);
 }
 
@@ -33,10 +33,10 @@ const sql = postgres(DATABASE_URL);
 try {
 	const [profile] = await sql`
 		insert into profiles (id, email, role)
-		values (${data.user.id}, ${email}, 'admin')
+		values (${data.user.id}, ${email}, ${role})
 		returning id, email, role
 	`;
-	console.log("Admin creado:", profile);
+	console.log("Usuario creado:", profile);
 } finally {
 	await sql.end();
 }

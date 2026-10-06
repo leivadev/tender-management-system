@@ -100,6 +100,8 @@ Only admins can create users, so the first one is bootstrapped directly against 
 ```bash
 set -a && source .dev.vars && source .env && set +a
 node scripts/create-admin.mjs admin@example.com "YourStrongPassword123!"
+# a non-admin user, e.g. for a public demo:
+node scripts/create-admin.mjs demo@example.com "DemoPassword123!" user
 ```
 
 For demo data, `node scripts/seed-mock.mjs --confirm` wipes clients, products, tenders and payments and repopulates them with sample records (users are untouched).
