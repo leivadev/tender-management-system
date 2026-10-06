@@ -171,16 +171,13 @@ npm run deploy   # builds client/ then wrangler deploy
 
 The Worker is served on the custom domain declared in `wrangler.jsonc` (`routes`); change `pattern` to a hostname on a zone in your Cloudflare account.
 
-Set production secrets (each prompts for the value):
+Upload the production secrets from an env file with the remote project values (same keys as `.dev.vars.example`). `APP_BASE_URL` is derived from the custom domain in `wrangler.jsonc`:
 
 ```bash
-npx wrangler secret put SUPABASE_URL
-npx wrangler secret put SUPABASE_PUBLISHABLE_KEY
-npx wrangler secret put SUPABASE_SECRET_KEY
-npx wrangler secret put RESEND_API_KEY
-npx wrangler secret put MAIL_FROM
-npx wrangler secret put APP_BASE_URL   # public URL of the deployed Worker
+./scripts/put-secrets.sh .dev.vars.production
 ```
+
+The script refuses to run if `SUPABASE_URL` is local, shows the target and asks for confirmation. Or set them one by one with `npx wrangler secret put <KEY>` (`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `RESEND_API_KEY`, `MAIL_FROM`, `APP_BASE_URL`).
 
 Then create the production admin with `scripts/create-admin.mjs`, pointing `SUPABASE_URL`, `SUPABASE_SECRET_KEY` and `DATABASE_URL` at the remote project.
 
