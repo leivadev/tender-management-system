@@ -1,0 +1,51 @@
+import { OpenAPIRoute } from "chanfana";
+import { z } from "zod";
+import { getDb } from "../../db/client";
+import { tenders } from "../../db/schema";
+import type { AppContext } from "../../types";
+
+const TenderInput = z.object({
+	clientId: z.uuid(),
+	title: z.string().min(1),
+	description: z.string().optional(),
+	maxBudget: z.coerce.number().positive(),
+	deadline: z.iso.datetime(),
+});
+
+export class TenderCreate extends OpenAPIRoute {
+	schema = {
+		tags: ["Tenders"],
+		summary: "Create a tender (starts in draft)",
+		request: {
+			body: { content: { "application/json": { schema: TenderInput } } },
+		},
+		responses: {
+			"201": {
+				description: "Tender created",
+				content: { "application/json": { schema: z.object({ success: z.boolean(), tender: z.any() }) } },
+			},
+		},
+	};
+
+	async handle(c: AppContext) {
+		const data = await this.getValidatedData<typeof this.schema>();
+		const db = getDb(c.env);
+		const user = c.var.user;
+
+		const [tender] = await db
+			.insert(tenders)
+			.values({
+				clientId: data.body.clientId,
+				title: data.body.title,
+				description: data.body.description,
+				maxBudget: data.body.maxBudget.toFixed(2),
+				deadline: new Date(data.body.deadline),
+				status: "draft",
+				createdBy: user.id,
+				updatedBy: user.id,
+			})
+			.returning();
+
+		return c.json({ success: true, tender }, 201);
+	}
+}
