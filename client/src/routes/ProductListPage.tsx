@@ -105,7 +105,7 @@ export function ProductListPage() {
 	const { canWrite } = useAuth();
 	const [editingId, setEditingId] = useState<string | null>(null);
 
-	function handleSubmit(e: React.FormEvent) {
+	function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
 		e.preventDefault();
 		createProduct.mutate(
 			{ name: name.trim(), description: description.trim() || undefined, unitPrice: Number(unitPrice) },

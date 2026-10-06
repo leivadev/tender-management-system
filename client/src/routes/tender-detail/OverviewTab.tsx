@@ -23,7 +23,7 @@ function EditTenderForm({ onDone }: { onDone: () => void }) {
 	const [title, setTitle] = useState(tender.title);
 	const [description, setDescription] = useState(tender.description ?? "");
 
-	function handleSubmit(e: React.FormEvent) {
+	function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
 		e.preventDefault();
 		updateTender.mutate(
 			{ title: title.trim(), description: description.trim() },
@@ -106,7 +106,7 @@ export function OverviewTab() {
 		});
 	}
 
-	function handleInvoice(e: React.FormEvent) {
+	function handleInvoice(e: React.SubmitEvent<HTMLFormElement>) {
 		e.preventDefault();
 		invoiceTender.mutate(
 			{ invoiceAmount: Number(invoiceAmount) },

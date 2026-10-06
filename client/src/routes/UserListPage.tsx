@@ -91,7 +91,7 @@ export function UserListPage() {
 	const [role, setRole] = useState<Role>("user");
 	const [editingId, setEditingId] = useState<string | null>(null);
 
-	function handleSubmit(e: React.FormEvent) {
+	function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
 		e.preventDefault();
 		createUser.mutate(
 			{ email: email.trim(), password, role },

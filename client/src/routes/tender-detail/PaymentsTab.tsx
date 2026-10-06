@@ -25,7 +25,7 @@ export function PaymentsTab() {
 	const canPay = canWrite && tender.status === "for_collection";
 	const willComplete = canPay && Number(amount) > 0 && Number(amount) >= pendingBalance;
 
-	function handleSubmit(e: React.FormEvent) {
+	function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
 		e.preventDefault();
 		createPayment.mutate(
 			{ amount: Number(amount), reference: reference.trim() || undefined, notes: notes.trim() || undefined },

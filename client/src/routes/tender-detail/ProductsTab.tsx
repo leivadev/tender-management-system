@@ -29,7 +29,7 @@ export function ProductsTab() {
 	const remainingBudget = Number(tender.maxBudget) - usedBudget;
 	const selectedProduct = productsQuery.data?.find((p) => p.id === productId);
 
-	function handleAdd(e: React.FormEvent) {
+	function handleAdd(e: React.SubmitEvent<HTMLFormElement>) {
 		e.preventDefault();
 
 		if (selectedProduct) {

@@ -30,7 +30,7 @@ export function TenderCreatePage() {
 	const minDeadline = localDateTimeNow();
 	const hasClients = (clientsQuery.data?.length ?? 0) > 0;
 
-	async function handleSubmit(e: React.FormEvent) {
+	async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
 		e.preventDefault();
 
 		if (new Date(deadline).getTime() <= Date.now()) {

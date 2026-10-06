@@ -97,7 +97,7 @@ export function ClientListPage() {
 	const { canWrite } = useAuth();
 	const [editingId, setEditingId] = useState<string | null>(null);
 
-	function handleSubmit(e: React.FormEvent) {
+	function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
 		e.preventDefault();
 		createClient.mutate(
 			{ name: name.trim(), companyName: companyName.trim(), email: email.trim() },
