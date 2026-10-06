@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run check
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase
+        run: supabase start -x realtime,storage-api,imgproxy,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: Configure environment
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          supabase status -o env > supabase.env
+          set -a && source supabase.env && set +a
+          {
+            echo "SUPABASE_URL=$API_URL"
+            echo "SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY"
+            echo "SUPABASE_SECRET_KEY=$SECRET_KEY"
+            echo "RESEND_API_KEY=$RESEND_API_KEY"
+            echo "MAIL_FROM=onboarding@resend.dev"
+            echo "APP_BASE_URL=http://localhost:8787"
+          } > .dev.vars
+          echo "DATABASE_URL=$DB_URL" > .env
+
+      - name: Migrate and seed admin
+        run: |
+          set -a && source .dev.vars && source .env && set +a
+          npm run db:migrate
+          psql "$DATABASE_URL" -f drizzle/manual/profiles_auth_fk.sql
+          node scripts/create-admin.mjs admin@example.com "AdminPass123!"
+
+      - run: npm run test
