@@ -20,7 +20,7 @@ export const profiles = pgTable("profiles", {
 	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 	// Nullable: the first bootstrap admin has no creator.
 	createdBy: uuid("created_by").references((): AnyPgColumn => profiles.id),
-});
+}).enableRLS();
 
 export const clients = pgTable("clients", {
 	id: uuid("id").primaryKey().defaultRandom(),
@@ -32,7 +32,7 @@ export const clients = pgTable("clients", {
 	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 	createdBy: uuid("created_by").references(() => profiles.id),
 	updatedBy: uuid("updated_by").references(() => profiles.id),
-});
+}).enableRLS();
 
 export const products = pgTable("products", {
 	id: uuid("id").primaryKey().defaultRandom(),
@@ -44,7 +44,7 @@ export const products = pgTable("products", {
 	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 	createdBy: uuid("created_by").references(() => profiles.id),
 	updatedBy: uuid("updated_by").references(() => profiles.id),
-});
+}).enableRLS();
 
 export const tenders = pgTable("tenders", {
 	id: uuid("id").primaryKey().defaultRandom(),
@@ -71,7 +71,7 @@ export const tenders = pgTable("tenders", {
 	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 	createdBy: uuid("created_by").references(() => profiles.id),
 	updatedBy: uuid("updated_by").references(() => profiles.id),
-});
+}).enableRLS();
 
 export const tenderProducts = pgTable("tender_products", {
 	id: uuid("id").primaryKey().defaultRandom(),
@@ -90,7 +90,7 @@ export const tenderProducts = pgTable("tender_products", {
 	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 	createdBy: uuid("created_by").references(() => profiles.id),
 	updatedBy: uuid("updated_by").references(() => profiles.id),
-});
+}).enableRLS();
 
 export const payments = pgTable("payments", {
 	id: uuid("id").primaryKey().defaultRandom(),
@@ -105,7 +105,7 @@ export const payments = pgTable("payments", {
 
 	createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 	createdBy: uuid("created_by").references(() => profiles.id),
-});
+}).enableRLS();
 
 export const tenderStatusHistory = pgTable("tender_status_history", {
 	id: uuid("id").primaryKey().defaultRandom(),
@@ -118,7 +118,7 @@ export const tenderStatusHistory = pgTable("tender_status_history", {
 
 	changedBy: uuid("changed_by").references(() => profiles.id),
 	changedAt: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}).enableRLS();
 
 export const clientsRelations = relations(clients, ({ many }) => ({
 	tenders: many(tenders),

@@ -15,6 +15,13 @@
       "when": 1787784036355,
       "tag": "0001_right_supreme_intelligence",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791334136192,
+      "tag": "0002_hot_unicorn",
+      "breakpoints": true
     }
   ]
 }
