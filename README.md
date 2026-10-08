@@ -3,16 +3,24 @@
 [![CI](https://github.com/leivadev/tender-management-system/actions/workflows/ci.yml/badge.svg)](https://github.com/leivadev/tender-management-system/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Full-stack app to draft, send, track, resolve and collect on commercial tenders ("licitaciones"). A tender belongs to a client, bundles products with quantities and prices, requires a formal proposal document, and must be emailed to the client before its deadline. Overdue tenders are lost automatically; payments are tracked until the tender is fully collected.
+Full-stack app to draft, send, track, resolve and collect on commercial tenders ("licitaciones"). What the system must do (scope, lifecycle, business rules, roles and permissions) is specified in the [Software Requirements Specification](docs/SRS.md).
 
 - **Backend:** Hono + chanfana (OpenAPI/Swagger at `/api/docs`) on Cloudflare Workers
 - **Data:** Supabase (Postgres + Auth) via Drizzle ORM and Hyperdrive
 - **Integrations:** Cloudflare R2 (proposal files), Resend (email with attachment), Cron Triggers (expiry + 48h reminder)
-- **Roles:** `admin` (manages users), `user` (full access to tenders) and `viewer` (read-only; every non-GET request is rejected by one middleware, and write actions are hidden in the UI)
 - **Frontend:** Vite + React + TypeScript + Tailwind + TanStack Query, served by the same Worker through the `assets` binding
-- **Quality:** 62 end-to-end tests running inside the real Workers runtime against a real local Supabase
+- **Quality:** end-to-end tests running inside the real Workers runtime against a real local Supabase
 
-**Live demo:** https://tender-management-system.leivadev.com — sign in with `demo@leivadev.com` / `Demo-Tenders-2026` (read-only viewer account). Swagger UI at `/api/docs`.
+## Live demo
+
+| | |
+|---|---|
+| **App** | [tender-management-system.leivadev.com](https://tender-management-system.leivadev.com) |
+| **API docs** | [Swagger UI](https://tender-management-system.leivadev.com/api/docs) |
+| **Email** | `demo@leivadev.com` |
+| **Password** | `Demo-Tenders-2026` |
+
+The demo account has the read-only `viewer` role, so you can browse every screen but not change data.
 
 ![Dashboard](docs/screenshots/dashboard.png)
 
@@ -21,31 +29,16 @@ Full-stack app to draft, send, track, resolve and collect on commercial tenders 
 | ![Tenders list](docs/screenshots/tenders-list.png) | ![Products](docs/screenshots/tender-products.png) |
 | ![Payments](docs/screenshots/tender-payments.png) | ![History](docs/screenshots/tender-history.png) |
 
-## Tender lifecycle
-
-```mermaid
-stateDiagram-v2
-    [*] --> draft
-    draft --> active: send (proposal required, email sent)
-    active --> finalized: finalize
-    active --> lost: mark lost / deadline passed (cron)
-    finalized --> for_collection: invoice
-    for_collection --> collected: balance reaches zero
-    collected --> [*]
-    lost --> [*]
-```
-
-Any transition not drawn above is rejected. Every transition is recorded in an audit history (previous status, new status, user, timestamp).
-
 ## Design decisions
+
+How the requirements in the [SRS](docs/SRS.md) are met, and why.
 
 - **`transitionTender()` is the only writer of `tenders.status`.** It validates against a whitelist (`VALID_TRANSITIONS`) and writes the history row in the same operation, so no endpoint or job can skip the state machine or leave history out of sync. New states or transitions are added there, not in endpoints (`src/domain/tenders/state-machine.ts`).
 - **Payments use `SELECT ... FOR UPDATE` inside a transaction.** Concurrent payment requests and the cron job can touch the same tender; locking the row makes the balance check and the insert atomic, so overpayment and double-collection can't happen (`src/domain/tenders/payments.ts`).
 - **Reminders are idempotent through an atomic guard.** The 48h reminder runs `UPDATE ... WHERE reminder_sent_at IS NULL`; only the run that flips the column sends the email, so overlapping or retried cron runs never double-send (`src/jobs/tenders.ts`).
 - **Hyperdrive instead of direct Postgres connections.** The Worker never reads `DATABASE_URL` at runtime; all queries go through the `HYPERDRIVE` binding, which pools connections so short-lived isolates don't open a new Postgres connection per request. `DATABASE_URL` exists only for `drizzle-kit` migrations.
-- **Tender edits are restricted to title and description.** `PATCH /api/tenders/:id` never accepts `maxBudget`, `deadline`, `clientId` or `status`, so edits can't bypass budget validation, the expiry cron or the state machine.
-- **R2 for proposal files.** S3-compatible API, no egress fees, same provider as the Worker. Files are served through an authenticated endpoint (`GET /api/tenders/:id/proposal/download`), never a public bucket URL.
-- **Secrets never live in `wrangler.jsonc`.** Local values go in `.dev.vars`, production values in `wrangler secret put`. `SUPABASE_SECRET_KEY` is used only server-side.
+- **R2 for proposal files.** S3-compatible API, no egress fees, same provider as the Worker.
+- **Secrets never live in `wrangler.jsonc`.** Local values go in `.dev.vars`, production values in `wrangler secret put`.
 
 ## Project structure
 
@@ -159,7 +152,7 @@ npm run check      # Biome lint + format
 npm run test       # needs local Supabase running
 ```
 
-The suite uses `@cloudflare/vitest-pool-workers`, so tests run inside the real Workers runtime with the bindings from `wrangler.jsonc`. It covers auth, roles, CRUD (including edits), budget validation, the full state machine (valid and invalid transitions), product locking, invoicing, payments (partial, overpayment, full), cron (expiry, reminder, idempotency), dashboard and audit trail. Outgoing Resend requests are stubbed in `tests/setup.ts`, so tests never send real email and any non-empty `RESEND_API_KEY` works.
+The suite uses `@cloudflare/vitest-pool-workers`, so tests run inside the real Workers runtime with the bindings from `wrangler.jsonc`. What they must cover is defined in the SRS (see Appendix B). Outgoing Resend requests are stubbed in `tests/setup.ts`, so tests never send real email and any non-empty `RESEND_API_KEY` works.
 
 CI (`.github/workflows/ci.yml`) runs typecheck, Biome and the full suite on every push and pull request.
 
