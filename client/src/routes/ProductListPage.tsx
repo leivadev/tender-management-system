@@ -10,14 +10,14 @@ import { inputClass } from "../lib/formStyles";
 import { pushToast } from "../lib/toast";
 
 function ProductRow({ product, onEdit }: { product: Product; onEdit: () => void }) {
-	const { canWrite } = useAuth();
+	const { isAdmin } = useAuth();
 	return (
 		<tr className="border-t border-gray-100 hover:bg-gray-50">
 			<td className="px-4 py-2">{product.name}</td>
 			<td className="px-4 py-2">{product.description || "—"}</td>
 			<td className="px-4 py-2">{formatCurrency(product.unitPrice)}</td>
 			<td className="px-4 py-2 text-right">
-				{canWrite && (
+				{isAdmin && (
 					<Button variant="link" onClick={onEdit}>
 						Editar
 					</Button>
@@ -101,7 +101,7 @@ export function ProductListPage() {
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
 	const [unitPrice, setUnitPrice] = useState("");
-	const { canWrite } = useAuth();
+	const { isAdmin } = useAuth();
 	const [editingId, setEditingId] = useState<string | null>(null);
 
 	function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
@@ -121,7 +121,7 @@ export function ProductListPage() {
 
 	return (
 		<div className="space-y-6">
-			{canWrite && (
+			{isAdmin && (
 				<form
 					onSubmit={handleSubmit}
 					className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4"

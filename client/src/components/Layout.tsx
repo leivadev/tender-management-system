@@ -3,18 +3,18 @@ import { NavLink } from "react-router-dom";
 import { useAuth } from "../lib/AuthContext";
 import { Button } from "./Button";
 
-const NAV_ITEMS = [
+const NAV_ITEMS: Array<{ to: string; label: string; end?: boolean; adminOnly?: boolean }> = [
 	{ to: "/", label: "Dashboard", end: true },
 	{ to: "/tenders", label: "Licitaciones" },
 	{ to: "/clients", label: "Clientes" },
 	{ to: "/products", label: "Productos" },
-	{ to: "/users", label: "Usuarios" },
+	{ to: "/users", label: "Usuarios", adminOnly: true },
 ];
 
 const FOOTER_LINK_CLASS = "text-gray-500 underline hover:text-gray-700";
 
 export function Layout({ children }: { children: ReactNode }) {
-	const { email, logout } = useAuth();
+	const { email, logout, isAdmin } = useAuth();
 
 	return (
 		<div className="flex min-h-screen flex-col bg-gray-50">
@@ -22,7 +22,7 @@ export function Layout({ children }: { children: ReactNode }) {
 				<div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
 					<nav className="flex flex-wrap items-center gap-x-4 gap-y-2">
 						<span className="font-semibold text-gray-900">Sistema de Gestión de Licitaciones</span>
-						{NAV_ITEMS.map((item) => (
+						{NAV_ITEMS.filter((item) => isAdmin || !item.adminOnly).map((item) => (
 							<NavLink
 								key={item.to}
 								to={item.to}

@@ -20,8 +20,8 @@ export function PaymentsTab() {
 	const invoiceAmount = Number(tender.invoiceAmount ?? 0);
 	const paid = (paymentsQuery.data ?? []).reduce((sum, p) => sum + Number(p.amount), 0);
 	const pendingBalance = Math.max(0, invoiceAmount - paid);
-	const { canWrite } = useAuth();
-	const canPay = canWrite && tender.status === "for_collection";
+	const { isAdmin } = useAuth();
+	const canPay = isAdmin && tender.status === "for_collection";
 	const willComplete = canPay && Number(amount) > 0 && Number(amount) >= pendingBalance;
 
 	function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
@@ -121,7 +121,7 @@ export function PaymentsTab() {
 					)}
 				</form>
 			) : (
-				canWrite && (
+				isAdmin && (
 					<p className="text-sm text-gray-400">
 						Los pagos solo se pueden registrar mientras la licitación está por cobrar.
 					</p>

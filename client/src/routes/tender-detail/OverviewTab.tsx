@@ -80,10 +80,11 @@ export function OverviewTab() {
 	const [isEditing, setIsEditing] = useState(false);
 
 	const usedBudget = tender.products.reduce((sum, p) => sum + Number(p.subtotal), 0);
-	const { canWrite } = useAuth();
+	const { canWrite, isAdmin } = useAuth();
 	const canSend = canWrite && tender.status === "draft";
-	const canFinalizeOrLose = canWrite && tender.status === "active";
-	const canInvoice = canWrite && tender.status === "finalized";
+	const canFinalize = canWrite && tender.status === "active";
+	const canLose = isAdmin && tender.status === "active";
+	const canInvoice = isAdmin && tender.status === "finalized";
 
 	function handleSend() {
 		sendTender.mutate(undefined, {
@@ -153,15 +154,15 @@ export function OverviewTab() {
 						Enviar
 					</Button>
 				)}
-				{canFinalizeOrLose && (
-					<>
-						<Button variant="info" loading={finalizeTender.isPending} onClick={handleFinalize}>
-							Finalizar
-						</Button>
-						<Button variant="danger" loading={loseTender.isPending} onClick={handleLose}>
-							Marcar como perdida
-						</Button>
-					</>
+				{canFinalize && (
+					<Button variant="info" loading={finalizeTender.isPending} onClick={handleFinalize}>
+						Finalizar
+					</Button>
+				)}
+				{canLose && (
+					<Button variant="danger" loading={loseTender.isPending} onClick={handleLose}>
+						Marcar como perdida
+					</Button>
 				)}
 				{canInvoice && (
 					<form className="flex flex-wrap items-end gap-2" onSubmit={handleInvoice}>
