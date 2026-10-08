@@ -811,5 +811,28 @@ describe("validación de input", () => {
 			admin,
 		);
 		expect(r.status).toBe(400);
+		expect(r.body.error.code).toBe("VALIDATION_ERROR");
+	});
+
+	it("precio negativo -> VALIDATION_ERROR con el campo en el mensaje", async () => {
+		const r = await api(
+			"/api/products",
+			{ method: "POST", body: JSON.stringify({ name: "P", unitPrice: -99 }) },
+			admin,
+		);
+		expect(r.status).toBe(400);
+		expect(r.body.error.code).toBe("VALIDATION_ERROR");
+		expect(r.body.error.message).toContain("unitPrice");
+		expect(r.body.error.message).not.toContain("Unauthorized");
+	});
+
+	it("pago en cero -> VALIDATION_ERROR", async () => {
+		const r = await api(
+			`/api/tenders/${crypto.randomUUID()}/payments`,
+			{ method: "POST", body: JSON.stringify({ amount: 0 }) },
+			admin,
+		);
+		expect(r.status).toBe(400);
+		expect(r.body.error.code).toBe("VALIDATION_ERROR");
 	});
 });

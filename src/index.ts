@@ -30,21 +30,49 @@ import { UserCreate } from "./endpoints/users/userCreate";
 import { UserList } from "./endpoints/users/userList";
 import { UserUpdate } from "./endpoints/users/userUpdate";
 import { processExpiredTenders, processTenderReminders } from "./jobs/tenders";
-import { AppError, errorBody } from "./lib/errors";
+import { AppError, type ErrorCode, errorBody } from "./lib/errors";
 import { type AppBindings, loadProfile, supabaseAuth } from "./middleware/auth";
 import { blockViewerWrites, requireRole } from "./middleware/roles";
 
 const app = new Hono<AppBindings>();
 
-app.onError((err, c) => {
+const CODE_BY_STATUS: Record<number, ErrorCode> = {
+	400: "VALIDATION_ERROR",
+	401: "UNAUTHENTICATED",
+	403: "FORBIDDEN",
+	404: "NOT_FOUND",
+	409: "CONFLICT",
+	429: "RATE_LIMITED",
+};
+
+// chanfana reports Zod failures as an HTTPException wrapping `{ errors: [{ message, path }] }`.
+async function validationMessage(err: HTTPException): Promise<string | null> {
+	try {
+		const body = (await err.getResponse().clone().json()) as {
+			errors?: Array<{ message: string; path?: string[] }>;
+		};
+		if (!body.errors?.length) return null;
+		return body.errors
+			.map((e) => {
+				const field = (e.path ?? []).filter((p) => p !== "body" && p !== "query").join(".");
+				return field ? `${field}: ${e.message}` : e.message;
+			})
+			.join("; ");
+	} catch {
+		return null;
+	}
+}
+
+app.onError(async (err, c) => {
 	if (err instanceof AppError) {
 		return c.json(errorBody(err), err.status as 400);
 	}
-	// withSupabase (@supabase/server) throws a plain Hono HTTPException on
-	// missing/invalid Bearer tokens instead of our AppError type.
+	// withSupabase (@supabase/server) and chanfana throw a plain Hono HTTPException
+	// instead of our AppError type.
 	if (err instanceof HTTPException) {
-		const code = err.status === 401 ? "UNAUTHENTICATED" : "FORBIDDEN";
-		return c.json({ error: { code, message: err.message || "Unauthorized." } }, err.status);
+		const code = CODE_BY_STATUS[err.status] ?? "INTERNAL_ERROR";
+		const message = err.message || (await validationMessage(err)) || "Request failed.";
+		return c.json({ error: { code, message } }, err.status);
 	}
 	console.error(err);
 	return c.json({ error: { code: "INTERNAL_ERROR", message: "Unexpected error." } }, 500);
