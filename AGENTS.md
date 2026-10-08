@@ -61,3 +61,17 @@ Nota: `vitest run` puede mostrar 1-2 "Stream was cancelled" al final — es Mini
 - El frontend (`client/`) no tiene tests automatizados (solo el backend, vía `npm run test`).
 
 Antes de desplegar a producción o tocar secrets, confirmar con el usuario — son pasos con efectos externos.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues (`leivadev/tender-management-system`, vía `gh`). Ver `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Defaults: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. Ver `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context (`GLOSSARY.md` + `docs/adr/` en la raíz). Ver `docs/agents/domain.md`.
