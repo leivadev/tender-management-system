@@ -84,13 +84,17 @@ app.use("/api/*", async (c, next) => {
 openapi.post("/api/auth/logout", Logout);
 openapi.get("/api/auth/me", Me);
 
+const adminOnly = requireRole("admin");
+app.use("/api/users", adminOnly);
+app.use("/api/users/:id", adminOnly);
+app.on("POST", "/api/products", adminOnly);
+app.on("PATCH", "/api/products/:id", adminOnly);
+app.on("POST", "/api/tenders/:id/invoice", adminOnly);
+app.on("POST", "/api/tenders/:id/payments", adminOnly);
+app.on("POST", "/api/tenders/:id/lost", adminOnly);
+
 openapi.get("/api/users", UserList);
-app.use("/api/users", async (c, next) => {
-	if (c.req.method !== "POST") return next();
-	return requireRole("admin")(c, next);
-});
 openapi.post("/api/users", UserCreate);
-app.use("/api/users/:id", requireRole("admin"));
 openapi.patch("/api/users/:id", UserUpdate);
 
 openapi.get("/api/dashboard", DashboardSummary);

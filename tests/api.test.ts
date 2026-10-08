@@ -200,6 +200,66 @@ describe("users", () => {
 	});
 });
 
+describe("permisos del rol user", () => {
+	let userToken: string;
+	const someId = "00000000-0000-0000-0000-000000000000";
+
+	beforeAll(async () => {
+		const email = `user-perms-${Date.now()}@example.com`;
+		await api(
+			"/api/users",
+			{ method: "POST", body: JSON.stringify({ email, password: "UserPass123!", role: "user" }) },
+			admin,
+		);
+		userToken = await login(email, "UserPass123!");
+	});
+
+	const adminOnly: Array<[string, string, string, unknown?]> = [
+		["listar usuarios", "GET", "/api/users"],
+		["crear producto", "POST", "/api/products", { name: "P", unitPrice: 10 }],
+		["editar producto", "PATCH", `/api/products/${someId}`, { unitPrice: 1 }],
+		["facturar", "POST", `/api/tenders/${someId}/invoice`, { invoiceAmount: 100 }],
+		["registrar pago", "POST", `/api/tenders/${someId}/payments`, { amount: 10 }],
+		["marcar perdida", "POST", `/api/tenders/${someId}/lost`],
+	];
+
+	for (const [name, method, path, body] of adminOnly) {
+		it(`${name} -> 403 para user`, async () => {
+			const r = await api(path, { method, body: body ? JSON.stringify(body) : undefined }, userToken);
+			expect(r.status).toBe(403);
+			expect(r.body.error.code).toBe("FORBIDDEN");
+		});
+	}
+
+	it("user sí puede crear clientes y licitaciones", async () => {
+		const client = await api(
+			"/api/clients",
+			{
+				method: "POST",
+				body: JSON.stringify({ name: "Cliente User", companyName: "Acme", email: "delivered@resend.dev" }),
+			},
+			userToken,
+		);
+		expect(client.status).toBe(201);
+
+		const deadline = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+		const tender = await api(
+			"/api/tenders",
+			{
+				method: "POST",
+				body: JSON.stringify({
+					clientId: client.body.client.id,
+					title: "Licitacion User",
+					maxBudget: 1000,
+					deadline,
+				}),
+			},
+			userToken,
+		);
+		expect(tender.status).toBe(201);
+	});
+});
+
 describe("clients & products", () => {
 	it("crear y listar clientes", async () => {
 		const r = await api("/api/clients", {}, admin);
