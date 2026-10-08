@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Button } from "../../components/Button";
-import { ErrorMessage } from "../../components/ErrorMessage";
 import { Field, FieldButtonSlot } from "../../components/Field";
 import { useProducts } from "../../hooks/useProducts";
 import { useAddTenderProduct, useRemoveTenderProduct } from "../../hooks/useTenders";
@@ -161,8 +160,6 @@ export function ProductsTab() {
 					</p>
 				)
 			)}
-
-			<ErrorMessage error={addProduct.error || removeProduct.error} />
 		</div>
 	);
 }

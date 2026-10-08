@@ -11,7 +11,7 @@ export function ToastContainer() {
 			{toasts.map((toast) => (
 				<div
 					key={toast.id}
-					role="status"
+					role={toast.variant === "error" ? "alert" : "status"}
 					className={`flex items-start justify-between gap-3 rounded-md border px-4 py-3 text-sm shadow-lg ${
 						toast.variant === "success"
 							? "border-green-200 bg-green-50 text-green-800"

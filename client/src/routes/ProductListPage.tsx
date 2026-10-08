@@ -1,7 +1,6 @@
 import { useState } from "react";
 import type { Product } from "../api/types";
 import { Button } from "../components/Button";
-import { ErrorMessage } from "../components/ErrorMessage";
 import { Field, FieldButtonSlot } from "../components/Field";
 import { PageLoader } from "../components/Spinner";
 import { useCreateProduct, useProducts, useUpdateProduct } from "../hooks/useProducts";
@@ -164,8 +163,6 @@ export function ProductListPage() {
 					</FieldButtonSlot>
 				</form>
 			)}
-
-			<ErrorMessage error={createProduct.error} />
 
 			{productsQuery.isLoading ? (
 				<PageLoader />

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/Button";
-import { ErrorMessage } from "../components/ErrorMessage";
 import { Field } from "../components/Field";
 import { useClients } from "../hooks/useClients";
 import { useCreateTender } from "../hooks/useTenders";
@@ -133,8 +132,6 @@ export function TenderCreatePage() {
 					className={fieldClass(Boolean(deadlineError))}
 				/>
 			</Field>
-
-			<ErrorMessage error={createTender.error} />
 
 			<Button type="submit" loading={createTender.isPending} disabled={!hasClients}>
 				{createTender.isPending ? "Creando…" : "Crear licitación"}

@@ -34,6 +34,15 @@ const MESSAGES: Record<ErrorCode, string> = {
 	INTERNAL_ERROR: "Ocurrió un error inesperado.",
 };
 
+// Codes whose server message says what to fix (field, balance, budget...).
+const SERVER_MESSAGE_CODES = new Set<ErrorCode>([
+	"VALIDATION_ERROR",
+	"BUSINESS_RULE_VIOLATION",
+	"TENDER_BUDGET_EXCEEDED",
+	"CONFLICT",
+]);
+
 export function mapErrorToMessage(error: ApiError): string {
+	if (SERVER_MESSAGE_CODES.has(error.code) && error.message) return error.message;
 	return MESSAGES[error.code] ?? error.message;
 }

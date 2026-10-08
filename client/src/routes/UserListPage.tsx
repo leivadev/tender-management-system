@@ -1,7 +1,6 @@
 import { useState } from "react";
 import type { Role, User } from "../api/types";
 import { Button } from "../components/Button";
-import { ErrorMessage } from "../components/ErrorMessage";
 import { Field, FieldButtonSlot } from "../components/Field";
 import { PageLoader } from "../components/Spinner";
 import { useCreateUser, useUpdateUser, useUsers } from "../hooks/useUsers";
@@ -153,8 +152,6 @@ export function UserListPage() {
 					</FieldButtonSlot>
 				</form>
 			)}
-
-			<ErrorMessage error={createUser.error} />
 
 			{usersQuery.isLoading ? (
 				<PageLoader />

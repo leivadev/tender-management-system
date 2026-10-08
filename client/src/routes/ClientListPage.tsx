@@ -1,7 +1,6 @@
 import { useState } from "react";
 import type { Client } from "../api/types";
 import { Button } from "../components/Button";
-import { ErrorMessage } from "../components/ErrorMessage";
 import { Field, FieldButtonSlot } from "../components/Field";
 import { PageLoader } from "../components/Spinner";
 import { useClients, useCreateClient, useUpdateClient } from "../hooks/useClients";
@@ -156,8 +155,6 @@ export function ClientListPage() {
 					</FieldButtonSlot>
 				</form>
 			)}
-
-			<ErrorMessage error={createClient.error} />
 
 			{clientsQuery.isLoading ? (
 				<PageLoader />

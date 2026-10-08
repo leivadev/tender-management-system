@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { BudgetBar } from "../../components/BudgetBar";
 import { Button } from "../../components/Button";
-import { ErrorMessage } from "../../components/ErrorMessage";
 import { Field, FieldButtonSlot } from "../../components/Field";
 import { useCreateTenderPayment, useTenderPayments } from "../../hooks/useTenders";
 import { useAuth } from "../../lib/AuthContext";
@@ -128,8 +127,6 @@ export function PaymentsTab() {
 					</p>
 				)
 			)}
-
-			<ErrorMessage error={createPayment.error} />
 		</div>
 	);
 }

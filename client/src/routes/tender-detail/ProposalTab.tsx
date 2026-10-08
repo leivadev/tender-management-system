@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 import { downloadTenderProposal } from "../../api/tenders";
 import { Button } from "../../components/Button";
-import { ErrorMessage } from "../../components/ErrorMessage";
 import { useUploadTenderProposal } from "../../hooks/useTenders";
 import { useAuth } from "../../lib/AuthContext";
 import { pushToast } from "../../lib/toast";
@@ -84,7 +83,6 @@ export function ProposalTab() {
 			)}
 
 			{sizeError && <p className="text-sm text-red-600">{sizeError}</p>}
-			<ErrorMessage error={uploadProposal.error} />
 		</div>
 	);
 }

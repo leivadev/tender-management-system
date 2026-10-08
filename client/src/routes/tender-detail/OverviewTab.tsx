@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { BudgetBar } from "../../components/BudgetBar";
 import { Button } from "../../components/Button";
-import { ErrorMessage } from "../../components/ErrorMessage";
 import { Field, FieldButtonSlot } from "../../components/Field";
 import {
 	useFinalizeTender,
@@ -59,7 +58,6 @@ function EditTenderForm({ onDone }: { onDone: () => void }) {
 					className={inputClass}
 				/>
 			</Field>
-			<ErrorMessage error={updateTender.error} />
 			<div className="flex gap-2">
 				<Button type="submit" loading={updateTender.isPending}>
 					Guardar
@@ -196,10 +194,6 @@ export function OverviewTab() {
 			{(tender.status === "collected" || tender.status === "lost") && (
 				<p className="text-sm text-gray-400">Esta licitación está en un estado final.</p>
 			)}
-
-			<ErrorMessage
-				error={sendTender.error || finalizeTender.error || loseTender.error || invoiceTender.error}
-			/>
 		</div>
 	);
 }
