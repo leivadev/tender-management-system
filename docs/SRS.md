@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **Document ID** | TMS-SRS-001 |
-| **Version** | 1.3 |
+| **Version** | 1.4 |
 | **Status** | Baseline |
 | **Date** | 2026-10-08 |
 | **Format** | Based on ISO/IEC/IEEE 29148:2018 |
@@ -19,6 +19,7 @@
 | 1.1 | 2026-10-08 | Quantified ambiguous requirements; split compound requirements; added reliability, performance, compliance, localization and verification; added source traceability; corrected invoiced-amount constraint. |
 | 1.2 | 2026-10-08 | Resolved all pending decisions: USD currency, provider-standard logout, session storage and login rate limiting, soft deletion, editable budget and deadline in draft, no proposal replacement when active, admin-only restrictions confirmed. |
 | 1.3 | 2026-10-08 | Closed all remaining open points: send-failure semantics, documentation access, immediate rejection of disabled accounts, whole-number quantities, inactive and duplicate products, archived-entity behaviour, pagination contract, invoiced-amount and payment fields, concrete configuration values, test reproducibility, English as the product language. |
+| 1.4 | 2026-10-08 | Specification review: client attributes, password policy, archive as the single user disable mechanism with provider ban, self-archive and last-admin race protection, invoice correction, row locking for all tender mutations, proposal object cleanup, reminder suppression, input limits and uniqueness, email content and time format, dashboard window parameter, session-end behaviour, backups and error logging, narrower audit claim, new exclusions. |
 
 ### Document conventions
 
@@ -40,7 +41,7 @@ This document specifies the software requirements of the Tender Management Syste
 
 ### 1.2 Scope
 
-This document covers TMS release 1.0, the complete product. The TMS lets a company draft, submit, track, resolve and collect payment on commercial tenders addressed to its clients. A tender is drafted, a formal proposal document is attached, and it is formally sent to the client with an automatic email notification. It is monitored until its deadline with automatic reminders, resolved as won or lost, and, if won, invoiced and collected until the balance is settled. Every step is audited.
+This document covers TMS release 1.0, the complete product. The TMS lets a company draft, submit, track, resolve and collect payment on commercial tenders addressed to its clients. A tender is drafted, a formal proposal document is attached, and it is formally sent to the client with an automatic email notification. It is monitored until its deadline with automatic reminders, resolved as won or lost, and, if won, invoiced and collected until the balance is settled. Every status change, payment, archive and restore is attributable to a user and a timestamp.
 
 The product comprises:
 
@@ -186,16 +187,19 @@ Errors are returned with a stable code, a human-readable message and the correct
 |---|---|---|---|
 | FR-01 | The system shall authenticate users with email and password and issue a JWT-based session. | Must | T |
 | FR-02 | Logging out shall terminate the user's session at the authentication provider, revoking its refresh tokens (provider sign-out, default `global` scope), and the client shall discard its stored session. | Must | T |
-| SEC-17 | An access token issued before logout remains valid until its `exp` claim, as in the provider's standard behaviour. The access-token lifetime shall be set explicitly to 3600 seconds (1 hour) in the authentication provider configuration and documented, and this residual window is an accepted risk. SEC-19 closes the window for disabled accounts. | Must | I |
-| FR-03 | Only `admin` users shall be able to create other users. | Must | T |
+| SEC-17 | An access token issued before logout remains valid until its `exp` claim, as in the provider's standard behaviour. The access-token lifetime shall be set explicitly to 3600 seconds (1 hour) in the authentication provider configuration and documented, and this residual window is an accepted risk. SEC-19 closes the window for archived accounts. | Must | I |
+| FR-03 | Only `admin` users shall be able to create other users. The admin sets the user's initial password (SEC-20); no one can change it afterwards. | Must | T |
 | FR-04 | The system shall restrict listing users to `admin`. | Must | T |
-| FR-33 | The system shall restrict editing users (role, active flag) to `admin`. | Must | T |
-| FR-05 | The system shall prevent the last active `admin` from being demoted, deactivated or archived, so at least one active admin always exists. | Must | T |
+| FR-33 | The system shall restrict editing users (role) to `admin`. Archiving is the only way to disable a user. | Must | T |
+| FR-05 | The system shall prevent the last non-archived `admin` from being demoted or archived, so at least one admin always exists. The check shall run in a transaction that locks the rows of all non-archived admins, so concurrent requests cannot both pass it. | Must | T || FR-40 | An `admin` shall be able to archive (soft-delete) and restore a user, a client or a tender. Archiving shall set an archive marker and shall not remove data, history or payments. | Must | T |
 | FR-40 | An `admin` shall be able to archive (soft-delete) and restore a user, a client or a tender. Archiving shall set an archive marker and shall not remove data, history or payments. | Must | T |
 | FR-41 | Archived users, clients and tenders shall be excluded from default lists. List endpoints shall accept `archived=only` or `archived=include`, honoured for `admin` only; for any other role the parameter is ignored and archived records are never returned. | Must | T |
 | FR-42 | An archived user shall not be able to log in. An archived client shall not be selectable for new tenders; the existing tenders of an archived client are kept unchanged. | Must | T |
 | FR-47 | An archived tender shall be read-only: every operation that would modify it, other than restoring it, shall be rejected with `409` `CONFLICT`. | Must | T |
 | FR-48 | Archiving a client that has tenders in `draft`, `active`, `finalized` or `for_collection` shall be rejected with `409` `CONFLICT`. | Must | T |
+| FR-51 | Archiving a user shall, in the same operation, mark the profile as archived, ban the user at the authentication provider and revoke the user's refresh tokens. Restoring the user shall lift the ban and keep the user's previous role. | Must | T |
+| FR-52 | An `admin` shall not be able to archive themselves or change their own role; the request is rejected with `409` `CONFLICT` and another admin must perform it. | Must | T |
+| FR-53 | Restoring an archived tender whose client is archived shall be allowed. The client remains archived and unusable for new tenders. | Must | T |
 | FR-44 | A tender shall be archivable only while `draft`, `collected` or `lost`. Archiving or restoring shall not change its status or write to the transition history as a status change. | Must | T |
 | FR-06 | Login attempts shall be rate-limited by the authentication provider's configurable rate limits, set to at most 10 sign-in attempts per 5 minutes per IP address. The Worker shall forward the end user's IP address so limits apply per end user rather than per Worker, and shall map a provider `429` to `429` with code `RATE_LIMITED`. | Must | T |
 
@@ -203,9 +207,10 @@ Errors are returned with a stable code, a human-readable message and the correct
 
 | ID | Requirement | Priority | Verif. |
 |---|---|---|---|
-| FR-07 | The system shall allow creating a client with a name and a contact email. | Must | T |
+| FR-07 | The system shall allow creating a client with a contact name, a company name and a contact email, all required. | Must | T |
 | FR-36 | The system shall allow listing clients, paginated. | Must | T |
-| FR-37 | The system shall allow editing a client's name and contact email. | Must | T |
+| FR-37 | The system shall allow editing a client's contact name, company name and contact email. | Must | T |
+
 #### 3.2.3 Products
 
 | ID | Requirement | Priority | Verif. |
@@ -225,15 +230,17 @@ Errors are returned with a stable code, a human-readable message and the correct
 | FR-12 | The tender detail shall return general data, products, status history and payments. | Must | T |
 | FR-13 | Editing a tender shall change only title and description, except budget and deadline while `draft` (FR-43). Client and status shall not be modifiable through the edit operation. | Must | T |
 | FR-43 | While a tender is `draft`, the system shall allow changing its maximum budget and deadline. The new budget shall not be lower than the current sum of the tender's lines (BR-01) and the new deadline shall be in the future (BR-02). | Must | T |
-| FR-14 | Adding or removing a product shall be allowed only in `draft` and `active`. The unit price shall be frozen on the line when added; later catalogue price changes shall not alter existing lines. | Must | T |
+| FR-14 | Adding or removing a product shall be allowed only in `draft` and `active`. The unit price shall be frozen on the line when added; later catalogue price changes shall not alter existing lines. Changes made while `active` are not notified to the client, whose emailed copy may therefore be outdated. | Must | T |
 | FR-15 | The system shall allow uploading the proposal (PDF) to private storage while the tender is `draft`. | Must | T |
 | FR-34 | The system shall reject uploading or replacing the proposal in `finalized`, `for_collection`, `collected` and `lost`. | Must | T |
 | FR-35 | The system shall reject uploading or replacing the proposal while the tender is `active`, because the client has already received the previous file by email. | Must | T |
+| FR-54 | When a proposal is replaced while the tender is `draft`, the previously stored object shall be deleted from object storage after the new one is stored. If the deletion fails, the replacement still succeeds and the failure is logged. The proposal of an archived tender is kept. | Must | T |
 | FR-16 | The stored proposal shall be retrievable through a real, stable HTTPS URL of the system, and that URL shall require a valid session. | Must | T |
 | FR-17 | Sending a tender shall, in this order, validate that a proposal is attached (BR-03) and that the deadline is in the future (BR-15), send the client email, and only then transition `draft` to `active`. | Must | T |
 | FR-18 | Users with role `user` or `admin` shall be able to mark an `active` tender `finalized`. | Must | T |
 | FR-19 | An `admin` shall be able to mark an `active` tender `lost`. | Must | T |
 | FR-20 | An `admin` shall be able to invoice a `finalized` tender by recording the invoiced amount, transitioning it to `for_collection`. | Must | T |
+| FR-50 | An `admin` shall be able to correct the invoiced amount of a `for_collection` tender while it has no registered payments. The new amount shall be strictly greater than zero (BR-16). The correction does not change the status and is attributed through the modifier and timestamp (DAT-06). | Must | T |
 | FR-21 | The system shall expose a tender's transition history. | Must | T |
 
 #### 3.2.5 Payments
@@ -249,7 +256,7 @@ Errors are returned with a stable code, a human-readable message and the correct
 | ID | Requirement | Priority | Verif. |
 |---|---|---|---|
 | FR-25 | On sending, the client shall receive a real email summarising the tender (products, budget, deadline) with the proposal attached. | Must | D |
-| FR-26 | While a tender is `active` and fewer than 48 hours remain to its deadline, the client shall receive one reminder email. | Must | T |
+| FR-26 | While a tender is `active` and fewer than 48 hours remain to its deadline, the client shall receive one reminder email stating the title, the deadline and the hours remaining, without attachment. If fewer than 48 hours already remained when the tender was sent, no reminder is sent. | Must | T |
 | FR-27 | Every user-supplied value interpolated into email HTML (title, file name, names) shall be HTML-escaped. | Must | T |
 
 #### 3.2.7 Scheduled processing
@@ -257,14 +264,14 @@ Errors are returned with a stable code, a human-readable message and the correct
 | ID | Requirement | Priority | Verif. |
 |---|---|---|---|
 | FR-28 | When the deadline passes and the tender is still `active`, the scheduled job shall transition it to `lost` with a null actor. | Must | T |
-| FR-29 | The 48-hour reminder (FR-26) shall be issued by the same scheduled mechanism. | Must | T |
+| FR-29 | The 48-hour reminder (FR-26) shall be issued by the same scheduled mechanism. Sending a tender with fewer than 48 hours remaining shall mark its reminder as already sent at that moment. | Must | T |
 | FR-30 | Scheduled processing shall be idempotent: overlapping or repeated runs shall not duplicate emails or transitions. | Must | T |
 
 #### 3.2.8 Dashboard and API documentation
 
 | ID | Requirement | Priority | Verif. |
 |---|---|---|---|
-| FR-31 | The dashboard shall show `active` tenders whose deadline falls within a configurable window (default 72 hours), and a count of tenders per status. | Should | T |
+| FR-31 | The dashboard shall show `active` tenders whose deadline falls within a window set by the `withinHours` query parameter (integer 1 to 720, default 72; a value outside the range is rejected with `VALIDATION_ERROR`), and a count of tenders per status. Both exclude archived tenders. | Should | T |
 | FR-32 | The system shall present the OpenAPI documentation as an interactive Swagger UI page at the SPA route `/docs`, reachable only by signed-in users of any role. The page shall load the OpenAPI document with the user's session token, and "Try it out" requests shall use that same token. | Must | D |
 | FR-45 | A request to `/openapi.json` without a valid session shall be rejected with `401`. The API shall not serve interactive documentation pages at `/api/docs` or `/redocs`: a request to either never returns a documentation page. | Must | T |
 
@@ -281,6 +288,7 @@ Errors are returned with a stable code, a human-readable message and the correct
 | UI-07 | Every page shall have a top-level heading. | Should | I |
 | UI-08 | Inline-edit fields shall have an associated label and shall submit with Enter. | Should | D |
 | UI-09 | All forms shall be operable by keyboard alone. | Should | D |
+| UI-10 | On any `401` response the SPA shall discard the local session, return to the login screen with the message "Your session has ended" and not keep showing previously loaded data. | Must | D |
 
 ### 3.3 Business rules
 
@@ -297,7 +305,7 @@ Errors are returned with a stable code, a human-readable message and the correct
 | BR-06 | Money shall be handled as integer minor units (cents) or exact decimal end to end. Floating-point values shall never be compared with strict equality. | Must | T |
 | BR-07 | Every status transition shall be recorded in the history (actor, timestamp, previous status, new status) in the same operation that changes the status. | Must | T |
 | BR-08 | Only the transitions in section 5.2 are permitted. Any other shall be rejected with an error. | Must | T |
-| BR-09 | Payments shall be registered in a transaction that row-locks the tender, to prevent races between concurrent requests and the scheduled job. | Must | T |
+| BR-09 | Every operation that modifies a tender (lines, budget, deadline, proposal, sending, finalizing, marking lost, invoicing, invoice correction, payments, archiving) shall run in a transaction that row-locks the tender, to prevent races between concurrent requests and the scheduled job. Concurrency tests shall cover at least BR-01 (budget against lines) and sending (against line changes). | Must | T |
 | BR-10 | The system shall allow a tender's maximum budget and deadline to change only while it is `draft`, and shall not allow its client to change after creation. | Must | T |
 | BR-14 | A product shall appear at most once per tender. Adding it again shall be rejected with `409` `CONFLICT`; to change the quantity the line is removed and added again. | Must | T |
 | BR-15 | Sending a tender whose deadline is not in the future shall be rejected with `422` `BUSINESS_RULE_VIOLATION`. A `draft` tender never expires automatically. | Must | T |
@@ -322,7 +330,7 @@ Errors are returned with a stable code, a human-readable message and the correct
 | Tenders | create, edit, add/remove product, upload proposal, send, finalize | Y | Y | N |
 | Tenders | archive, restore | Y | N | N |
 | Tenders | mark lost | Y | N | N |
-| Tenders | invoice | Y | N | N |
+| Tenders | invoice, correct invoiced amount | Y | N | N |
 | Payments | register | Y | N | N |
 | Dashboard | view | Y | Y | Y |
 | API documentation | view | Y | Y | Y |
@@ -347,7 +355,11 @@ Restricting product management, invoicing, payment registration and marking a te
 | DAT-08 | The database shall enforce a `CHECK` constraint that a tender line's frozen unit price is strictly greater than zero. | Must | T |
 | DAT-09 | The database shall enforce a `CHECK` constraint that a tender's invoiced amount, when set, is strictly greater than zero. A zero invoiced amount would make the outstanding balance zero from the start and the tender could never reach `collected`. | Must | T |
 | DAT-10 | The database shall enforce a `CHECK` constraint that a payment amount is strictly greater than zero. | Must | T |
-| DAT-11 | Users, clients and tenders shall have a nullable archive timestamp and the archiving user. | Must | I |
+| DAT-11 | Users, clients and tenders shall have a nullable archive timestamp and the archiving user. Restoring clears them; the restoring user is recorded as the last modifier (DAT-06). | Must | I |
+| DAT-12 | Text inputs shall be limited to these maximum lengths, enforced by the API and the database: tender title 200, tender description 5,000, client contact name 200, company name 200, product name 200, payment reference 100, payment note 500, email address 254. A violation is rejected with `VALIDATION_ERROR`. | Must | T |
+| DAT-13 | Every monetary input shall be between 0.01 and 9,999,999,999.99, consistent with `numeric(12,2)`. A violation is rejected with `VALIDATION_ERROR`. | Must | T |
+| DAT-14 | A product name shall be unique, ignoring letter case. A duplicate is rejected with `409` `CONFLICT`. Client names and emails are not unique. | Must | T |
+| DAT-15 | A user's email shall be unique. A duplicate is rejected with `409` `CONFLICT`. | Must | T |
 | DAT-03 | The database shall have indexes on tender status, on deadline, and on frequently joined foreign keys. | Should | I |
 | DAT-04 | Monetary columns shall use `numeric(12,2)`. | Must | I |
 | DAT-05 | Critical integrity rules shall not depend only on application code: a script or future endpoint bypassing the domain layer shall not be able to put the database in an impossible state. | Must | T |
@@ -363,8 +375,9 @@ Restricting product management, invoicing, payment registration and marking a te
 | SEC-13 | The provider's auto-generated data API shall not expose the application schema, or any new table created in it. | Must | I |
 | SEC-14 | A request to the provider's data API using the public project key shall not be able to read or write any application table. | Must | T |
 | SEC-04 | The API documentation shall not be publicly readable (FR-32, FR-45). | Must | T |
-| SEC-05 | The configured provider rate-limit values and the access-token lifetime (FR-06, SEC-17) shall be recorded in the deployment documentation. | Must | I |
-| SEC-19 | On every authenticated request, the system shall reject, with `401` `UNAUTHENTICATED`, a user whose profile is inactive or archived, even if the presented access token is still valid. | Must | T |
+| SEC-05 | The configured provider rate-limit values, the access-token lifetime and the password policy (FR-06, SEC-17, SEC-20) shall be recorded in the deployment documentation. | Must | I |
+| SEC-19 | On every authenticated request, the system shall reject, with `401` `UNAUTHENTICATED`, a user whose profile is archived, even if the presented access token is still valid. | Must | T |
+| SEC-20 | Passwords shall have a minimum length of 12 characters, configured at the authentication provider. No composition rules are imposed. | Must | I |
 | SEC-06 | Object storage shall be private; the bucket shall have no public access. | Must | I |
 | SEC-15 | Object names shall contain a random identifier of at least 122 bits (for example UUID v4) and shall not be derived from tender data. | Must | I |
 | SEC-16 | A download request without a valid session shall return `401`. | Must | T |
@@ -392,6 +405,8 @@ Restricting product management, invoicing, payment registration and marking a te
 | NFR-10 | The deployed environment shall have recorded evidence that a real email with the proposal attached was received by a client address (provider log or capture). | Must | D |
 | NFR-11 | The deployed environment shall have recorded evidence that a stored proposal is retrievable through its real URL. | Must | D |
 | NFR-12 | The deployed environment shall have recorded evidence that the scheduled job has fired on its own (for example a system-actor transition at the scheduled time). | Must | D |
+| NFR-26 | The provider's automatic daily database backups shall be enabled and their retention policy recorded in the deployment documentation. | Should | I |
+| NFR-27 | Unexpected errors shall be logged with a correlation identifier that is also returned to the caller, and the logs shall contain no personal data or secrets. | Should | I |
 | NFR-24 | The automated test suite shall be runnable with a single documented command against a local database, and the continuous-integration pipeline shall start that database and run the suite on every push and pull request. | Must | I |
 
 #### 3.7.1 Performance
@@ -424,6 +439,7 @@ Restricting product management, invoicing, payment registration and marking a te
 | NFR-21 | Timestamps shall be stored in UTC and rendered in the user's local time zone. | Must | T |
 | NFR-22 | Monetary values shall be stored and displayed in USD with two decimals. | Must | D |
 | NFR-25 | The product language is English: every user-interface text, API message, client email and OpenAPI description shall be in English. | Must | D |
+| NFR-28 | Emails shall state dates in UTC with the zone explicit (for example `2026-10-15 17:00 UTC`) and monetary values in USD with two decimals. They shall be sent from the configured sender address with no Reply-To header. | Must | T |
 
 ---
 
@@ -433,10 +449,10 @@ Restricting product management, invoicing, payment registration and marking a te
 
 | Entity | Attributes |
 |---|---|
-| Client | name, contact email |
-| Profile (user) | email, role, active |
+| Client | contact name, company name, contact email, archive marker |
+| Profile (user) | email, role, archive marker |
 | Product | name, list price, active |
-| Tender | title, description, client, maximum budget, deadline, status, proposal key and URL, invoiced amount, reminder-sent marker |
+| Tender | title, description, client, maximum budget, deadline, status, proposal key and URL, invoiced amount, reminder-sent marker, archive marker |
 | Tender line | tender, product, quantity (whole number), frozen unit price |
 | Payment | tender, amount, reference, note, registering user, timestamp |
 | Status history entry | tender, previous status, new status, actor (null for the system), timestamp |
@@ -498,6 +514,11 @@ stateDiagram-v2
 - Physical (hard) deletion of users, clients and tenders. Soft deletion is specified in FR-40..44.
 - Notification channels other than email.
 - Integration with external electronic invoicing.
+- Changing or recovering a password after the account is created, by anyone. The admin sets the initial password when creating the user (FR-03).
+- Voiding or reversing a registered payment.
+- A general audit log of every mutation; auditing is limited to what section 1.2 states.
+- Handling of client replies to emails; emails are sent without Reply-To (NFR-28).
+- A formal accessibility conformance target such as WCAG 2.2 AA; UI-07 to UI-09 apply.
 
 ---
 
@@ -507,22 +528,22 @@ Maps each business capability to its requirements and to the source it originate
 
 | Capability | Requirements | Source |
 |---|---|---|
-| Authentication and roles | FR-01..06, FR-33, FR-40..42, FR-44, FR-47, FR-48, DAT-11, SEC-01, SEC-02, SEC-05, SEC-10, SEC-17, SEC-19 | REF-1; REF-2 #2, #8, #9, #10, #17, #21 |
-| Catalogue and clients | FR-07..09, FR-36..39, FR-46 | REF-1 |
+| Authentication and roles | FR-01..06, FR-33, FR-40..42, FR-44, FR-47, FR-48, FR-51..53, DAT-11, DAT-15, SEC-01, SEC-02, SEC-05, SEC-10, SEC-17, SEC-19, SEC-20 | REF-1; REF-2 #2, #8, #9, #10, #17, #21 |
+| Catalogue and clients | FR-07..09, FR-36..39, FR-46, DAT-12..14 | REF-1; Design |
 | Tender drafting and budget | FR-10..14, FR-43, BR-01, BR-02, BR-10, BR-14, BR-17 | REF-1; REF-2 #12 |
-| Proposal and sending | FR-15, FR-16, FR-17, FR-25, FR-34, FR-35, BR-03, BR-15, BR-04, BR-13, SEC-06, SEC-11, SEC-15, SEC-16 | REF-1; REF-2 #11, #13 |
+| Proposal and sending | FR-15, FR-16, FR-17, FR-25, FR-34, FR-35, FR-54, BR-03, BR-15, BR-04, BR-13, SEC-06, SEC-11, SEC-15, SEC-16 | REF-1; REF-2 #11, #13 |
 | Lifecycle and audit | FR-18..21, BR-07, BR-08, DAT-06 | REF-1 |
-| Collection | FR-22..24, BR-05, BR-06, BR-09, BR-11, BR-12, BR-16, NFR-02 | REF-1; REF-2 #1 |
+| Collection | FR-22..24, FR-50, BR-05, BR-06, BR-09, BR-11, BR-12, BR-16, DAT-13, NFR-02 | REF-1; REF-2 #1 |
 | Scheduled processing | FR-26, FR-28..30, NFR-15, NFR-17 | REF-1 |
 | Email safety | FR-27, NFR-16 | REF-2 #16 |
 | Data integrity | DAT-01..05, DAT-07..10 | REF-2 #4 |
 | Database exposure | SEC-03, SEC-12..14 | REF-2 #5 |
 | API surface | FR-32, FR-45, IF-01..05, SEC-04, NFR-06 | REF-1; REF-2 #7, #15 |
-| User interface and accessibility | UI-01..09, FR-31 | REF-1; REF-2 #3, #6, #19, #20 |
+| User interface and accessibility | UI-01..10, FR-31 | REF-1; REF-2 #3, #6, #19, #20 |
 | Browser-side security | SEC-08, SEC-18 | REF-2 #14, #16 |
 | Secrets and query safety | SEC-07, SEC-09 | Design |
 | Quality and delivery | NFR-01, NFR-03..05, NFR-07..12, NFR-23, NFR-24 | REF-1; REF-2 #18, #22 |
-| Performance, reliability, compliance, localization | NFR-13, NFR-14, NFR-18..22, NFR-25 | Design |
+| Performance, reliability, compliance, localization | NFR-13, NFR-14, NFR-18..22, NFR-25..28 | Design |
 | Role restrictions beyond user creation | Section 3.4 | Design |
 
 ## Appendix B. Verification
