@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { RequireAuth } from "./components/RequireAuth";
 import { ToastContainer } from "./components/ToastContainer";
+import { DesignPage } from "./design/DesignPage";
 import { ClientListPage } from "./routes/ClientListPage";
 import { DashboardPage } from "./routes/DashboardPage";
 import { LoginPage } from "./routes/LoginPage";
@@ -23,6 +24,7 @@ export default function App() {
 			<ToastContainer />
 			<Routes>
 				<Route path="/login" element={<LoginPage />} />
+				<Route path="/_design" element={<DesignPage />} />
 				<Route
 					path="/*"
 					element={
