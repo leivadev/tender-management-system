@@ -4,13 +4,13 @@ import postgres from "postgres";
 const [, , email, password, role = "admin"] = process.argv;
 
 if (!email || !password || !["admin", "user", "viewer"].includes(role)) {
-	console.error("Uso: node scripts/create-admin.mjs <email> <password> [admin|user]");
+	console.error("Usage: node scripts/create-admin.mjs <email> <password> [admin|user]");
 	process.exit(1);
 }
 
 const { SUPABASE_URL, SUPABASE_SECRET_KEY, DATABASE_URL } = process.env;
 if (!SUPABASE_URL || !SUPABASE_SECRET_KEY || !DATABASE_URL) {
-	console.error("Faltan variables de entorno: SUPABASE_URL, SUPABASE_SECRET_KEY, DATABASE_URL");
+	console.error("Missing environment variables: SUPABASE_URL, SUPABASE_SECRET_KEY, DATABASE_URL");
 	process.exit(1);
 }
 
@@ -25,7 +25,7 @@ const { data, error } = await admin.auth.admin.createUser({
 });
 
 if (error || !data.user) {
-	console.error("Error creando el usuario en Supabase Auth:", error?.message);
+	console.error("Error creating the user in Supabase Auth:", error?.message);
 	process.exit(1);
 }
 
@@ -36,7 +36,7 @@ try {
 		values (${data.user.id}, ${email}, ${role})
 		returning id, email, role
 	`;
-	console.log("Usuario creado:", profile);
+	console.log("User created:", profile);
 } finally {
 	await sql.end();
 }
