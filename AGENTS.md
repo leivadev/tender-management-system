@@ -1,77 +1,77 @@
-# Sistema de Gestión de Licitaciones
+# Tender Management System
 
-API en Cloudflare Workers (Hono + chanfana/OpenAPI) para redactar, enviar, dar seguimiento, resolver y cobrar licitaciones comerciales. Ver `README.md` para setup y decisiones de diseño.
+API on Cloudflare Workers (Hono + chanfana/OpenAPI) to draft, send, track, resolve and collect on commercial tenders. See `README.md` for setup and design decisions.
 
-## Comandos
+## Commands
 
-| Comando | Propósito |
+| Command | Purpose |
 |---|---|
-| `npm run dev` | `wrangler dev` local |
+| `npm run dev` | Local `wrangler dev` |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm run check` | Lint + formato (Biome), sin escribir |
-| `npm run check:fix` | Aplica fixes de Biome |
-| `npm run db:generate` | Genera migración Drizzle desde `src/db/schema.ts` |
-| `npm run db:migrate` | Aplica migraciones (usa `DATABASE_URL` del `.env`, no Hyperdrive) |
-| `npm run test` | `vitest run` — suite E2E contra Supabase local real (ver `tests/`) |
-| `npm run deploy` | Build de `client/` + `wrangler deploy` a producción |
+| `npm run check` | Lint + formatting (Biome), read-only |
+| `npm run check:fix` | Apply Biome fixes |
+| `npm run db:generate` | Generate a Drizzle migration from `src/db/schema.ts` |
+| `npm run db:migrate` | Apply migrations (uses `DATABASE_URL` from `.env`, not Hyperdrive) |
+| `npm run test` | `vitest run` — E2E suite against a real local Supabase (see `tests/`) |
+| `npm run deploy` | Build `client/` + `wrangler deploy` to production |
 
-Antes de dar por terminado cualquier cambio en `src/`, correr `npm run typecheck`, `npm run check` y `npm run test` — deben quedar limpios. `test` necesita el Supabase local levantado (ver README, sección "Supabase local").
+Before considering any change in `src/` done, run `npm run typecheck`, `npm run check` and `npm run test` — all must be clean. `test` needs the local Supabase running (see README, section "Supabase local").
 
-## Arquitectura del código
+## Code architecture
 
-- `src/endpoints/**` — un archivo por endpoint, cada uno una clase `OpenAPIRoute` de chanfana (schema Zod + `handle()`). Así se genera el Swagger UI en `/api/docs` automáticamente (`/` sirve la SPA de `client/`).
-- `client/` — SPA independiente (Vite + React + TypeScript + Tailwind + TanStack Query), `package.json` propio. Se compila a `client/dist/` y el Worker la sirve vía el binding `assets` de `wrangler.jsonc`. `cd client && npm run dev` para levantarla en local (puerto 5173, hace proxy de `/api/*` hacia `wrangler dev` en 8787).
-- `src/domain/tenders/` — la única capa que conoce las reglas de negocio de licitaciones: `state-machine.ts` (transiciones), `rules.ts` (presupuesto, propuesta obligatoria), `payments.ts` (saldo, pago atómico).
-- `src/services/` — integraciones externas: `storage.ts` (R2), `email.ts` (Resend), `auth.ts` (Supabase Admin API).
-- `src/jobs/tenders.ts` — lógica de vencimiento/recordatorio, invocada desde `scheduled()` en `src/index.ts`.
-- `src/middleware/` — `auth.ts` (verifica JWT de Supabase contra JWKS, carga el profile) y `roles.ts` (`requireRole`, `blockViewerWrites`: el rol `viewer` es de solo lectura).
-- `src/db/schema.ts` — único archivo de schema Drizzle, incluye las `relations()` inline.
+- `src/endpoints/**` — one file per endpoint, each a chanfana `OpenAPIRoute` class (Zod schema + `handle()`). This is how the Swagger UI at `/api/docs` is generated automatically (`/` serves the SPA from `client/`).
+- `client/` — standalone SPA (Vite + React + TypeScript + Tailwind + TanStack Query) with its own `package.json`. It builds to `client/dist/` and the Worker serves it through the `assets` binding in `wrangler.jsonc`. `cd client && npm run dev` runs it locally (port 5173, proxies `/api/*` to `wrangler dev` on 8787).
+- `src/domain/tenders/` — the only layer that knows the tender business rules: `state-machine.ts` (transitions), `rules.ts` (budget, mandatory proposal), `payments.ts` (balance, atomic payment).
+- `src/services/` — external integrations: `storage.ts` (R2), `email.ts` (Resend), `auth.ts` (Supabase Admin API).
+- `src/jobs/tenders.ts` — expiry/reminder logic, invoked from `scheduled()` in `src/index.ts`.
+- `src/middleware/` — `auth.ts` (verifies the Supabase JWT against JWKS, loads the profile) and `roles.ts` (`requireRole`, `blockViewerWrites`: the `viewer` role is read-only).
+- `src/db/schema.ts` — the single Drizzle schema file, with `relations()` inline.
 
-## Invariantes que no se deben romper
+## Invariants that must not be broken
 
-1. **Ningún endpoint escribe `tenders.status` directamente.** Toda transición pasa por `transitionTender()` en `state-machine.ts`, que valida contra la whitelist `VALID_TRANSITIONS` y escribe el historial en la misma operación. Si necesitas un nuevo estado o transición, se agrega ahí, no en el endpoint.
-2. **El Worker en runtime nunca usa `DATABASE_URL` directo.** Toda conexión a Postgres pasa por el binding `env.HYPERDRIVE` (`src/db/client.ts`). `DATABASE_URL` sólo existe en `.env` para `drizzle-kit`.
-3. **Los pagos se registran dentro de una transacción con `SELECT ... FOR UPDATE`** (`payments.ts`) — evita condiciones de carrera entre requests concurrentes y el cron.
-4. **`SUPABASE_SECRET_KEY` sólo se usa server-side** (`services/auth.ts`, admin API) — nunca debe viajar al cliente ni loguearse.
-5. **No se agregan secretos a `wrangler.jsonc`.** Van en `.dev.vars` (local) o `wrangler secret put` (producción); ambos gitignorados salvo los `.example`.
+1. **No endpoint writes `tenders.status` directly.** Every transition goes through `transitionTender()` in `state-machine.ts`, which validates against the `VALID_TRANSITIONS` whitelist and writes the history in the same operation. If you need a new status or transition, add it there, not in the endpoint.
+2. **The Worker at runtime never uses `DATABASE_URL` directly.** Every Postgres connection goes through the `env.HYPERDRIVE` binding (`src/db/client.ts`). `DATABASE_URL` only exists in `.env` for `drizzle-kit`.
+3. **Payments are recorded inside a transaction with `SELECT ... FOR UPDATE`** (`payments.ts`) — this avoids race conditions between concurrent requests and the cron.
+4. **`SUPABASE_SECRET_KEY` is only used server-side** (`services/auth.ts`, admin API) — it must never travel to the client or be logged.
+5. **No secrets are added to `wrangler.jsonc`.** They go in `.dev.vars` (local) or `wrangler secret put` (production); both are gitignored except the `.example` files.
 
 ## Cloudflare Workers
 
-STOP. Tu conocimiento de las APIs y límites de Cloudflare Workers puede estar desactualizado. Verifica la documentación actual antes de tocar Workers, Hyperdrive, R2, Cron Triggers, o Node.js compat.
+STOP. Your knowledge of Cloudflare Workers APIs and limits may be out of date. Check the current documentation before touching Workers, Hyperdrive, R2, Cron Triggers, or Node.js compat.
 
 - Docs: https://developers.cloudflare.com/workers/
-- Límites: `/workers/platform/limits/`
+- Limits: `/workers/platform/limits/`
 - Node.js compat: https://developers.cloudflare.com/workers/runtime-apis/nodejs/
-- Errores: https://developers.cloudflare.com/workers/observability/errors/
-- Este proyecto usa `hyperdrive` y `r2_buckets` bindings + `nodejs_compat`. Corre `wrangler types` después de tocar `wrangler.jsonc`.
+- Errors: https://developers.cloudflare.com/workers/observability/errors/
+- This project uses `hyperdrive` and `r2_buckets` bindings + `nodejs_compat`. Run `wrangler types` after touching `wrangler.jsonc`.
 
-Este proyecto **no usa** Durable Objects, Queues, Vectorize ni Workers AI — no agregar sin que el README lo justifique.
+This project **does not use** Durable Objects, Queues, Vectorize or Workers AI — do not add them unless the README justifies it.
 
-## Estado de testing
+## Testing status
 
-`tests/api.test.ts`, `tests/cron.test.ts` y `tests/english.test.ts` — 75 casos con `@cloudflare/vitest-pool-workers` (corre dentro del runtime real de Workers, contra los bindings reales de `wrangler.jsonc` y el Supabase local). Cubren auth, roles, CRUD (incl. edición vía `PATCH` de clientes/productos/usuarios/licitaciones), presupuesto, las 10 transiciones inválidas + 4 válidas de la máquina de estados, bloqueo de productos en los 4 estados terminales, facturación, pagos (parcial/sobrepago/completo), cron (vencimiento + recordatorio + idempotencia), dashboard y auditoría. Si agregas lógica nueva, agrega su caso ahí — no asumas que compila = funciona.
+`tests/api.test.ts`, `tests/cron.test.ts` and `tests/english.test.ts` — 75 cases with `@cloudflare/vitest-pool-workers` (runs inside the real Workers runtime, against the real bindings from `wrangler.jsonc` and the local Supabase). They cover auth, roles, CRUD (including editing clients/products/users/tenders via `PATCH`), budget, the 10 invalid + 4 valid state-machine transitions, product locking in the 4 terminal statuses, invoicing, payments (partial/overpayment/full), cron (expiry + reminder + idempotency), dashboard and audit. Shared helpers live in `tests/helpers.ts`. If you add new logic, add its case there — do not assume that compiling = working.
 
-El frontend (`client/`) no tiene tests automatizados — se verifica manualmente en navegador.
+The frontend (`client/`) has no automated tests — it is verified manually in the browser.
 
-Nota: `vitest run` puede mostrar 1-2 "Stream was cancelled" al final — es Miniflare cerrando conexiones de Postgres.js al terminar el archivo de test, no un fallo real (los asserts sí corren y sí fallan la suite si algo está mal).
+Note: `vitest run` may show 1-2 "Stream was cancelled" errors at the end — that is Miniflare closing Postgres.js connections when the test file finishes, not a real failure (the asserts do run and do fail the suite if something is wrong).
 
-## Pendientes conocidos
+## Known pending items
 
-- Desplegado a producción (`wrangler deploy` + secrets vía `wrangler secret put`) — pero el Cron Trigger nunca se confirmó disparándose solo en ese ambiente real (en local no se dispara automáticamente).
-- El frontend (`client/`) no tiene tests automatizados (solo el backend, vía `npm run test`).
+- Deployed to production (`wrangler deploy` + secrets via `wrangler secret put`) — but the Cron Trigger was never confirmed firing on its own in that real environment (locally it does not fire automatically).
+- The frontend (`client/`) has no automated tests (only the backend, via `npm run test`).
 
-Antes de desplegar a producción o tocar secrets, confirmar con el usuario — son pasos con efectos externos.
+Before deploying to production or touching secrets, confirm with the user — these are steps with external effects.
 
 ## Agent skills
 
 ### Issue tracker
 
-GitHub Issues (`leivadev/tender-management-system`, vía `gh`). Ver `docs/agents/issue-tracker.md`.
+GitHub Issues (`leivadev/tender-management-system`, via `gh`). See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-Defaults: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. Ver `docs/agents/triage-labels.md`.
+Defaults: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
-Single-context (`GLOSSARY.md` + `docs/adr/` en la raíz). Ver `docs/agents/domain.md`.
+Single-context (`GLOSSARY.md` + `docs/adr/` at the root). See `docs/agents/domain.md`.
