@@ -1,33 +1,8 @@
-import { env, exports } from "cloudflare:workers";
+import { env } from "cloudflare:workers";
 import postgres from "postgres";
 import { beforeAll, describe, expect, it } from "vitest";
 import { processExpiredTenders, processTenderReminders } from "../src/jobs/tenders";
-
-const worker = exports.default;
-
-async function api(path: string, init: RequestInit = {}, token?: string) {
-	const headers = new Headers(init.headers);
-	headers.set("Content-Type", "application/json");
-	if (token) headers.set("Authorization", `Bearer ${token}`);
-	const res = await worker.fetch(`http://localhost${path}`, { ...init, headers });
-	return { status: res.status, body: await res.json() };
-}
-
-async function login(email: string, password: string) {
-	const r = await api("/api/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
-	return r.body.access_token as string;
-}
-
-async function uploadPdf(tenderId: string, token: string) {
-	const pdfBytes = new TextEncoder().encode("%PDF-1.4\n%%EOF");
-	const form = new FormData();
-	form.append("file", new Blob([pdfBytes], { type: "application/pdf" }), "p.pdf");
-	await worker.fetch(`http://localhost/api/tenders/${tenderId}/proposal`, {
-		method: "POST",
-		headers: { Authorization: `Bearer ${token}` },
-		body: form,
-	});
-}
+import { api, login, uploadPdf } from "./helpers";
 
 let admin: string;
 let clientId: string;

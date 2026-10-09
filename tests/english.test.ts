@@ -1,27 +1,13 @@
-import { env, exports } from "cloudflare:workers";
+import { env } from "cloudflare:workers";
 import { beforeAll, describe, expect, it } from "vitest";
 import { processTenderReminders } from "../src/jobs/tenders";
-
-const worker = exports.default;
+import { api, login, uploadPdf } from "./helpers";
 
 type SentEmail = { subject: string; html: string; text: string };
 const sentEmails = (globalThis as unknown as { __sentEmails: SentEmail[] }).__sentEmails;
 
 // Accented letters, inverted punctuation, and common Spanish words used by the old copy.
 const SPANISH = /[áéíóúñ¿¡]|licitaci|estimado|presupuesto|recordatorio|adjuntamos|cantidad|producto/i;
-
-async function api(path: string, init: RequestInit = {}, token?: string) {
-	const headers = new Headers(init.headers);
-	headers.set("Content-Type", "application/json");
-	if (token) headers.set("Authorization", `Bearer ${token}`);
-	const res = await worker.fetch(`http://localhost${path}`, { ...init, headers });
-	return { status: res.status, body: (await res.json()) as any };
-}
-
-async function login(email: string, password: string) {
-	const r = await api("/api/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
-	return r.body.access_token as string;
-}
 
 let admin: string;
 let clientId: string;
@@ -58,17 +44,7 @@ async function sendTender(title: string, deadlineIso: string) {
 		{ method: "POST", body: JSON.stringify({ productId, quantity: 2 }) },
 		admin,
 	);
-	const form = new FormData();
-	form.append(
-		"file",
-		new Blob([new TextEncoder().encode("%PDF-1.4\n%%EOF")], { type: "application/pdf" }),
-		"p.pdf",
-	);
-	await worker.fetch(`http://localhost/api/tenders/${tenderId}/proposal`, {
-		method: "POST",
-		headers: { Authorization: `Bearer ${admin}` },
-		body: form,
-	});
+	await uploadPdf(tenderId, admin);
 	const send = await api(`/api/tenders/${tenderId}/send`, { method: "POST" }, admin);
 	expect(send.status).toBe(200);
 	return tenderId;
