@@ -1,11 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { CreateUserRequest, UpdateUserRequest } from "../api/types";
 import * as api from "../api/users";
 
-export function useUsers() {
+export function useUsers(page: number) {
 	return useQuery({
-		queryKey: ["users", "list"],
-		queryFn: () => api.listUsers().then((r) => r.users),
+		queryKey: ["users", "list", { page }],
+		queryFn: () => api.listUsers(page),
+		placeholderData: keepPreviousData,
 	});
 }
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Role, User } from "../api/types";
 import { Button } from "../components/Button";
 import { Field, FieldButtonSlot } from "../components/Field";
+import { Pagination } from "../components/Pagination";
 import { PageLoader } from "../components/Spinner";
 import { useCreateUser, useUpdateUser, useUsers } from "../hooks/useUsers";
 import { useAuth } from "../lib/AuthContext";
@@ -83,7 +84,8 @@ function UserEditRow({ user, onDone }: { user: User; onDone: () => void }) {
 
 export function UserListPage() {
 	const { isAdmin, userId } = useAuth();
-	const usersQuery = useUsers();
+	const [page, setPage] = useState(1);
+	const usersQuery = useUsers(page);
 	const createUser = useCreateUser();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -166,7 +168,7 @@ export function UserListPage() {
 							</tr>
 						</thead>
 						<tbody>
-							{(usersQuery.data ?? []).map((user) =>
+							{(usersQuery.data?.data ?? []).map((user) =>
 								editingId === user.id ? (
 									<UserEditRow key={user.id} user={user} onDone={() => setEditingId(null)} />
 								) : (
@@ -182,6 +184,8 @@ export function UserListPage() {
 					</table>
 				</div>
 			)}
+
+			{usersQuery.data && <Pagination meta={usersQuery.data} onChange={setPage} />}
 		</div>
 	);
 }

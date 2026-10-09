@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/Button";
 import { Field } from "../components/Field";
-import { useClients } from "../hooks/useClients";
+import { useAllClients } from "../hooks/useClients";
 import { useCreateTender } from "../hooks/useTenders";
 import { fieldClass, inputClass } from "../lib/formStyles";
 import { pushToast } from "../lib/toast";
@@ -16,7 +16,7 @@ function localDateTimeNow(): string {
 
 export function TenderCreatePage() {
 	const navigate = useNavigate();
-	const clientsQuery = useClients();
+	const clientsQuery = useAllClients();
 	const createTender = useCreateTender();
 
 	const [clientId, setClientId] = useState("");

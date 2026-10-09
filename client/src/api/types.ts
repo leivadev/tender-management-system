@@ -11,6 +11,13 @@ export const TENDER_STATUSES: TenderStatus[] = [
 	"lost",
 ];
 
+export interface Page<T> {
+	data: T[];
+	page: number;
+	pageSize: number;
+	total: number;
+}
+
 // --- auth ---
 
 export interface LoginRequest {

@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Client } from "../api/types";
 import { Button } from "../components/Button";
 import { Field, FieldButtonSlot } from "../components/Field";
+import { Pagination } from "../components/Pagination";
 import { PageLoader } from "../components/Spinner";
 import { useClients, useCreateClient, useUpdateClient } from "../hooks/useClients";
 import { useAuth } from "../lib/AuthContext";
@@ -88,7 +89,8 @@ function ClientEditRow({ client, onDone }: { client: Client; onDone: () => void 
 }
 
 export function ClientListPage() {
-	const clientsQuery = useClients();
+	const [page, setPage] = useState(1);
+	const clientsQuery = useClients(page);
 	const createClient = useCreateClient();
 	const [name, setName] = useState("");
 	const [companyName, setCompanyName] = useState("");
@@ -170,7 +172,7 @@ export function ClientListPage() {
 							</tr>
 						</thead>
 						<tbody>
-							{(clientsQuery.data ?? []).map((client) =>
+							{(clientsQuery.data?.data ?? []).map((client) =>
 								editingId === client.id ? (
 									<ClientEditRow key={client.id} client={client} onDone={() => setEditingId(null)} />
 								) : (
@@ -179,11 +181,13 @@ export function ClientListPage() {
 							)}
 						</tbody>
 					</table>
-					{clientsQuery.data?.length === 0 && (
+					{clientsQuery.data?.total === 0 && (
 						<p className="px-4 py-6 text-center text-sm text-gray-500">No clients yet.</p>
 					)}
 				</div>
 			)}
+
+			{clientsQuery.data && <Pagination meta={clientsQuery.data} onChange={setPage} />}
 		</div>
 	);
 }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Product } from "../api/types";
 import { Button } from "../components/Button";
 import { Field, FieldButtonSlot } from "../components/Field";
+import { Pagination } from "../components/Pagination";
 import { PageLoader } from "../components/Spinner";
 import { useCreateProduct, useProducts, useUpdateProduct } from "../hooks/useProducts";
 import { useAuth } from "../lib/AuthContext";
@@ -96,7 +97,8 @@ function ProductEditRow({ product, onDone }: { product: Product; onDone: () => v
 }
 
 export function ProductListPage() {
-	const productsQuery = useProducts();
+	const [page, setPage] = useState(1);
+	const productsQuery = useProducts(page);
 	const createProduct = useCreateProduct();
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
@@ -178,7 +180,7 @@ export function ProductListPage() {
 							</tr>
 						</thead>
 						<tbody>
-							{(productsQuery.data ?? []).map((product) =>
+							{(productsQuery.data?.data ?? []).map((product) =>
 								editingId === product.id ? (
 									<ProductEditRow key={product.id} product={product} onDone={() => setEditingId(null)} />
 								) : (
@@ -187,11 +189,13 @@ export function ProductListPage() {
 							)}
 						</tbody>
 					</table>
-					{productsQuery.data?.length === 0 && (
+					{productsQuery.data?.total === 0 && (
 						<p className="px-4 py-6 text-center text-sm text-gray-500">No products yet.</p>
 					)}
 				</div>
 			)}
+
+			{productsQuery.data && <Pagination meta={productsQuery.data} onChange={setPage} />}
 		</div>
 	);
 }

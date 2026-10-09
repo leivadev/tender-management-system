@@ -1,10 +1,11 @@
-import { fetchBlob, fetchJson } from "./client";
+import { fetchBlob, fetchJson, pageQuery } from "./client";
 import type {
 	AddTenderProductRequest,
 	CreatePaymentRequest,
 	CreatePaymentResponse,
 	CreateTenderRequest,
 	InvoiceTenderRequest,
+	Page,
 	Payment,
 	Tender,
 	TenderDetail,
@@ -13,9 +14,8 @@ import type {
 	UpdateTenderRequest,
 } from "./types";
 
-export function listTenders(status?: TenderStatus) {
-	const query = status ? `?status=${status}` : "";
-	return fetchJson<{ success: true; tenders: Tender[] }>(`/api/tenders${query}`);
+export function listTenders(page: number, status?: TenderStatus) {
+	return fetchJson<Page<Tender>>(`/api/tenders?${pageQuery(page, { status })}`);
 }
 
 export function getTender(id: string) {

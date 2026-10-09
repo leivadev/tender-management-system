@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "../../components/Button";
 import { Field, FieldButtonSlot } from "../../components/Field";
-import { useProducts } from "../../hooks/useProducts";
+import { useAllProducts } from "../../hooks/useProducts";
 import { useAddTenderProduct, useRemoveTenderProduct } from "../../hooks/useTenders";
 import { useAuth } from "../../lib/AuthContext";
 import { confirmAction } from "../../lib/confirm";
@@ -14,7 +14,7 @@ const EDITABLE_STATUSES = new Set(["draft", "active"]);
 
 export function ProductsTab() {
 	const { tender } = useTenderContext();
-	const productsQuery = useProducts();
+	const productsQuery = useAllProducts();
 	const addProduct = useAddTenderProduct(tender.id);
 	const removeProduct = useRemoveTenderProduct(tender.id);
 	const [productId, setProductId] = useState("");

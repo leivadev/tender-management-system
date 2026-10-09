@@ -1,8 +1,8 @@
-import { fetchJson } from "./client";
-import type { CreateUserRequest, UpdateUserRequest, User } from "./types";
+import { fetchJson, pageQuery } from "./client";
+import type { CreateUserRequest, Page, UpdateUserRequest, User } from "./types";
 
-export function listUsers() {
-	return fetchJson<{ success: true; users: User[] }>("/api/users");
+export function listUsers(page: number) {
+	return fetchJson<Page<User>>(`/api/users?${pageQuery(page)}`);
 }
 
 export function createUser(payload: CreateUserRequest) {

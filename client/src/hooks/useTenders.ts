@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "../api/tenders";
 import type {
 	AddTenderProductRequest,
@@ -9,10 +9,11 @@ import type {
 	UpdateTenderRequest,
 } from "../api/types";
 
-export function useTenders(status?: TenderStatus) {
+export function useTenders(page: number, status?: TenderStatus) {
 	return useQuery({
-		queryKey: ["tenders", "list", { status }],
-		queryFn: () => api.listTenders(status).then((r) => r.tenders),
+		queryKey: ["tenders", "list", { page, status }],
+		queryFn: () => api.listTenders(page, status),
+		placeholderData: keepPreviousData,
 		refetchInterval: 60_000,
 	});
 }

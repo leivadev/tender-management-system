@@ -2,9 +2,10 @@ import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { TENDER_STATUSES, type TenderStatus } from "../api/types";
 import { ErrorMessage } from "../components/ErrorMessage";
+import { Pagination } from "../components/Pagination";
 import { PageLoader } from "../components/Spinner";
 import { StatusBadge } from "../components/StatusBadge";
-import { useClients } from "../hooks/useClients";
+import { useAllClients } from "../hooks/useClients";
 import { useTenders } from "../hooks/useTenders";
 import { useAuth } from "../lib/AuthContext";
 import { formatCurrency, formatDate } from "../lib/format";
@@ -20,12 +21,18 @@ export function TenderListPage() {
 	const statusParam = searchParams.get("status");
 	const status = isTenderStatus(statusParam) ? statusParam : undefined;
 
+	const page = Math.max(1, Number.parseInt(searchParams.get("page") ?? "", 10) || 1);
+
 	function setStatus(next: TenderStatus | undefined) {
 		setSearchParams(next ? { status: next } : {});
 	}
 
-	const tendersQuery = useTenders(status);
-	const clientsQuery = useClients();
+	function setPage(next: number) {
+		setSearchParams({ ...(status ? { status } : {}), page: String(next) });
+	}
+
+	const tendersQuery = useTenders(page, status);
+	const clientsQuery = useAllClients();
 
 	const clientNameById = useMemo(() => {
 		const map = new Map<string, string>();
@@ -86,7 +93,7 @@ export function TenderListPage() {
 							</tr>
 						</thead>
 						<tbody>
-							{(tendersQuery.data ?? []).map((tender) => (
+							{(tendersQuery.data?.data ?? []).map((tender) => (
 								<tr key={tender.id} className="border-t border-gray-100 hover:bg-gray-50">
 									<td className="px-4 py-2">
 										<Link to={`/tenders/${tender.id}`} className="text-blue-600 hover:underline">
@@ -103,13 +110,15 @@ export function TenderListPage() {
 							))}
 						</tbody>
 					</table>
-					{tendersQuery.data?.length === 0 && (
+					{tendersQuery.data?.total === 0 && (
 						<p className="px-4 py-6 text-center text-sm text-gray-500">
 							{status ? `No tenders with status "${STATUS_LABELS[status]}".` : "No tenders yet."}
 						</p>
 					)}
 				</div>
 			)}
+
+			{tendersQuery.data && <Pagination meta={tendersQuery.data} onChange={setPage} />}
 		</div>
 	);
 }

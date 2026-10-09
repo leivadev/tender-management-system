@@ -1,8 +1,12 @@
-import { fetchJson } from "./client";
-import type { CreateProductRequest, Product, UpdateProductRequest } from "./types";
+import { fetchAllPages, fetchJson, pageQuery } from "./client";
+import type { CreateProductRequest, Page, Product, UpdateProductRequest } from "./types";
 
-export function listProducts() {
-	return fetchJson<{ success: true; products: Product[] }>("/api/products");
+export function listProducts(page: number) {
+	return fetchJson<Page<Product>>(`/api/products?${pageQuery(page)}`);
+}
+
+export function listAllProducts() {
+	return fetchAllPages<Product>("/api/products");
 }
 
 export function createProduct(payload: CreateProductRequest) {

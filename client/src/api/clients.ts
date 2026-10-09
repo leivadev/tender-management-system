@@ -1,8 +1,12 @@
-import { fetchJson } from "./client";
-import type { Client, CreateClientRequest, UpdateClientRequest } from "./types";
+import { fetchAllPages, fetchJson, pageQuery } from "./client";
+import type { Client, CreateClientRequest, Page, UpdateClientRequest } from "./types";
 
-export function listClients() {
-	return fetchJson<{ success: true; clients: Client[] }>("/api/clients");
+export function listClients(page: number) {
+	return fetchJson<Page<Client>>(`/api/clients?${pageQuery(page)}`);
+}
+
+export function listAllClients() {
+	return fetchAllPages<Client>("/api/clients");
 }
 
 export function createClient(payload: CreateClientRequest) {
