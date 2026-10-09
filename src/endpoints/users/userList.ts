@@ -2,23 +2,25 @@ import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
 import { getDb } from "../../db/client";
 import { profiles } from "../../db/schema";
+import { pageSchema, paginate, paginationQuery } from "../../lib/pagination";
 import type { AppContext } from "../../types";
 
 export class UserList extends OpenAPIRoute {
 	schema = {
 		tags: ["Users"],
 		summary: "List users",
+		request: { query: paginationQuery },
 		responses: {
 			"200": {
-				description: "Returns a list of users",
-				content: { "application/json": { schema: z.object({ success: z.boolean(), users: z.any() }) } },
+				description: "Returns a page of users, newest first",
+				content: { "application/json": { schema: pageSchema(z.any()) } },
 			},
 		},
 	};
 
 	async handle(c: AppContext) {
+		const data = await this.getValidatedData<typeof this.schema>();
 		const db = getDb(c.env);
-		const rows = await db.select().from(profiles);
-		return c.json({ success: true, users: rows });
+		return c.json(await paginate(db, profiles, data.query));
 	}
 }

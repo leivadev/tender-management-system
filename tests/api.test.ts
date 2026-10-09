@@ -229,13 +229,13 @@ describe("clients & products", () => {
 	it("create and list clients", async () => {
 		const r = await api("/api/clients", {}, admin);
 		expect(r.status).toBe(200);
-		expect(Array.isArray(r.body.clients)).toBe(true);
+		expect(Array.isArray(r.body.data)).toBe(true);
 	});
 
 	it("create and list products", async () => {
 		const r = await api("/api/products", {}, admin);
 		expect(r.status).toBe(200);
-		expect(Array.isArray(r.body.products)).toBe(true);
+		expect(Array.isArray(r.body.data)).toBe(true);
 	});
 
 	it("validation: client without email -> 400", async () => {

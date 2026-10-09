@@ -2,23 +2,25 @@ import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
 import { getDb } from "../../db/client";
 import { products } from "../../db/schema";
+import { pageSchema, paginate, paginationQuery } from "../../lib/pagination";
 import type { AppContext } from "../../types";
 
 export class ProductList extends OpenAPIRoute {
 	schema = {
 		tags: ["Products"],
 		summary: "List products",
+		request: { query: paginationQuery },
 		responses: {
 			"200": {
-				description: "Returns a list of products",
-				content: { "application/json": { schema: z.object({ success: z.boolean(), products: z.any() }) } },
+				description: "Returns a page of products, newest first",
+				content: { "application/json": { schema: pageSchema(z.any()) } },
 			},
 		},
 	};
 
 	async handle(c: AppContext) {
+		const data = await this.getValidatedData<typeof this.schema>();
 		const db = getDb(c.env);
-		const rows = await db.select().from(products);
-		return c.json({ success: true, products: rows });
+		return c.json(await paginate(db, products, data.query));
 	}
 }
