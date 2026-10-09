@@ -9,13 +9,14 @@ import type {
 	Payment,
 	Tender,
 	TenderDetail,
+	TenderListItem,
 	TenderStatus,
 	TenderStatusHistoryRow,
 	UpdateTenderRequest,
 } from "./types";
 
 export function listTenders(page: number, status?: TenderStatus) {
-	return fetchJson<Page<Tender>>(`/api/tenders?${pageQuery(page, { status })}`);
+	return fetchJson<Page<TenderListItem>>(`/api/tenders?${pageQuery(page, { status })}`);
 }
 
 export function getTender(id: string) {

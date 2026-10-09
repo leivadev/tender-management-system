@@ -122,6 +122,10 @@ export interface Tender {
 	updatedAt: string;
 }
 
+export interface TenderListItem extends Tender {
+	clientName: string | null;
+}
+
 export interface TenderProductLine {
 	id: string;
 	productId: string;

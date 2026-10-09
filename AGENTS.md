@@ -49,7 +49,7 @@ This project **does not use** Durable Objects, Queues, Vectorize or Workers AI �
 
 ## Testing status
 
-`tests/api.test.ts`, `tests/cron.test.ts`, `tests/english.test.ts` and `tests/pagination.test.ts` — 102 cases with `@cloudflare/vitest-pool-workers` (runs inside the real Workers runtime, against the real bindings from `wrangler.jsonc` and the local Supabase). They cover auth, roles, CRUD (including editing clients/products/users/tenders via `PATCH`), budget, the 10 invalid + 4 valid state-machine transitions, product locking in the 4 terminal statuses, invoicing, payments (partial/overpayment/full), cron (expiry + reminder + idempotency), dashboard, audit and pagination (envelope, limits, order, 10,000-tender latency). Shared helpers live in `tests/helpers.ts`. If you add new logic, add its case there — do not assume that compiling = working.
+`tests/api.test.ts`, `tests/cron.test.ts`, `tests/english.test.ts` and `tests/pagination.test.ts` — 103 cases with `@cloudflare/vitest-pool-workers` (runs inside the real Workers runtime, against the real bindings from `wrangler.jsonc` and the local Supabase). They cover auth, roles, CRUD (including editing clients/products/users/tenders via `PATCH`), budget, the 10 invalid + 4 valid state-machine transitions, product locking in the 4 terminal statuses, invoicing, payments (partial/overpayment/full), cron (expiry + reminder + idempotency), dashboard, audit and pagination (envelope, limits, order, 10,000-tender latency). Shared helpers live in `tests/helpers.ts`. If you add new logic, add its case there — do not assume that compiling = working.
 
 The frontend (`client/`) has no automated tests — it is verified manually in the browser.
 

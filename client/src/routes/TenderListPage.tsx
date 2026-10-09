@@ -1,11 +1,9 @@
-import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { TENDER_STATUSES, type TenderStatus } from "../api/types";
 import { ErrorMessage } from "../components/ErrorMessage";
 import { Pagination } from "../components/Pagination";
 import { PageLoader } from "../components/Spinner";
 import { StatusBadge } from "../components/StatusBadge";
-import { useAllClients } from "../hooks/useClients";
 import { useTenders } from "../hooks/useTenders";
 import { useAuth } from "../lib/AuthContext";
 import { formatCurrency, formatDate } from "../lib/format";
@@ -32,13 +30,6 @@ export function TenderListPage() {
 	}
 
 	const tendersQuery = useTenders(page, status);
-	const clientsQuery = useAllClients();
-
-	const clientNameById = useMemo(() => {
-		const map = new Map<string, string>();
-		for (const client of clientsQuery.data ?? []) map.set(client.id, client.name);
-		return map;
-	}, [clientsQuery.data]);
 
 	return (
 		<div className="space-y-4">
@@ -100,7 +91,7 @@ export function TenderListPage() {
 											{tender.title}
 										</Link>
 									</td>
-									<td className="px-4 py-2">{clientNameById.get(tender.clientId) ?? "—"}</td>
+									<td className="px-4 py-2">{tender.clientName ?? "—"}</td>
 									<td className="px-4 py-2">{formatCurrency(tender.maxBudget)}</td>
 									<td className="px-4 py-2">{formatDate(tender.deadline)}</td>
 									<td className="px-4 py-2">

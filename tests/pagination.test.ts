@@ -133,6 +133,14 @@ describe("tender list (FR-11, NFR-13)", () => {
 		expect(r.body.data.every((t: { status: string }) => t.status === "lost")).toBe(true);
 	});
 
+	it("includes the client name so the SPA needs no client lookup (FR-11)", async () => {
+		const r = await api("/api/tenders?pageSize=100", {}, admin);
+		expect(r.body.data.length).toBeGreaterThan(0);
+		for (const t of r.body.data) expect(typeof t.clientName).toBe("string");
+		const seeded = r.body.data.find((t: { clientId: string }) => t.clientId === clientId);
+		expect(seeded.clientName).toBe("Pagination Client");
+	});
+
 	it("rejects an unknown status (FR-11)", async () => {
 		const r = await api("/api/tenders?status=bogus", {}, admin);
 		expect(r.body.error.code).toBe("VALIDATION_ERROR");
