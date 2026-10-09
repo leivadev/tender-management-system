@@ -8,10 +8,10 @@ let clientId: string;
 
 beforeAll(async () => {
 	admin = await login("admin@example.com", "AdminPass123!");
-	// Reuse an existing client: creating new ones here would reorder the paginated client list
-	// that pagination.test.ts asserts on while files run concurrently.
-	const clients = await api("/api/clients?pageSize=1", {}, admin);
-	clientId = clients.body.data[0].id;
+	// Use the oldest client of the first page: pagination.test.ts creates its own (newest) client and
+	// deletes its tenders on teardown while files run concurrently.
+	const clients = await api("/api/clients?pageSize=100", {}, admin);
+	clientId = clients.body.data.at(-1).id;
 });
 
 async function createProduct(name: string) {
