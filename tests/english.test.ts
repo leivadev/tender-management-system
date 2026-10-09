@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { beforeAll, describe, expect, it } from "vitest";
 import { processTenderReminders } from "../src/jobs/tenders";
-import { api, login, uploadPdf } from "./helpers";
+import { api, login, uniqueName, uploadPdf } from "./helpers";
 
 type SentEmail = { subject: string; html: string; text: string };
 const sentEmails = (globalThis as unknown as { __sentEmails: SentEmail[] }).__sentEmails;
@@ -26,7 +26,7 @@ beforeAll(async () => {
 	clientId = client.body.client.id;
 	const product = await api(
 		"/api/products",
-		{ method: "POST", body: JSON.stringify({ name: "English Product", unitPrice: 1234.5 }) },
+		{ method: "POST", body: JSON.stringify({ name: uniqueName("English Product"), unitPrice: 1234.5 }) },
 		admin,
 	);
 	productId = product.body.product.id;

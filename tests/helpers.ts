@@ -36,3 +36,8 @@ export async function uploadPdf(tenderId: string, token: string) {
 	});
 	return { status: res.status, body: await res.json() };
 }
+
+// Product names are unique (DAT-14) and the local database persists across runs.
+export function uniqueName(prefix: string) {
+	return `${prefix} ${crypto.randomUUID().slice(0, 8)}`;
+}

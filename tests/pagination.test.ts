@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { api, login } from "./helpers";
+import { api, login, uniqueName } from "./helpers";
 
 let admin: string;
 let clientId: string;
@@ -88,17 +88,23 @@ describe("clients and products lists (FR-36, FR-38)", () => {
 	});
 
 	it("products: paginated, newest first (FR-38, NFR-06)", async () => {
-		for (const name of ["Prod A", "Prod B", "Prod C"]) {
+		const run = uniqueName("Prod");
+		for (const name of [`${run} A`, `${run} B`, `${run} C`]) {
 			await api("/api/products", { method: "POST", body: JSON.stringify({ name, unitPrice: 10 }) }, admin);
 		}
 		const r = await api("/api/products?page=1&pageSize=2", {}, admin);
 		expect(r.body.data).toHaveLength(2);
-		expect(r.body.data[0].name).toBe("Prod C");
+		// Other test files create products concurrently, so assert relative order, not position.
+		const recent = await api("/api/products?pageSize=100", {}, admin);
+		const names = recent.body.data
+			.map((p: { name: string }) => p.name)
+			.filter((n: string) => n.startsWith(run));
+		expect(names).toEqual([`${run} C`, `${run} B`, `${run} A`]);
 		expect(r.body.total).toBeGreaterThanOrEqual(3);
 		const beyond = await api("/api/products?page=9999", {}, admin);
 		expect(beyond.status).toBe(200);
 		expect(beyond.body.data).toEqual([]);
-		expect(beyond.body.total).toBe(r.body.total);
+		expect(beyond.body.total).toBeGreaterThanOrEqual(r.body.total);
 	});
 
 	it("users: paginated (NFR-06)", async () => {

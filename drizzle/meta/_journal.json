@@ -22,6 +22,13 @@
       "when": 1791334136192,
       "tag": "0002_hot_unicorn",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791527233307,
+      "tag": "0003_shocking_terrax",
+      "breakpoints": true
     }
   ]
 }

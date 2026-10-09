@@ -2,6 +2,7 @@ import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
 import { getDb } from "../../db/client";
 import { products } from "../../db/schema";
+import { AppError, isUniqueViolation } from "../../lib/errors";
 import type { AppContext } from "../../types";
 
 const ProductInput = z.object({
@@ -30,17 +31,24 @@ export class ProductCreate extends OpenAPIRoute {
 		const db = getDb(c.env);
 		const user = c.var.user;
 
-		const [product] = await db
-			.insert(products)
-			.values({
-				name: data.body.name,
-				description: data.body.description,
-				unitPrice: data.body.unitPrice.toFixed(2),
-				createdBy: user.id,
-				updatedBy: user.id,
-			})
-			.returning();
+		try {
+			const [product] = await db
+				.insert(products)
+				.values({
+					name: data.body.name,
+					description: data.body.description,
+					unitPrice: data.body.unitPrice.toFixed(2),
+					createdBy: user.id,
+					updatedBy: user.id,
+				})
+				.returning();
 
-		return c.json({ success: true, product }, 201);
+			return c.json({ success: true, product }, 201);
+		} catch (err) {
+			if (isUniqueViolation(err)) {
+				throw new AppError("CONFLICT", `A product named "${data.body.name}" already exists.`);
+			}
+			throw err;
+		}
 	}
 }

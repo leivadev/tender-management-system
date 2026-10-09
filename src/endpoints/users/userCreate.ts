@@ -2,7 +2,8 @@ import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
 import { getDb } from "../../db/client";
 import { profiles, roleEnum } from "../../db/schema";
-import { createAuthUser } from "../../services/auth";
+import { AppError, isUniqueViolation } from "../../lib/errors";
+import { createAuthUser, deleteAuthUser } from "../../services/auth";
 import type { AppContext } from "../../types";
 
 const UserInput = z.object({
@@ -41,7 +42,15 @@ export class UserCreate extends OpenAPIRoute {
 				role: data.body.role,
 				createdBy: actor.id,
 			})
-			.returning();
+			.returning()
+			.catch(async (err) => {
+				// Don't leave an auth user without a profile behind.
+				await deleteAuthUser(c.env, authUser.id).catch((cleanupErr) => console.error(cleanupErr));
+				if (isUniqueViolation(err)) {
+					throw new AppError("CONFLICT", `A user with email ${data.body.email} already exists.`);
+				}
+				throw err;
+			});
 
 		return c.json({ success: true, user: profile }, 201);
 	}

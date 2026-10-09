@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import postgres from "postgres";
 import { beforeAll, describe, expect, it } from "vitest";
-import { api, login, uploadPdf, worker } from "./helpers";
+import { api, login, uniqueName, uploadPdf, worker } from "./helpers";
 
 async function createSentTender(clientId: string, token: string, deadline: string) {
 	const create = await api(
@@ -37,7 +37,7 @@ beforeAll(async () => {
 
 	const product = await api(
 		"/api/products",
-		{ method: "POST", body: JSON.stringify({ name: "Product Test", unitPrice: 300 }) },
+		{ method: "POST", body: JSON.stringify({ name: uniqueName("Product Test"), unitPrice: 300 }) },
 		admin,
 	);
 	productId = product.body.product.id;
@@ -281,7 +281,7 @@ describe("clients & products", () => {
 	it("edit product", async () => {
 		const create = await api(
 			"/api/products",
-			{ method: "POST", body: JSON.stringify({ name: "Antes", unitPrice: 10 }) },
+			{ method: "POST", body: JSON.stringify({ name: uniqueName("Before"), unitPrice: 10 }) },
 			admin,
 		);
 		const id = create.body.product.id as string;
@@ -349,9 +349,14 @@ describe("tenders: creation, detail, budget", () => {
 		);
 		expect(ok.status).toBe(201); // 300*2=600 <= 1000
 
+		const second = await api(
+			"/api/products",
+			{ method: "POST", body: JSON.stringify({ name: uniqueName("Budget Test"), unitPrice: 300 }) },
+			admin,
+		);
 		const exceeded = await api(
 			`/api/tenders/${tenderId}/products`,
-			{ method: "POST", body: JSON.stringify({ productId, quantity: 2 }) },
+			{ method: "POST", body: JSON.stringify({ productId: second.body.product.id, quantity: 2 }) },
 			admin,
 		);
 		expect(exceeded.status).toBe(422); // 600+600=1200 > 1000
@@ -520,9 +525,14 @@ describe("full lifecycle: send -> finalize -> invoice -> payments -> collected",
 	});
 
 	it("adding product in active is still allowed", async () => {
+		const extra = await api(
+			"/api/products",
+			{ method: "POST", body: JSON.stringify({ name: uniqueName("Active Add"), unitPrice: 10 }) },
+			admin,
+		);
 		const r = await api(
 			`/api/tenders/${tenderId}/products`,
-			{ method: "POST", body: JSON.stringify({ productId, quantity: 0.5 }) },
+			{ method: "POST", body: JSON.stringify({ productId: extra.body.product.id, quantity: 0.5 }) },
 			admin,
 		);
 		expect(r.status).toBe(201);

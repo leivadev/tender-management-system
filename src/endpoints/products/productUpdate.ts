@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "../../db/client";
 import { products } from "../../db/schema";
-import { AppError } from "../../lib/errors";
+import { AppError, isUniqueViolation } from "../../lib/errors";
 import type { AppContext } from "../../types";
 
 const ProductUpdateInput = z
@@ -45,7 +45,13 @@ export class ProductUpdate extends OpenAPIRoute {
 				updatedAt: new Date(),
 			})
 			.where(eq(products.id, data.params.id))
-			.returning();
+			.returning()
+			.catch((err) => {
+				if (isUniqueViolation(err)) {
+					throw new AppError("CONFLICT", `A product named "${data.body.name}" already exists.`);
+				}
+				throw err;
+			});
 
 		if (!product) {
 			throw new AppError("NOT_FOUND", `Product ${data.params.id} not found.`);

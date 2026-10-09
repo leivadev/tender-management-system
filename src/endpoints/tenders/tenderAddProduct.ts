@@ -1,11 +1,11 @@
 import { OpenAPIRoute } from "chanfana";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "../../db/client";
 import { products, tenderProducts, tenders } from "../../db/schema";
 import { assertWithinBudget } from "../../domain/tenders/rules";
 import { assertProductsEditable, type TenderStatus } from "../../domain/tenders/state-machine";
-import { AppError } from "../../lib/errors";
+import { AppError, isUniqueViolation } from "../../lib/errors";
 import type { AppContext } from "../../types";
 
 const AddProductInput = z.object({
@@ -49,6 +49,14 @@ export class TenderAddProduct extends OpenAPIRoute {
 				throw new AppError("NOT_FOUND", `Product ${data.body.productId} not found.`);
 			}
 
+			const [existing] = await tx
+				.select({ id: tenderProducts.id })
+				.from(tenderProducts)
+				.where(and(eq(tenderProducts.tenderId, tenderId), eq(tenderProducts.productId, product.id)));
+			if (existing) {
+				throw new AppError("CONFLICT", `Product ${product.id} is already in this tender.`);
+			}
+
 			const unitPrice = Number(product.unitPrice);
 			const subtotal = unitPrice * data.body.quantity;
 
@@ -65,7 +73,14 @@ export class TenderAddProduct extends OpenAPIRoute {
 					createdBy: user.id,
 					updatedBy: user.id,
 				})
-				.returning();
+				.returning()
+				.catch((err) => {
+					// Concurrent request added the same product between the check and the insert.
+					if (isUniqueViolation(err)) {
+						throw new AppError("CONFLICT", `Product ${product.id} is already in this tender.`);
+					}
+					throw err;
+				});
 
 			return c.json({ success: true, tenderProduct }, 201);
 		});
