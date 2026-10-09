@@ -11,6 +11,7 @@ const ProductUpdateInput = z
 		name: z.string().min(1).optional(),
 		description: z.string().optional(),
 		unitPrice: z.coerce.number().positive().optional(),
+		active: z.boolean().optional(),
 	})
 	.refine((body) => Object.keys(body).length > 0, { message: "At least one field must be provided." });
 
@@ -41,6 +42,7 @@ export class ProductUpdate extends OpenAPIRoute {
 				...(data.body.name !== undefined ? { name: data.body.name } : {}),
 				...(data.body.description !== undefined ? { description: data.body.description } : {}),
 				...(data.body.unitPrice !== undefined ? { unitPrice: data.body.unitPrice.toFixed(2) } : {}),
+				...(data.body.active !== undefined ? { active: data.body.active } : {}),
 				updatedBy: user.id,
 				updatedAt: new Date(),
 			})

@@ -49,6 +49,10 @@ export class TenderAddProduct extends OpenAPIRoute {
 				throw new AppError("NOT_FOUND", `Product ${data.body.productId} not found.`);
 			}
 
+			if (!product.active) {
+				throw new AppError("BUSINESS_RULE_VIOLATION", `Product ${product.id} is inactive.`);
+			}
+
 			const [existing] = await tx
 				.select({ id: tenderProducts.id })
 				.from(tenderProducts)

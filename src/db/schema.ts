@@ -1,5 +1,14 @@
 import { relations, sql } from "drizzle-orm";
-import { type AnyPgColumn, numeric, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+	type AnyPgColumn,
+	boolean,
+	numeric,
+	pgTable,
+	text,
+	timestamp,
+	uniqueIndex,
+	uuid,
+} from "drizzle-orm/pg-core";
 
 export const roleEnum = ["admin", "user", "viewer"] as const;
 
@@ -45,6 +54,7 @@ export const products = pgTable(
 		name: text("name").notNull(),
 		description: text("description"),
 		unitPrice: numeric("unit_price", { precision: 12, scale: 2 }).notNull(),
+		active: boolean("active").notNull().default(true),
 
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
