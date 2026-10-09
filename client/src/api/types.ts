@@ -75,6 +75,7 @@ export interface Product {
 	name: string;
 	description: string | null;
 	unitPrice: string;
+	active: boolean;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -85,7 +86,7 @@ export interface CreateProductRequest {
 	unitPrice: number;
 }
 
-export type UpdateProductRequest = Partial<CreateProductRequest>;
+export type UpdateProductRequest = Partial<CreateProductRequest> & { active?: boolean };
 
 // --- dashboard ---
 

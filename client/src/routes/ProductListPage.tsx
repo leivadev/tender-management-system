@@ -17,6 +17,13 @@ function ProductRow({ product, onEdit }: { product: Product; onEdit: () => void 
 			<td className="px-4 py-2">{product.name}</td>
 			<td className="px-4 py-2">{product.description || "—"}</td>
 			<td className="px-4 py-2">{formatCurrency(product.unitPrice)}</td>
+			{isAdmin && (
+				<td className="px-4 py-2">
+					<span className={product.active ? "text-green-700" : "text-gray-500"}>
+						{product.active ? "Active" : "Inactive"}
+					</span>
+				</td>
+			)}
 			<td className="px-4 py-2 text-right">
 				{isAdmin && (
 					<Button variant="link" onClick={onEdit}>
@@ -33,6 +40,7 @@ function ProductEditRow({ product, onDone }: { product: Product; onDone: () => v
 	const [name, setName] = useState(product.name);
 	const [description, setDescription] = useState(product.description ?? "");
 	const [unitPrice, setUnitPrice] = useState(product.unitPrice);
+	const [active, setActive] = useState(product.active);
 
 	function handleSave() {
 		updateProduct.mutate(
@@ -42,6 +50,7 @@ function ProductEditRow({ product, onDone }: { product: Product; onDone: () => v
 					name: name.trim(),
 					description: description.trim() || undefined,
 					unitPrice: Number(unitPrice),
+					active,
 				},
 			},
 			{
@@ -81,6 +90,12 @@ function ProductEditRow({ product, onDone }: { product: Product; onDone: () => v
 					className={`w-28 ${inputClass} py-1`}
 					required
 				/>
+			</td>
+			<td className="px-4 py-2">
+				<label className="flex items-center gap-2">
+					<input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
+					Active
+				</label>
 			</td>
 			<td className="px-4 py-2 text-right">
 				<div className="flex justify-end gap-2">
@@ -176,6 +191,7 @@ export function ProductListPage() {
 								<th className="px-4 py-2">Name</th>
 								<th className="px-4 py-2">Description</th>
 								<th className="px-4 py-2">Price</th>
+								{isAdmin && <th className="px-4 py-2">Status</th>}
 								<th className="px-4 py-2" />
 							</tr>
 						</thead>

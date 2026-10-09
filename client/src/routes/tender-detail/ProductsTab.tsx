@@ -15,6 +15,7 @@ const EDITABLE_STATUSES = new Set(["draft", "active"]);
 export function ProductsTab() {
 	const { tender } = useTenderContext();
 	const productsQuery = useAllProducts();
+	const activeProducts = (productsQuery.data ?? []).filter((p) => p.active);
 	const addProduct = useAddTenderProduct(tender.id);
 	const removeProduct = useRemoveTenderProduct(tender.id);
 	const [productId, setProductId] = useState("");
@@ -120,7 +121,7 @@ export function ProductsTab() {
 							<option value="" disabled>
 								Select
 							</option>
-							{(productsQuery.data ?? []).map((p) => (
+							{activeProducts.map((p) => (
 								<option key={p.id} value={p.id}>
 									{p.name} ({formatCurrency(p.unitPrice)})
 								</option>
