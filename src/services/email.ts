@@ -21,7 +21,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer) {
 }
 
 function formatCurrency(value: string | number) {
-	return new Intl.NumberFormat("es-ES", {
+	return new Intl.NumberFormat("en-US", {
 		style: "currency",
 		currency: "USD",
 		minimumFractionDigits: 2,
@@ -34,10 +34,14 @@ function formatQuantity(value: string) {
 }
 
 function formatDate(date: Date) {
-	return new Intl.DateTimeFormat("es-ES", {
-		dateStyle: "long",
-		timeStyle: "short",
+	return new Intl.DateTimeFormat("en-US", {
+		year: "numeric",
+		month: "long",
+		day: "numeric",
+		hour: "numeric",
+		minute: "2-digit",
 		timeZone: "UTC",
+		timeZoneName: "short",
 	}).format(date);
 }
 
@@ -87,9 +91,9 @@ function productsTableHtml(products: TenderProductLine[]) {
 		<table style="${EMAIL_STYLES.table}">
 			<thead>
 				<tr>
-					<th style="${EMAIL_STYLES.th}">Producto</th>
-					<th style="${EMAIL_STYLES.th}; text-align: right;">Cantidad</th>
-					<th style="${EMAIL_STYLES.th}; text-align: right;">Precio unitario</th>
+					<th style="${EMAIL_STYLES.th}">Product</th>
+					<th style="${EMAIL_STYLES.th}; text-align: right;">Quantity</th>
+					<th style="${EMAIL_STYLES.th}; text-align: right;">Unit price</th>
 				</tr>
 			</thead>
 			<tbody>${rows}</tbody>
@@ -112,36 +116,36 @@ export async function sendTenderEmail(
 
 	const html = `
 		<div style="${EMAIL_STYLES.body}">
-			<p>Estimado/a ${tender.clientName},</p>
-			<h1 style="${EMAIL_STYLES.heading}">Licitación: ${tender.title}</h1>
-			<p>Le enviamos formalmente la siguiente licitación:</p>
+			<p>Dear ${tender.clientName},</p>
+			<h1 style="${EMAIL_STYLES.heading}">Tender: ${tender.title}</h1>
+			<p>We are formally sending you the following tender:</p>
 			${productsTableHtml(tender.products)}
 			${summaryHtml([
-				{ label: "Presupuesto máximo", value: formatCurrency(tender.maxBudget) },
-				{ label: "Fecha límite", value: formatDate(tender.deadline) },
+				{ label: "Maximum budget", value: formatCurrency(tender.maxBudget) },
+				{ label: "Deadline", value: formatDate(tender.deadline) },
 			])}
-			<p>Adjuntamos el documento de propuesta (${proposal.filename}).</p>
-			<p style="${EMAIL_STYLES.footer}">Este es un mensaje automático del sistema de gestión de licitaciones.</p>
+			<p>The proposal document is attached (${proposal.filename}).</p>
+			<p style="${EMAIL_STYLES.footer}">This is an automated message from the tender management system.</p>
 		</div>
 	`;
 
 	const text = [
-		`Estimado/a ${tender.clientName},`,
+		`Dear ${tender.clientName},`,
 		"",
-		`Le enviamos formalmente la licitación: ${tender.title}`,
+		`We are formally sending you the tender: ${tender.title}`,
 		"",
 		productsTableText(tender.products),
 		"",
-		`Presupuesto máximo: ${formatCurrency(tender.maxBudget)}`,
-		`Fecha límite: ${formatDate(tender.deadline)}`,
+		`Maximum budget: ${formatCurrency(tender.maxBudget)}`,
+		`Deadline: ${formatDate(tender.deadline)}`,
 		"",
-		`Adjuntamos el documento de propuesta (${proposal.filename}).`,
+		`The proposal document is attached (${proposal.filename}).`,
 	].join("\n");
 
 	const { data, error } = await resend.emails.send({
 		from: env.MAIL_FROM,
 		to: [tender.clientEmail],
-		subject: `Licitación enviada: ${tender.title}`,
+		subject: `Tender sent: ${tender.title}`,
 		html,
 		text,
 		attachments: [
@@ -167,23 +171,23 @@ export async function sendReminderEmail(
 
 	const html = `
 		<div style="${EMAIL_STYLES.body}">
-			<p>Estimado/a ${tender.clientName},</p>
-			<h1 style="${EMAIL_STYLES.heading}">Recordatorio: ${tender.title}</h1>
-			<p>Le recordamos que esta licitación vence el <strong>${formatDate(tender.deadline)}</strong>.</p>
-			<p style="${EMAIL_STYLES.footer}">Este es un mensaje automático del sistema de gestión de licitaciones.</p>
+			<p>Dear ${tender.clientName},</p>
+			<h1 style="${EMAIL_STYLES.heading}">Reminder: ${tender.title}</h1>
+			<p>This is a reminder that this tender is due on <strong>${formatDate(tender.deadline)}</strong>.</p>
+			<p style="${EMAIL_STYLES.footer}">This is an automated message from the tender management system.</p>
 		</div>
 	`;
 
 	const text = [
-		`Estimado/a ${tender.clientName},`,
+		`Dear ${tender.clientName},`,
 		"",
-		`Le recordamos que la licitación "${tender.title}" vence el ${formatDate(tender.deadline)}.`,
+		`This is a reminder that the tender "${tender.title}" is due on ${formatDate(tender.deadline)}.`,
 	].join("\n");
 
 	const { data, error } = await resend.emails.send({
 		from: env.MAIL_FROM,
 		to: [tender.clientEmail],
-		subject: `Recordatorio: la licitación "${tender.title}" vence pronto`,
+		subject: `Reminder: tender "${tender.title}" is due soon`,
 		html,
 		text,
 	});

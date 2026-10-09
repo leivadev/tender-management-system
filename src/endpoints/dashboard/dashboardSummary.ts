@@ -7,8 +7,8 @@ import { hoursFromNow } from "../../lib/date";
 import type { AppContext } from "../../types";
 
 /**
- * Extra feature requested by the assignment: "Panel simple de licitaciones
- * próximas a vencer (activas con fecha límite cercana)".
+ * Extra feature requested by the assignment: "Simple dashboard of tenders
+ * due soon (active tenders with a nearby deadline)".
  */
 export class DashboardSummary extends OpenAPIRoute {
 	schema = {
