@@ -30,7 +30,7 @@ export function LoginPage() {
 			await login(emailValue, passwordValue);
 			navigate("/", { replace: true });
 		} catch (err) {
-			setError(err instanceof ApiError ? mapErrorToMessage(err) : "No se pudo iniciar sesión.");
+			setError(err instanceof ApiError ? mapErrorToMessage(err) : "Could not log in.");
 		} finally {
 			setSubmitting(false);
 		}
@@ -54,10 +54,10 @@ export function LoginPage() {
 				className="w-full max-w-sm space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
 			>
 				<div>
-					<h1 className="text-lg font-semibold text-gray-900">Ingresar</h1>
-					<p className="mt-1 text-sm text-gray-500">Sistema de gestión de licitaciones</p>
+					<h1 className="text-lg font-semibold text-gray-900">Log in</h1>
+					<p className="mt-1 text-sm text-gray-500">Tender management system</p>
 				</div>
-				<Field label="Correo" htmlFor="email">
+				<Field label="Email" htmlFor="email">
 					<input
 						id="email"
 						type="email"
@@ -68,7 +68,7 @@ export function LoginPage() {
 						className={inputClass}
 					/>
 				</Field>
-				<Field label="Contraseña" htmlFor="password">
+				<Field label="Password" htmlFor="password">
 					<input
 						id="password"
 						type="password"
@@ -86,10 +86,10 @@ export function LoginPage() {
 					</p>
 				)}
 				<Button type="submit" loading={submitting} className="w-full">
-					{submitting ? "Ingresando…" : "Ingresar"}
+					{submitting ? "Logging in…" : "Log in"}
 				</Button>
 				<div className="rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-900">
-					<p className="font-medium">Cuenta demo (solo lectura)</p>
+					<p className="font-medium">Demo account (read-only)</p>
 					<p className="mt-1 font-mono text-xs">{DEMO_EMAIL}</p>
 					<p className="font-mono text-xs">{DEMO_PASSWORD}</p>
 					<Button
@@ -99,7 +99,7 @@ export function LoginPage() {
 						loading={submitting}
 						onClick={handleDemoLogin}
 					>
-						Ingresar con cuenta demo
+						Log in with demo account
 					</Button>
 				</div>
 			</form>

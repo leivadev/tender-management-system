@@ -33,7 +33,7 @@ export function TenderCreatePage() {
 		e.preventDefault();
 
 		if (new Date(deadline).getTime() <= Date.now()) {
-			setDeadlineError("La fecha límite debe ser en el futuro.");
+			setDeadlineError("The deadline must be in the future.");
 			return;
 		}
 		setDeadlineError(null);
@@ -45,7 +45,7 @@ export function TenderCreatePage() {
 			maxBudget: Number(maxBudget),
 			deadline: new Date(deadline).toISOString(),
 		});
-		pushToast("Licitación creada.");
+		pushToast("Tender created.");
 		navigate(`/tenders/${tender.tender.id}`);
 	}
 
@@ -54,19 +54,19 @@ export function TenderCreatePage() {
 			onSubmit={handleSubmit}
 			className="max-w-lg space-y-4 rounded-lg border border-gray-200 bg-white p-6"
 		>
-			<h1 className="text-lg font-semibold text-gray-900">Nueva licitación</h1>
+			<h1 className="text-lg font-semibold text-gray-900">New tender</h1>
 
 			{!clientsQuery.isLoading && !hasClients && (
 				<p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
-					Todavía no hay clientes.{" "}
+					There are no clients yet.{" "}
 					<Link to="/clients" className="font-medium underline">
-						Crea uno primero
+						Create one first
 					</Link>
 					.
 				</p>
 			)}
 
-			<Field label="Cliente" htmlFor="client">
+			<Field label="Client" htmlFor="client">
 				<select
 					id="client"
 					required
@@ -75,7 +75,7 @@ export function TenderCreatePage() {
 					className={inputClass}
 				>
 					<option value="" disabled>
-						Selecciona un cliente
+						Select a client
 					</option>
 					{(clientsQuery.data ?? []).map((client) => (
 						<option key={client.id} value={client.id}>
@@ -85,7 +85,7 @@ export function TenderCreatePage() {
 				</select>
 			</Field>
 
-			<Field label="Título" htmlFor="title">
+			<Field label="Title" htmlFor="title">
 				<input
 					id="title"
 					required
@@ -96,7 +96,7 @@ export function TenderCreatePage() {
 				/>
 			</Field>
 
-			<Field label="Descripción" htmlFor="description">
+			<Field label="Description" htmlFor="description">
 				<textarea
 					id="description"
 					value={description}
@@ -105,7 +105,7 @@ export function TenderCreatePage() {
 				/>
 			</Field>
 
-			<Field label="Presupuesto máximo" htmlFor="maxBudget">
+			<Field label="Maximum budget" htmlFor="maxBudget">
 				<input
 					id="maxBudget"
 					type="number"
@@ -118,7 +118,7 @@ export function TenderCreatePage() {
 				/>
 			</Field>
 
-			<Field label="Fecha límite" htmlFor="deadline" error={deadlineError ?? undefined}>
+			<Field label="Deadline" htmlFor="deadline" error={deadlineError ?? undefined}>
 				<input
 					id="deadline"
 					type="datetime-local"
@@ -134,7 +134,7 @@ export function TenderCreatePage() {
 			</Field>
 
 			<Button type="submit" loading={createTender.isPending} disabled={!hasClients}>
-				{createTender.isPending ? "Creando…" : "Crear licitación"}
+				{createTender.isPending ? "Creating…" : "Create tender"}
 			</Button>
 		</form>
 	);

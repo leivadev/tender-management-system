@@ -1,12 +1,12 @@
 import type { TenderStatus } from "../api/types";
 
 export const STATUS_LABELS: Record<TenderStatus, string> = {
-	draft: "Borrador",
-	active: "Activa",
-	finalized: "Finalizada",
-	for_collection: "Por cobrar",
-	collected: "Cobrada",
-	lost: "Perdida",
+	draft: "Draft",
+	active: "Active",
+	finalized: "Finalized",
+	for_collection: "For collection",
+	collected: "Collected",
+	lost: "Lost",
 };
 
 export const STATUS_COLORS: Record<TenderStatus, string> = {

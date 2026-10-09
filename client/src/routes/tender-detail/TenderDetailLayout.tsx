@@ -5,11 +5,11 @@ import { useTender } from "../../hooks/useTenders";
 import { TenderStepper } from "./TenderStepper";
 
 const TABS = [
-	{ to: "", label: "Resumen", end: true },
-	{ to: "productos", label: "Productos" },
-	{ to: "propuesta", label: "Propuesta" },
-	{ to: "pagos", label: "Pagos" },
-	{ to: "historial", label: "Historial" },
+	{ to: "", label: "Overview", end: true },
+	{ to: "products", label: "Products" },
+	{ to: "proposal", label: "Proposal" },
+	{ to: "payments", label: "Payments" },
+	{ to: "history", label: "History" },
 ];
 
 export function TenderDetailLayout() {
@@ -26,7 +26,7 @@ export function TenderDetailLayout() {
 		<div className="space-y-6">
 			<div>
 				<Link to="/tenders" className="text-sm text-gray-500 hover:text-gray-700">
-					← Licitaciones
+					← Tenders
 				</Link>
 				<h1 className="mt-1 text-lg font-semibold text-gray-900">{tender.title}</h1>
 				<TenderStepper tender={tender} />

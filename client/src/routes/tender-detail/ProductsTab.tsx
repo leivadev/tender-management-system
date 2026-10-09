@@ -35,7 +35,7 @@ export function ProductsTab() {
 			const subtotal = Number(selectedProduct.unitPrice) * Number(quantity);
 			if (subtotal > remainingBudget) {
 				setBudgetError(
-					`El subtotal (${formatCurrency(subtotal)}) supera el presupuesto restante (${formatCurrency(Math.max(0, remainingBudget))}).`,
+					`The subtotal (${formatCurrency(subtotal)}) exceeds the remaining budget (${formatCurrency(Math.max(0, remainingBudget))}).`,
 				);
 				return;
 			}
@@ -48,16 +48,16 @@ export function ProductsTab() {
 				onSuccess: () => {
 					setProductId("");
 					setQuantity("1");
-					pushToast("Producto agregado.");
+					pushToast("Product added.");
 				},
 			},
 		);
 	}
 
 	function handleRemove(productLineId: string, productName: string) {
-		if (!confirmAction(`¿Quitar "${productName}" de esta licitación?`)) return;
+		if (!confirmAction(`Remove "${productName}" from this tender?`)) return;
 		removeProduct.mutate(productLineId, {
-			onSuccess: () => pushToast("Producto eliminado."),
+			onSuccess: () => pushToast("Product removed."),
 		});
 	}
 
@@ -67,9 +67,9 @@ export function ProductsTab() {
 				<table className="w-full text-sm">
 					<thead className="text-left text-xs text-gray-500">
 						<tr>
-							<th className="px-4 py-2">Producto</th>
-							<th className="px-4 py-2">Cantidad</th>
-							<th className="px-4 py-2">Precio unitario</th>
+							<th className="px-4 py-2">Product</th>
+							<th className="px-4 py-2">Quantity</th>
+							<th className="px-4 py-2">Unit price</th>
 							<th className="px-4 py-2">Subtotal</th>
 							{editable && <th className="px-4 py-2" />}
 						</tr>
@@ -88,7 +88,7 @@ export function ProductsTab() {
 											loading={removeProduct.isPending}
 											onClick={() => handleRemove(line.productId, line.productName)}
 										>
-											Quitar
+											Remove
 										</Button>
 									</td>
 								)}
@@ -97,7 +97,7 @@ export function ProductsTab() {
 					</tbody>
 				</table>
 				{tender.products.length === 0 && (
-					<p className="px-4 py-6 text-center text-sm text-gray-500">Sin productos agregados.</p>
+					<p className="px-4 py-6 text-center text-sm text-gray-500">No products added.</p>
 				)}
 			</div>
 
@@ -106,7 +106,7 @@ export function ProductsTab() {
 					onSubmit={handleAdd}
 					className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4"
 				>
-					<Field label="Producto" htmlFor="product">
+					<Field label="Product" htmlFor="product">
 						<select
 							id="product"
 							required
@@ -118,7 +118,7 @@ export function ProductsTab() {
 							className={inputClass}
 						>
 							<option value="" disabled>
-								Selecciona
+								Select
 							</option>
 							{(productsQuery.data ?? []).map((p) => (
 								<option key={p.id} value={p.id}>
@@ -127,7 +127,7 @@ export function ProductsTab() {
 							))}
 						</select>
 					</Field>
-					<Field label="Cantidad" htmlFor="quantity" error={budgetError ?? undefined}>
+					<Field label="Quantity" htmlFor="quantity" error={budgetError ?? undefined}>
 						<input
 							id="quantity"
 							type="number"
@@ -144,19 +144,19 @@ export function ProductsTab() {
 					</Field>
 					<FieldButtonSlot>
 						<Button type="submit" loading={addProduct.isPending}>
-							Agregar
+							Add
 						</Button>
 					</FieldButtonSlot>
 					<FieldButtonSlot>
 						<p className="text-xs text-gray-500">
-							Presupuesto restante: {formatCurrency(Math.max(0, remainingBudget))}
+							Remaining budget: {formatCurrency(Math.max(0, remainingBudget))}
 						</p>
 					</FieldButtonSlot>
 				</form>
 			) : (
 				canWrite && (
 					<p className="text-sm text-gray-400">
-						Los productos solo se pueden editar mientras la licitación está en borrador o activa.
+						Products can only be edited while the tender is draft or active.
 					</p>
 				)
 			)}

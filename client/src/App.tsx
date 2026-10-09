@@ -34,10 +34,10 @@ export default function App() {
 									<Route path="/tenders/new" element={<TenderCreatePage />} />
 									<Route path="/tenders/:id" element={<TenderDetailLayout />}>
 										<Route index element={<OverviewTab />} />
-										<Route path="productos" element={<ProductsTab />} />
-										<Route path="propuesta" element={<ProposalTab />} />
-										<Route path="pagos" element={<PaymentsTab />} />
-										<Route path="historial" element={<HistoryTab />} />
+										<Route path="products" element={<ProductsTab />} />
+										<Route path="proposal" element={<ProposalTab />} />
+										<Route path="payments" element={<PaymentsTab />} />
+										<Route path="history" element={<HistoryTab />} />
 									</Route>
 									<Route path="/clients" element={<ClientListPage />} />
 									<Route path="/products" element={<ProductListPage />} />

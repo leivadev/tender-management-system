@@ -10,9 +10,9 @@ import { inputClass } from "../lib/formStyles";
 import { pushToast } from "../lib/toast";
 
 const ROLE_LABELS: Record<Role, string> = {
-	admin: "Administrador",
-	user: "Usuario",
-	viewer: "Solo lectura",
+	admin: "Administrator",
+	user: "User",
+	viewer: "Read-only",
 };
 
 function UserRow({ user, canEdit, onEdit }: { user: User; canEdit: boolean; onEdit: () => void }) {
@@ -23,7 +23,7 @@ function UserRow({ user, canEdit, onEdit }: { user: User; canEdit: boolean; onEd
 			<td className="px-4 py-2 text-right">
 				{canEdit && (
 					<Button variant="link" onClick={onEdit}>
-						Editar
+						Edit
 					</Button>
 				)}
 			</td>
@@ -39,14 +39,14 @@ function UserEditRow({ user, onDone }: { user: User; onDone: () => void }) {
 		if (
 			user.role === "admin" &&
 			role !== "admin" &&
-			!confirmAction(`¿Quitarle el rol de administrador a ${user.email}?`)
+			!confirmAction(`Remove the administrator role from ${user.email}?`)
 		)
 			return;
 		updateUser.mutate(
 			{ id: user.id, payload: { role } },
 			{
 				onSuccess: () => {
-					pushToast("Usuario actualizado.");
+					pushToast("User updated.");
 					onDone();
 				},
 			},
@@ -62,18 +62,18 @@ function UserEditRow({ user, onDone }: { user: User; onDone: () => void }) {
 					onChange={(e) => setRole(e.target.value as Role)}
 					className={`${inputClass} py-1`}
 				>
-					<option value="user">Usuario</option>
-					<option value="viewer">Solo lectura</option>
-					<option value="admin">Administrador</option>
+					<option value="user">User</option>
+					<option value="viewer">Read-only</option>
+					<option value="admin">Administrator</option>
 				</select>
 			</td>
 			<td className="px-4 py-2 text-right">
 				<div className="flex justify-end gap-2">
 					<Button variant="secondary" onClick={onDone}>
-						Cancelar
+						Cancel
 					</Button>
 					<Button loading={updateUser.isPending} onClick={handleSave}>
-						Guardar
+						Save
 					</Button>
 				</div>
 			</td>
@@ -99,7 +99,7 @@ export function UserListPage() {
 					setEmail("");
 					setPassword("");
 					setRole("user");
-					pushToast("Usuario creado.");
+					pushToast("User created.");
 				},
 			},
 		);
@@ -112,7 +112,7 @@ export function UserListPage() {
 					onSubmit={handleSubmit}
 					className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4"
 				>
-					<Field label="Correo" htmlFor="email">
+					<Field label="Email" htmlFor="email">
 						<input
 							id="email"
 							type="email"
@@ -122,7 +122,7 @@ export function UserListPage() {
 							className={inputClass}
 						/>
 					</Field>
-					<Field label="Contraseña" htmlFor="password" hint="Mínimo 8 caracteres">
+					<Field label="Password" htmlFor="password" hint="Minimum 8 characters">
 						<input
 							id="password"
 							type="password"
@@ -133,21 +133,21 @@ export function UserListPage() {
 							className={inputClass}
 						/>
 					</Field>
-					<Field label="Rol" htmlFor="role">
+					<Field label="Role" htmlFor="role">
 						<select
 							id="role"
 							value={role}
 							onChange={(e) => setRole(e.target.value as Role)}
 							className={inputClass}
 						>
-							<option value="user">Usuario</option>
-							<option value="viewer">Solo lectura</option>
-							<option value="admin">Administrador</option>
+							<option value="user">User</option>
+							<option value="viewer">Read-only</option>
+							<option value="admin">Administrator</option>
 						</select>
 					</Field>
 					<FieldButtonSlot>
 						<Button type="submit" loading={createUser.isPending}>
-							Crear usuario
+							Create user
 						</Button>
 					</FieldButtonSlot>
 				</form>
@@ -160,8 +160,8 @@ export function UserListPage() {
 					<table className="w-full text-sm">
 						<thead className="text-left text-xs text-gray-500">
 							<tr>
-								<th className="px-4 py-2">Correo</th>
-								<th className="px-4 py-2">Rol</th>
+								<th className="px-4 py-2">Email</th>
+								<th className="px-4 py-2">Role</th>
 								<th className="px-4 py-2" />
 							</tr>
 						</thead>

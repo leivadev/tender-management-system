@@ -44,7 +44,7 @@ export function TenderListPage() {
 							status === undefined ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
 						}`}
 					>
-						Todas
+						All
 					</button>
 					{TENDER_STATUSES.map((s) => (
 						<button
@@ -64,7 +64,7 @@ export function TenderListPage() {
 						to="/tenders/new"
 						className="inline-flex items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
 					>
-						Nueva licitación
+						New tender
 					</Link>
 				)}
 			</div>
@@ -78,11 +78,11 @@ export function TenderListPage() {
 					<table className="w-full text-sm">
 						<thead className="text-left text-xs text-gray-500">
 							<tr>
-								<th className="px-4 py-2">Título</th>
-								<th className="px-4 py-2">Cliente</th>
-								<th className="px-4 py-2">Presupuesto</th>
-								<th className="px-4 py-2">Vence</th>
-								<th className="px-4 py-2">Estado</th>
+								<th className="px-4 py-2">Title</th>
+								<th className="px-4 py-2">Client</th>
+								<th className="px-4 py-2">Budget</th>
+								<th className="px-4 py-2">Due</th>
+								<th className="px-4 py-2">Status</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -105,9 +105,7 @@ export function TenderListPage() {
 					</table>
 					{tendersQuery.data?.length === 0 && (
 						<p className="px-4 py-6 text-center text-sm text-gray-500">
-							{status
-								? `No hay licitaciones en estado "${STATUS_LABELS[status]}".`
-								: "No hay licitaciones todavía."}
+							{status ? `No tenders with status "${STATUS_LABELS[status]}".` : "No tenders yet."}
 						</p>
 					)}
 				</div>

@@ -28,7 +28,7 @@ function EditTenderForm({ onDone }: { onDone: () => void }) {
 			{ title: title.trim(), description: description.trim() },
 			{
 				onSuccess: () => {
-					pushToast("Licitación actualizada.");
+					pushToast("Tender updated.");
 					onDone();
 				},
 			},
@@ -40,7 +40,7 @@ function EditTenderForm({ onDone }: { onDone: () => void }) {
 			onSubmit={handleSubmit}
 			className="space-y-3 rounded-lg border border-gray-200 bg-white p-4 text-sm"
 		>
-			<Field label="Título" htmlFor="editTitle">
+			<Field label="Title" htmlFor="editTitle">
 				<input
 					id="editTitle"
 					required
@@ -50,7 +50,7 @@ function EditTenderForm({ onDone }: { onDone: () => void }) {
 					className={inputClass}
 				/>
 			</Field>
-			<Field label="Descripción" htmlFor="editDescription">
+			<Field label="Description" htmlFor="editDescription">
 				<textarea
 					id="editDescription"
 					value={description}
@@ -60,10 +60,10 @@ function EditTenderForm({ onDone }: { onDone: () => void }) {
 			</Field>
 			<div className="flex gap-2">
 				<Button type="submit" loading={updateTender.isPending}>
-					Guardar
+					Save
 				</Button>
 				<Button type="button" variant="secondary" onClick={onDone}>
-					Cancelar
+					Cancel
 				</Button>
 			</div>
 		</form>
@@ -88,20 +88,20 @@ export function OverviewTab() {
 
 	function handleSend() {
 		sendTender.mutate(undefined, {
-			onSuccess: () => pushToast("Licitación enviada al cliente."),
+			onSuccess: () => pushToast("Tender sent to the client."),
 		});
 	}
 
 	function handleFinalize() {
 		finalizeTender.mutate(undefined, {
-			onSuccess: () => pushToast("Licitación finalizada."),
+			onSuccess: () => pushToast("Tender finalized."),
 		});
 	}
 
 	function handleLose() {
-		if (!confirmAction(`¿Marcar "${tender.title}" como perdida? Esta acción no se puede deshacer.`)) return;
+		if (!confirmAction(`Mark "${tender.title}" as lost? This cannot be undone.`)) return;
 		loseTender.mutate(undefined, {
-			onSuccess: () => pushToast("Licitación marcada como perdida."),
+			onSuccess: () => pushToast("Tender marked as lost."),
 		});
 	}
 
@@ -109,7 +109,7 @@ export function OverviewTab() {
 		e.preventDefault();
 		invoiceTender.mutate(
 			{ invoiceAmount: Number(invoiceAmount) },
-			{ onSuccess: () => pushToast("Factura registrada.") },
+			{ onSuccess: () => pushToast("Invoice recorded.") },
 		);
 	}
 
@@ -120,53 +120,53 @@ export function OverviewTab() {
 			) : (
 				<div className="grid grid-cols-2 gap-4 rounded-lg border border-gray-200 bg-white p-4 text-sm sm:grid-cols-4">
 					<div className="sm:col-span-3">
-						<p className="text-gray-500">Descripción</p>
+						<p className="text-gray-500">Description</p>
 						<p>{tender.description || "—"}</p>
 					</div>
 					<div>
-						<p className="text-gray-500">Fecha límite</p>
+						<p className="text-gray-500">Deadline</p>
 						<p>{formatDate(tender.deadline)}</p>
 					</div>
 					<div>
-						<p className="text-gray-500">Monto facturado</p>
+						<p className="text-gray-500">Invoiced amount</p>
 						<p>{tender.invoiceAmount ? formatCurrency(tender.invoiceAmount) : "—"}</p>
 					</div>
 					{canWrite && (
 						<div className="flex items-end sm:col-start-4 sm:row-start-1 sm:justify-self-end">
 							<Button variant="link" onClick={() => setIsEditing(true)}>
-								Editar título/descripción
+								Edit title/description
 							</Button>
 						</div>
 					)}
 				</div>
 			)}
 
-			<BudgetBar used={usedBudget} max={Number(tender.maxBudget)} label="Presupuesto usado" />
+			<BudgetBar used={usedBudget} max={Number(tender.maxBudget)} label="Budget used" />
 
 			<div className="flex flex-wrap items-center gap-3">
 				{canSend && (
 					<Button
 						loading={sendTender.isPending}
 						disabled={!tender.proposalKey}
-						title={!tender.proposalKey ? "Sube la propuesta antes de enviar" : undefined}
+						title={!tender.proposalKey ? "Upload the proposal before sending" : undefined}
 						onClick={handleSend}
 					>
-						Enviar
+						Send
 					</Button>
 				)}
 				{canFinalize && (
 					<Button variant="info" loading={finalizeTender.isPending} onClick={handleFinalize}>
-						Finalizar
+						Finalize
 					</Button>
 				)}
 				{canLose && (
 					<Button variant="danger" loading={loseTender.isPending} onClick={handleLose}>
-						Marcar como perdida
+						Mark as lost
 					</Button>
 				)}
 				{canInvoice && (
 					<form className="flex flex-wrap items-end gap-2" onSubmit={handleInvoice}>
-						<Field label="Monto a facturar" htmlFor="invoiceAmount">
+						<Field label="Amount to invoice" htmlFor="invoiceAmount">
 							<input
 								id="invoiceAmount"
 								type="number"
@@ -180,7 +180,7 @@ export function OverviewTab() {
 						</Field>
 						<FieldButtonSlot>
 							<Button variant="warning" type="submit" loading={invoiceTender.isPending}>
-								Facturar
+								Invoice
 							</Button>
 						</FieldButtonSlot>
 					</form>
@@ -189,11 +189,11 @@ export function OverviewTab() {
 
 			{tender.status === "for_collection" && (
 				<p className="text-sm text-gray-400">
-					Registra los pagos en la pestaña <span className="font-medium">Pagos</span>.
+					Record payments in the <span className="font-medium">Payments</span> tab.
 				</p>
 			)}
 			{(tender.status === "collected" || tender.status === "lost") && (
-				<p className="text-sm text-gray-400">Esta licitación está en un estado final.</p>
+				<p className="text-sm text-gray-400">This tender is in a final status.</p>
 			)}
 		</div>
 	);

@@ -34,9 +34,7 @@ export function PaymentsTab() {
 					setReference("");
 					setNotes("");
 					pushToast(
-						res.pendingBalance <= 0
-							? "Pago registrado. Licitación cobrada por completo."
-							: "Pago registrado.",
+						res.pendingBalance <= 0 ? "Payment recorded. Tender fully collected." : "Payment recorded.",
 					);
 				},
 			},
@@ -45,16 +43,16 @@ export function PaymentsTab() {
 
 	return (
 		<div className="space-y-4">
-			{tender.invoiceAmount && <BudgetBar used={paid} max={invoiceAmount} label="Cobrado" />}
+			{tender.invoiceAmount && <BudgetBar used={paid} max={invoiceAmount} label="Collected" />}
 
 			<div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
 				<table className="w-full text-sm">
 					<thead className="text-left text-xs text-gray-500">
 						<tr>
-							<th className="px-4 py-2">Monto</th>
-							<th className="px-4 py-2">Referencia</th>
-							<th className="px-4 py-2">Notas</th>
-							<th className="px-4 py-2">Fecha</th>
+							<th className="px-4 py-2">Amount</th>
+							<th className="px-4 py-2">Reference</th>
+							<th className="px-4 py-2">Notes</th>
+							<th className="px-4 py-2">Date</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -69,7 +67,7 @@ export function PaymentsTab() {
 					</tbody>
 				</table>
 				{paymentsQuery.data?.length === 0 && (
-					<p className="px-4 py-6 text-center text-sm text-gray-500">Sin pagos registrados.</p>
+					<p className="px-4 py-6 text-center text-sm text-gray-500">No payments recorded.</p>
 				)}
 			</div>
 
@@ -78,7 +76,7 @@ export function PaymentsTab() {
 					onSubmit={handleSubmit}
 					className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4"
 				>
-					<Field label={`Monto (saldo: ${formatCurrency(pendingBalance)})`} htmlFor="amount">
+					<Field label={`Amount (balance: ${formatCurrency(pendingBalance)})`} htmlFor="amount">
 						<input
 							id="amount"
 							type="number"
@@ -91,7 +89,7 @@ export function PaymentsTab() {
 							className={`w-40 ${inputClass}`}
 						/>
 					</Field>
-					<Field label="Referencia" htmlFor="reference">
+					<Field label="Reference" htmlFor="reference">
 						<input
 							id="reference"
 							value={reference}
@@ -99,7 +97,7 @@ export function PaymentsTab() {
 							className={inputClass}
 						/>
 					</Field>
-					<Field label="Notas" htmlFor="notes">
+					<Field label="Notes" htmlFor="notes">
 						<input
 							id="notes"
 							value={notes}
@@ -109,13 +107,13 @@ export function PaymentsTab() {
 					</Field>
 					<FieldButtonSlot>
 						<Button type="submit" loading={createPayment.isPending} disabled={pendingBalance <= 0}>
-							Registrar pago
+							Record payment
 						</Button>
 					</FieldButtonSlot>
 					{willComplete && (
 						<FieldButtonSlot>
 							<p className="text-xs text-green-600">
-								Este pago completa el saldo — la licitación pasará a Cobrada.
+								This payment settles the balance — the tender will move to Collected.
 							</p>
 						</FieldButtonSlot>
 					)}
@@ -123,7 +121,7 @@ export function PaymentsTab() {
 			) : (
 				isAdmin && (
 					<p className="text-sm text-gray-400">
-						Los pagos solo se pueden registrar mientras la licitación está por cobrar.
+						Payments can only be recorded while the tender is for collection.
 					</p>
 				)
 			)}

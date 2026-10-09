@@ -19,7 +19,7 @@ function ProductRow({ product, onEdit }: { product: Product; onEdit: () => void 
 			<td className="px-4 py-2 text-right">
 				{isAdmin && (
 					<Button variant="link" onClick={onEdit}>
-						Editar
+						Edit
 					</Button>
 				)}
 			</td>
@@ -45,7 +45,7 @@ function ProductEditRow({ product, onDone }: { product: Product; onDone: () => v
 			},
 			{
 				onSuccess: () => {
-					pushToast("Producto actualizado.");
+					pushToast("Product updated.");
 					onDone();
 				},
 			},
@@ -84,10 +84,10 @@ function ProductEditRow({ product, onDone }: { product: Product; onDone: () => v
 			<td className="px-4 py-2 text-right">
 				<div className="flex justify-end gap-2">
 					<Button variant="secondary" onClick={onDone}>
-						Cancelar
+						Cancel
 					</Button>
 					<Button loading={updateProduct.isPending} onClick={handleSave}>
-						Guardar
+						Save
 					</Button>
 				</div>
 			</td>
@@ -113,7 +113,7 @@ export function ProductListPage() {
 					setName("");
 					setDescription("");
 					setUnitPrice("");
-					pushToast("Producto creado.");
+					pushToast("Product created.");
 				},
 			},
 		);
@@ -126,7 +126,7 @@ export function ProductListPage() {
 					onSubmit={handleSubmit}
 					className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4"
 				>
-					<Field label="Nombre" htmlFor="name">
+					<Field label="Name" htmlFor="name">
 						<input
 							id="name"
 							required
@@ -136,7 +136,7 @@ export function ProductListPage() {
 							className={inputClass}
 						/>
 					</Field>
-					<Field label="Descripción" htmlFor="description">
+					<Field label="Description" htmlFor="description">
 						<input
 							id="description"
 							value={description}
@@ -144,7 +144,7 @@ export function ProductListPage() {
 							className={inputClass}
 						/>
 					</Field>
-					<Field label="Precio unitario" htmlFor="unitPrice">
+					<Field label="Unit price" htmlFor="unitPrice">
 						<input
 							id="unitPrice"
 							type="number"
@@ -158,7 +158,7 @@ export function ProductListPage() {
 					</Field>
 					<FieldButtonSlot>
 						<Button type="submit" loading={createProduct.isPending}>
-							Crear producto
+							Create product
 						</Button>
 					</FieldButtonSlot>
 				</form>
@@ -171,9 +171,9 @@ export function ProductListPage() {
 					<table className="w-full text-sm">
 						<thead className="text-left text-xs text-gray-500">
 							<tr>
-								<th className="px-4 py-2">Nombre</th>
-								<th className="px-4 py-2">Descripción</th>
-								<th className="px-4 py-2">Precio</th>
+								<th className="px-4 py-2">Name</th>
+								<th className="px-4 py-2">Description</th>
+								<th className="px-4 py-2">Price</th>
 								<th className="px-4 py-2" />
 							</tr>
 						</thead>
@@ -188,7 +188,7 @@ export function ProductListPage() {
 						</tbody>
 					</table>
 					{productsQuery.data?.length === 0 && (
-						<p className="px-4 py-6 text-center text-sm text-gray-500">No hay productos todavía.</p>
+						<p className="px-4 py-6 text-center text-sm text-gray-500">No products yet.</p>
 					)}
 				</div>
 			)}

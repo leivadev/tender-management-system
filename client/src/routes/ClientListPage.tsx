@@ -18,7 +18,7 @@ function ClientRow({ client, onEdit }: { client: Client; onEdit: () => void }) {
 			<td className="px-4 py-2 text-right">
 				{canWrite && (
 					<Button variant="link" onClick={onEdit}>
-						Editar
+						Edit
 					</Button>
 				)}
 			</td>
@@ -37,7 +37,7 @@ function ClientEditRow({ client, onDone }: { client: Client; onDone: () => void 
 			{ id: client.id, payload: { name: name.trim(), companyName: companyName.trim(), email: email.trim() } },
 			{
 				onSuccess: () => {
-					pushToast("Cliente actualizado.");
+					pushToast("Client updated.");
 					onDone();
 				},
 			},
@@ -76,10 +76,10 @@ function ClientEditRow({ client, onDone }: { client: Client; onDone: () => void 
 			<td className="px-4 py-2 text-right">
 				<div className="flex justify-end gap-2">
 					<Button variant="secondary" onClick={onDone}>
-						Cancelar
+						Cancel
 					</Button>
 					<Button loading={updateClient.isPending} onClick={handleSave}>
-						Guardar
+						Save
 					</Button>
 				</div>
 			</td>
@@ -105,7 +105,7 @@ export function ClientListPage() {
 					setName("");
 					setCompanyName("");
 					setEmail("");
-					pushToast("Cliente creado.");
+					pushToast("Client created.");
 				},
 			},
 		);
@@ -118,7 +118,7 @@ export function ClientListPage() {
 					onSubmit={handleSubmit}
 					className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4"
 				>
-					<Field label="Nombre" htmlFor="name">
+					<Field label="Name" htmlFor="name">
 						<input
 							id="name"
 							required
@@ -128,7 +128,7 @@ export function ClientListPage() {
 							className={inputClass}
 						/>
 					</Field>
-					<Field label="Empresa" htmlFor="companyName">
+					<Field label="Company" htmlFor="companyName">
 						<input
 							id="companyName"
 							required
@@ -138,7 +138,7 @@ export function ClientListPage() {
 							className={inputClass}
 						/>
 					</Field>
-					<Field label="Correo" htmlFor="email">
+					<Field label="Email" htmlFor="email">
 						<input
 							id="email"
 							type="email"
@@ -150,7 +150,7 @@ export function ClientListPage() {
 					</Field>
 					<FieldButtonSlot>
 						<Button type="submit" loading={createClient.isPending}>
-							Crear cliente
+							Create client
 						</Button>
 					</FieldButtonSlot>
 				</form>
@@ -163,9 +163,9 @@ export function ClientListPage() {
 					<table className="w-full text-sm">
 						<thead className="text-left text-xs text-gray-500">
 							<tr>
-								<th className="px-4 py-2">Nombre</th>
-								<th className="px-4 py-2">Empresa</th>
-								<th className="px-4 py-2">Correo</th>
+								<th className="px-4 py-2">Name</th>
+								<th className="px-4 py-2">Company</th>
+								<th className="px-4 py-2">Email</th>
 								<th className="px-4 py-2" />
 							</tr>
 						</thead>
@@ -180,7 +180,7 @@ export function ClientListPage() {
 						</tbody>
 					</table>
 					{clientsQuery.data?.length === 0 && (
-						<p className="px-4 py-6 text-center text-sm text-gray-500">No hay clientes todavía.</p>
+						<p className="px-4 py-6 text-center text-sm text-gray-500">No clients yet.</p>
 					)}
 				</div>
 			)}

@@ -13,7 +13,7 @@ const queryClient = new QueryClient({
 			// 401 already clears the session and redirects to login.
 			if (error instanceof ApiError && error.status === 401) return;
 			pushToast(
-				error instanceof ApiError ? mapErrorToMessage(error) : "Ocurrió un error inesperado.",
+				error instanceof ApiError ? mapErrorToMessage(error) : "An unexpected error occurred.",
 				"error",
 			);
 		},

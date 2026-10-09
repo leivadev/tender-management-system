@@ -24,7 +24,7 @@ export function HistoryTab() {
 				</li>
 			))}
 			{historyQuery.data?.length === 0 && (
-				<p className="text-center text-sm text-gray-500">Sin historial todavía.</p>
+				<p className="text-center text-sm text-gray-500">No history yet.</p>
 			)}
 		</ol>
 	);

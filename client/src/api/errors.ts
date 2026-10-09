@@ -22,16 +22,16 @@ export class ApiError extends Error {
 }
 
 const MESSAGES: Record<ErrorCode, string> = {
-	VALIDATION_ERROR: "Los datos ingresados no son válidos.",
-	UNAUTHENTICATED: "Tu sesión expiró, ingresa de nuevo.",
-	FORBIDDEN: "No tienes permiso para realizar esta acción.",
-	NOT_FOUND: "No se encontró el recurso solicitado.",
-	CONFLICT: "La operación entra en conflicto con el estado actual.",
-	BUSINESS_RULE_VIOLATION: "La operación no cumple una regla de negocio.",
-	TENDER_BUDGET_EXCEEDED: "El presupuesto máximo de la licitación sería superado.",
-	INVALID_TENDER_TRANSITION: "Esa transición de estado no es válida en este momento.",
-	RATE_LIMITED: "Demasiadas solicitudes, intenta de nuevo en unos segundos.",
-	INTERNAL_ERROR: "Ocurrió un error inesperado.",
+	VALIDATION_ERROR: "The data entered is not valid.",
+	UNAUTHENTICATED: "Your session expired, please log in again.",
+	FORBIDDEN: "You do not have permission to perform this action.",
+	NOT_FOUND: "The requested resource was not found.",
+	CONFLICT: "The operation conflicts with the current state.",
+	BUSINESS_RULE_VIOLATION: "The operation violates a business rule.",
+	TENDER_BUDGET_EXCEEDED: "The tender's maximum budget would be exceeded.",
+	INVALID_TENDER_TRANSITION: "That status transition is not valid right now.",
+	RATE_LIMITED: "Too many requests, try again in a few seconds.",
+	INTERNAL_ERROR: "An unexpected error occurred.",
 };
 
 // Codes whose server message says what to fix (field, balance, budget...).

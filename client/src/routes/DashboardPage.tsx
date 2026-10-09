@@ -30,23 +30,21 @@ export function DashboardPage() {
 
 			<div className="rounded-lg border border-gray-200 bg-white">
 				<div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-					<h2 className="font-medium text-gray-900">Próximas a vencer (72h)</h2>
+					<h2 className="font-medium text-gray-900">Due soon (72h)</h2>
 					<Link to="/tenders" className="text-sm text-blue-600 hover:underline">
-						Ver todas
+						View all
 					</Link>
 				</div>
 				{data.upcoming.length === 0 ? (
-					<p className="px-4 py-6 text-center text-sm text-gray-500">
-						No hay licitaciones próximas a vencer.
-					</p>
+					<p className="px-4 py-6 text-center text-sm text-gray-500">No tenders due soon.</p>
 				) : (
 					<table className="w-full text-sm">
 						<thead className="text-left text-xs text-gray-500">
 							<tr>
-								<th className="px-4 py-2">Título</th>
-								<th className="px-4 py-2">Cliente</th>
-								<th className="px-4 py-2">Presupuesto</th>
-								<th className="px-4 py-2">Vence</th>
+								<th className="px-4 py-2">Title</th>
+								<th className="px-4 py-2">Client</th>
+								<th className="px-4 py-2">Budget</th>
+								<th className="px-4 py-2">Due</th>
 							</tr>
 						</thead>
 						<tbody>
