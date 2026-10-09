@@ -11,7 +11,7 @@ interface Session {
 	expiresAt: number;
 }
 
-const STORAGE_KEY = "licitaciones.session";
+const STORAGE_KEY = "tenders.session";
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
