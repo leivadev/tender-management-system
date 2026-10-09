@@ -65,12 +65,13 @@ describe("pagination envelope (NFR-06)", () => {
 
 describe("clients and products lists (FR-36, FR-38)", () => {
 	it("clients: pages are disjoint, newest first (FR-36, NFR-06)", async () => {
+		const run = uniqueName("Order");
 		for (let i = 0; i < 3; i++) {
 			await api(
 				"/api/clients",
 				{
 					method: "POST",
-					body: JSON.stringify({ name: `Order ${i}`, companyName: "Acme", email: "delivered@resend.dev" }),
+					body: JSON.stringify({ name: `${run} ${i}`, companyName: "Acme", email: "delivered@resend.dev" }),
 				},
 				admin,
 			);
@@ -84,7 +85,13 @@ describe("clients and products lists (FR-36, FR-38)", () => {
 
 		const created = [...first.body.data, ...second.body.data].map((c: { createdAt: string }) => c.createdAt);
 		expect(created).toEqual([...created].sort().reverse());
-		expect(first.body.data[0].name).toBe("Order 2");
+
+		// Other test files create clients concurrently, so assert relative order, not position.
+		const recent = await api("/api/clients?pageSize=100", {}, admin);
+		const names = recent.body.data
+			.map((c: { name: string }) => c.name)
+			.filter((n: string) => n.startsWith(run));
+		expect(names).toEqual([`${run} 2`, `${run} 1`, `${run} 0`]);
 	});
 
 	it("products: paginated, newest first (FR-38, NFR-06)", async () => {
