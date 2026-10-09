@@ -38,7 +38,7 @@ beforeAll(async () => {
 		"/api/clients",
 		{
 			method: "POST",
-			body: JSON.stringify({ name: "Cliente Cron", companyName: "Acme", email: "delivered@resend.dev" }),
+			body: JSON.stringify({ name: "Client Cron", companyName: "Acme", email: "delivered@resend.dev" }),
 		},
 		admin,
 	);
@@ -61,7 +61,7 @@ async function createActiveTender(deadlineIso: string) {
 }
 
 describe("processExpiredTenders", () => {
-	it("active + deadline vencida -> lost, con historial changedBy=null", async () => {
+	it("active + expired deadline -> lost, with history changedBy=null", async () => {
 		const tenderId = await createActiveTender(new Date(Date.now() + 60_000).toISOString());
 
 		const sql = postgres(env.HYPERDRIVE.connectionString);
@@ -79,7 +79,7 @@ describe("processExpiredTenders", () => {
 		expect(autoTransition?.changedBy).toBeNull();
 	});
 
-	it("no toca licitaciones activas con deadline futuro", async () => {
+	it("does not touch active tenders with a future deadline", async () => {
 		const tenderId = await createActiveTender(new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString());
 		await processExpiredTenders(env);
 		const detail = await api(`/api/tenders/${tenderId}`, {}, admin);
@@ -88,7 +88,7 @@ describe("processExpiredTenders", () => {
 });
 
 describe("processTenderReminders", () => {
-	it("active + <48h -> reminder_sent_at poblado; segunda corrida no duplica", async () => {
+	it("active + <48h -> reminder_sent_at set; second run does not duplicate", async () => {
 		const tenderId = await createActiveTender(new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString());
 
 		await processTenderReminders(env);
@@ -101,7 +101,7 @@ describe("processTenderReminders", () => {
 		expect(second.body.tender.reminderSentAt).toBe(firstTimestamp);
 	});
 
-	it("no envía recordatorio si el deadline está a más de 48h", async () => {
+	it("does not send reminder if the deadline is more than 48h away", async () => {
 		const tenderId = await createActiveTender(new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString());
 		await processTenderReminders(env);
 		const detail = await api(`/api/tenders/${tenderId}`, {}, admin);
