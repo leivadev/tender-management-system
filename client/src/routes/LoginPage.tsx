@@ -179,15 +179,9 @@ function BrandPanel() {
 			<div className="pointer-events-none absolute -bottom-40 -left-24 size-[26rem] rounded-full bg-primary/20 blur-3xl" />
 
 			<div className="relative mx-auto w-full max-w-md">
-				<h2 className="text-3xl leading-tight font-semibold tracking-tight">
-					Not a mockup. A full-stack app, deployed.
-				</h2>
-				<p className="mt-3 text-sm text-white/70">
-					Every screen talks to the production API. Tenders, clients and payments are rows in a real database,
-					seeded with sample data.
-				</p>
+				<h2 className="text-3xl leading-tight font-semibold tracking-tight">How it's built</h2>
 
-				<ul className="mt-8 space-y-2.5">
+				<ul className="mt-6 space-y-2.5">
 					{STACK.map(({ icon: Icon, name, note }) => (
 						<li
 							key={name}
