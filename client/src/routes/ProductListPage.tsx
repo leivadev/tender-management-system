@@ -1,9 +1,19 @@
+import { Package, Plus, SearchX } from "lucide-react";
 import { useState } from "react";
 import type { Product } from "../api/types";
+import { Badge } from "../components/Badge";
 import { Button } from "../components/Button";
+import { Card, CardHeader } from "../components/Card";
+import { DisabledAction } from "../components/DisabledAction";
+import { EmptyState } from "../components/EmptyState";
+import { ErrorMessage } from "../components/ErrorMessage";
 import { Field, FieldButtonSlot } from "../components/Field";
+import { PageHeader } from "../components/PageHeader";
 import { Pagination } from "../components/Pagination";
-import { PageLoader } from "../components/Spinner";
+import { SearchInput } from "../components/SearchInput";
+import { TableSkeleton } from "../components/Skeleton";
+import { Table, TBody, TD, TH, THead, TR } from "../components/Table";
+import { useListParams } from "../hooks/useListParams";
 import { useCreateProduct, useProducts, useUpdateProduct } from "../hooks/useProducts";
 import { useAuth } from "../lib/AuthContext";
 import { formatCurrency } from "../lib/format";
@@ -13,25 +23,25 @@ import { pushToast } from "../lib/toast";
 function ProductRow({ product, onEdit }: { product: Product; onEdit: () => void }) {
 	const { isAdmin } = useAuth();
 	return (
-		<tr className="border-t border-gray-100 hover:bg-gray-50">
-			<td className="px-4 py-2">{product.name}</td>
-			<td className="px-4 py-2">{product.description || "—"}</td>
-			<td className="px-4 py-2">{formatCurrency(product.unitPrice)}</td>
+		<TR>
+			<TD className="font-medium">{product.name}</TD>
+			<TD className="max-w-xs truncate text-muted-foreground">{product.description || "—"}</TD>
+			<TD numeric>{formatCurrency(product.unitPrice)}</TD>
 			{isAdmin && (
-				<td className="px-4 py-2">
-					<span className={product.active ? "text-green-700" : "text-gray-500"}>
+				<TD>
+					<Badge tone={product.active ? "positive" : "neutral"}>
 						{product.active ? "Active" : "Inactive"}
-					</span>
-				</td>
+					</Badge>
+				</TD>
 			)}
-			<td className="px-4 py-2 text-right">
+			<TD className="text-right">
 				{isAdmin && (
-					<Button variant="link" onClick={onEdit}>
+					<Button variant="ghost" onClick={onEdit}>
 						Edit
 					</Button>
 				)}
-			</td>
-		</tr>
+			</TD>
+		</TR>
 	);
 }
 
@@ -63,41 +73,44 @@ function ProductEditRow({ product, onDone }: { product: Product; onDone: () => v
 	}
 
 	return (
-		<tr className="border-t border-gray-100 bg-blue-50/40">
-			<td className="px-4 py-2">
+		<TR className="h-14 bg-primary-soft/40">
+			<TD>
 				<input
+					aria-label="Name"
 					value={name}
 					onChange={(e) => setName(e.target.value)}
-					className={`${inputClass} py-1`}
+					className={inputClass}
 					minLength={2}
 					required
 				/>
-			</td>
-			<td className="px-4 py-2">
+			</TD>
+			<TD>
 				<input
+					aria-label="Description"
 					value={description}
 					onChange={(e) => setDescription(e.target.value)}
-					className={`${inputClass} py-1`}
+					className={inputClass}
 				/>
-			</td>
-			<td className="px-4 py-2">
+			</TD>
+			<TD numeric>
 				<input
+					aria-label="Unit price"
 					type="number"
 					min="0.01"
 					step="0.01"
 					value={unitPrice}
 					onChange={(e) => setUnitPrice(e.target.value)}
-					className={`w-28 ${inputClass} py-1`}
+					className={`ml-auto w-28 ${inputClass}`}
 					required
 				/>
-			</td>
-			<td className="px-4 py-2">
+			</TD>
+			<TD>
 				<label className="flex items-center gap-2">
 					<input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
 					Active
 				</label>
-			</td>
-			<td className="px-4 py-2 text-right">
+			</TD>
+			<TD>
 				<div className="flex justify-end gap-2">
 					<Button variant="secondary" onClick={onDone}>
 						Cancel
@@ -106,20 +119,16 @@ function ProductEditRow({ product, onDone }: { product: Product; onDone: () => v
 						Save
 					</Button>
 				</div>
-			</td>
-		</tr>
+			</TD>
+		</TR>
 	);
 }
 
-export function ProductListPage() {
-	const [page, setPage] = useState(1);
-	const productsQuery = useProducts(page);
+function CreateProductForm({ onDone }: { onDone: () => void }) {
 	const createProduct = useCreateProduct();
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
 	const [unitPrice, setUnitPrice] = useState("");
-	const { isAdmin } = useAuth();
-	const [editingId, setEditingId] = useState<string | null>(null);
 
 	function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
 		e.preventDefault();
@@ -127,75 +136,134 @@ export function ProductListPage() {
 			{ name: name.trim(), description: description.trim() || undefined, unitPrice: Number(unitPrice) },
 			{
 				onSuccess: () => {
-					setName("");
-					setDescription("");
-					setUnitPrice("");
 					pushToast("Product created.");
+					onDone();
 				},
 			},
 		);
 	}
 
 	return (
-		<div className="space-y-6">
-			{isAdmin && (
-				<form
-					onSubmit={handleSubmit}
-					className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4"
-				>
-					<Field label="Name" htmlFor="name">
-						<input
-							id="name"
-							required
-							minLength={2}
-							value={name}
-							onChange={(e) => setName(e.target.value)}
-							className={inputClass}
-						/>
-					</Field>
-					<Field label="Description" htmlFor="description">
-						<input
-							id="description"
-							value={description}
-							onChange={(e) => setDescription(e.target.value)}
-							className={inputClass}
-						/>
-					</Field>
-					<Field label="Unit price" htmlFor="unitPrice">
-						<input
-							id="unitPrice"
-							type="number"
-							min="0.01"
-							step="0.01"
-							required
-							value={unitPrice}
-							onChange={(e) => setUnitPrice(e.target.value)}
-							className={`w-32 ${inputClass}`}
-						/>
-					</Field>
-					<FieldButtonSlot>
+		<Card className="mb-4">
+			<CardHeader title="New product" />
+			<form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3 p-4">
+				<Field label="Name" htmlFor="name">
+					<input
+						id="name"
+						required
+						minLength={2}
+						value={name}
+						onChange={(e) => setName(e.target.value)}
+						className={inputClass}
+					/>
+				</Field>
+				<Field label="Description" htmlFor="description">
+					<input
+						id="description"
+						value={description}
+						onChange={(e) => setDescription(e.target.value)}
+						className={inputClass}
+					/>
+				</Field>
+				<Field label="Unit price" htmlFor="unitPrice">
+					<input
+						id="unitPrice"
+						type="number"
+						min="0.01"
+						step="0.01"
+						required
+						value={unitPrice}
+						onChange={(e) => setUnitPrice(e.target.value)}
+						className={`w-32 ${inputClass}`}
+					/>
+				</Field>
+				<FieldButtonSlot>
+					<div className="flex gap-2">
+						<Button variant="secondary" onClick={onDone}>
+							Cancel
+						</Button>
 						<Button type="submit" loading={createProduct.isPending}>
 							Create product
 						</Button>
-					</FieldButtonSlot>
-				</form>
-			)}
+					</div>
+				</FieldButtonSlot>
+			</form>
+		</Card>
+	);
+}
 
-			{productsQuery.isLoading ? (
-				<PageLoader />
-			) : (
-				<div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-					<table className="w-full text-sm">
-						<thead className="text-left text-xs text-gray-500">
+export function ProductListPage() {
+	const { isAdmin } = useAuth();
+	const { q, page, setQ, setPage, clear } = useListParams();
+	const productsQuery = useProducts(page, q || undefined);
+	const [creating, setCreating] = useState(false);
+	const [editingId, setEditingId] = useState<string | null>(null);
+
+	return (
+		<>
+			<PageHeader
+				title="Products"
+				description="Catalogue priced into tender lines."
+				actions={
+					isAdmin ? (
+						!creating && (
+							<Button onClick={() => setCreating(true)}>
+								<Plus className="size-3.5" aria-hidden="true" /> New product
+							</Button>
+						)
+					) : (
+						<DisabledAction reason="Only administrators can create products">New product</DisabledAction>
+					)
+				}
+			/>
+
+			{creating && <CreateProductForm onDone={() => setCreating(false)} />}
+
+			<div className="space-y-4">
+				<SearchInput
+					value={q}
+					onSearch={setQ}
+					placeholder="Search by name or description"
+					className="w-full sm:w-80"
+				/>
+
+				{productsQuery.error && <ErrorMessage error={productsQuery.error} />}
+
+				{productsQuery.isLoading ? (
+					<TableSkeleton rows={6} cols={4} />
+				) : productsQuery.data?.total === 0 ? (
+					<EmptyState
+						icon={q ? SearchX : Package}
+						title={q ? "No products match your search" : "No products yet"}
+						description={
+							q ? "Try a different name or description." : "Products added here can be priced into tenders."
+						}
+						action={
+							q ? (
+								<button
+									type="button"
+									onClick={clear}
+									className="text-[13px] font-medium text-primary hover:underline"
+								>
+									Clear search
+								</button>
+							) : undefined
+						}
+					/>
+				) : (
+					<Table>
+						<THead>
 							<tr>
-								<th className="px-4 py-2">Name</th>
-								<th className="px-4 py-2">Description</th>
-								<th className="px-4 py-2">Price</th>
-								{isAdmin && <th className="px-4 py-2">Status</th>}
-								<th className="px-4 py-2" />
+								<TH>Name</TH>
+								<TH>Description</TH>
+								<TH numeric>Price</TH>
+								{isAdmin && <TH>Status</TH>}
+								<TH className="w-1">
+									<span className="sr-only">Actions</span>
+								</TH>
 							</tr>
-						</thead>
-						<tbody>
+						</THead>
+						<TBody>
 							{(productsQuery.data?.data ?? []).map((product) =>
 								editingId === product.id ? (
 									<ProductEditRow key={product.id} product={product} onDone={() => setEditingId(null)} />
@@ -203,15 +271,12 @@ export function ProductListPage() {
 									<ProductRow key={product.id} product={product} onEdit={() => setEditingId(product.id)} />
 								),
 							)}
-						</tbody>
-					</table>
-					{productsQuery.data?.total === 0 && (
-						<p className="px-4 py-6 text-center text-sm text-gray-500">No products yet.</p>
-					)}
-				</div>
-			)}
+						</TBody>
+					</Table>
+				)}
 
-			{productsQuery.data && <Pagination meta={productsQuery.data} onChange={setPage} />}
-		</div>
+				{productsQuery.data && <Pagination meta={productsQuery.data} onChange={setPage} />}
+			</div>
+		</>
 	);
 }

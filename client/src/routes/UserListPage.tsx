@@ -1,9 +1,16 @@
+import { Plus } from "lucide-react";
 import { useState } from "react";
 import type { Role, User } from "../api/types";
+import { Badge, type Tone } from "../components/Badge";
 import { Button } from "../components/Button";
+import { Card, CardHeader } from "../components/Card";
+import { ErrorMessage } from "../components/ErrorMessage";
 import { Field, FieldButtonSlot } from "../components/Field";
+import { PageHeader } from "../components/PageHeader";
 import { Pagination } from "../components/Pagination";
-import { PageLoader } from "../components/Spinner";
+import { TableSkeleton } from "../components/Skeleton";
+import { Table, TBody, TD, TH, THead, TR } from "../components/Table";
+import { useListParams } from "../hooks/useListParams";
 import { useCreateUser, useUpdateUser, useUsers } from "../hooks/useUsers";
 import { useAuth } from "../lib/AuthContext";
 import { confirmAction } from "../lib/confirm";
@@ -16,19 +23,40 @@ const ROLE_LABELS: Record<Role, string> = {
 	viewer: "Read-only",
 };
 
-function UserRow({ user, canEdit, onEdit }: { user: User; canEdit: boolean; onEdit: () => void }) {
+const ROLE_TONES: Record<Role, Tone> = {
+	admin: "accent",
+	user: "info",
+	viewer: "neutral",
+};
+
+function UserRow({
+	user,
+	isYou,
+	canEdit,
+	onEdit,
+}: {
+	user: User;
+	isYou: boolean;
+	canEdit: boolean;
+	onEdit: () => void;
+}) {
 	return (
-		<tr className="border-t border-gray-100 hover:bg-gray-50">
-			<td className="px-4 py-2">{user.email}</td>
-			<td className="px-4 py-2">{ROLE_LABELS[user.role]}</td>
-			<td className="px-4 py-2 text-right">
+		<TR>
+			<TD className="font-medium">
+				{user.email}
+				{isYou && <span className="ml-2 text-xs font-normal text-muted-foreground">(you)</span>}
+			</TD>
+			<TD>
+				<Badge tone={ROLE_TONES[user.role]}>{ROLE_LABELS[user.role]}</Badge>
+			</TD>
+			<TD className="text-right">
 				{canEdit && (
-					<Button variant="link" onClick={onEdit}>
+					<Button variant="ghost" onClick={onEdit}>
 						Edit
 					</Button>
 				)}
-			</td>
-		</tr>
+			</TD>
+		</TR>
 	);
 }
 
@@ -60,20 +88,21 @@ function UserEditRow({ user, onDone }: { user: User; onDone: () => void }) {
 	}
 
 	return (
-		<tr className="border-t border-gray-100 bg-blue-50/40">
-			<td className="px-4 py-2">{user.email}</td>
-			<td className="px-4 py-2">
+		<TR className="h-14 bg-primary-soft/40">
+			<TD className="font-medium">{user.email}</TD>
+			<TD>
 				<select
+					aria-label="Role"
 					value={role}
 					onChange={(e) => setRole(e.target.value as Role)}
-					className={`${inputClass} py-1`}
+					className={`${inputClass} w-44`}
 				>
 					<option value="user">User</option>
 					<option value="viewer">Read-only</option>
 					<option value="admin">Administrator</option>
 				</select>
-			</td>
-			<td className="px-4 py-2 text-right">
+			</TD>
+			<TD>
 				<div className="flex justify-end gap-2">
 					<Button variant="secondary" onClick={onDone}>
 						Cancel
@@ -82,20 +111,16 @@ function UserEditRow({ user, onDone }: { user: User; onDone: () => void }) {
 						Save
 					</Button>
 				</div>
-			</td>
-		</tr>
+			</TD>
+		</TR>
 	);
 }
 
-export function UserListPage() {
-	const { isAdmin, userId } = useAuth();
-	const [page, setPage] = useState(1);
-	const usersQuery = useUsers(page);
+function CreateUserForm({ onDone }: { onDone: () => void }) {
 	const createUser = useCreateUser();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [role, setRole] = useState<Role>("user");
-	const [editingId, setEditingId] = useState<string | null>(null);
 
 	function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
 		e.preventDefault();
@@ -103,76 +128,105 @@ export function UserListPage() {
 			{ email: email.trim(), password, role },
 			{
 				onSuccess: () => {
-					setEmail("");
-					setPassword("");
-					setRole("user");
 					pushToast("User created.");
+					onDone();
 				},
 			},
 		);
 	}
 
 	return (
-		<div className="space-y-6">
-			{isAdmin && (
-				<form
-					onSubmit={handleSubmit}
-					className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4"
-				>
-					<Field label="Email" htmlFor="email">
-						<input
-							id="email"
-							type="email"
-							required
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-							className={inputClass}
-						/>
-					</Field>
-					<Field label="Password" htmlFor="password" hint="Minimum 8 characters">
-						<input
-							id="password"
-							type="password"
-							required
-							minLength={8}
-							value={password}
-							onChange={(e) => setPassword(e.target.value)}
-							className={inputClass}
-						/>
-					</Field>
-					<Field label="Role" htmlFor="role">
-						<select
-							id="role"
-							value={role}
-							onChange={(e) => setRole(e.target.value as Role)}
-							className={inputClass}
-						>
-							<option value="user">User</option>
-							<option value="viewer">Read-only</option>
-							<option value="admin">Administrator</option>
-						</select>
-					</Field>
-					<FieldButtonSlot>
+		<Card className="mb-4">
+			<CardHeader title="New user" />
+			<form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3 p-4">
+				<Field label="Email" htmlFor="email">
+					<input
+						id="email"
+						type="email"
+						required
+						value={email}
+						onChange={(e) => setEmail(e.target.value)}
+						className={inputClass}
+					/>
+				</Field>
+				<Field label="Password" htmlFor="password" hint="Minimum 8 characters">
+					<input
+						id="password"
+						type="password"
+						required
+						minLength={8}
+						value={password}
+						onChange={(e) => setPassword(e.target.value)}
+						className={inputClass}
+					/>
+				</Field>
+				<Field label="Role" htmlFor="role">
+					<select
+						id="role"
+						value={role}
+						onChange={(e) => setRole(e.target.value as Role)}
+						className={inputClass}
+					>
+						<option value="user">User</option>
+						<option value="viewer">Read-only</option>
+						<option value="admin">Administrator</option>
+					</select>
+				</Field>
+				<FieldButtonSlot>
+					<div className="flex gap-2">
+						<Button variant="secondary" onClick={onDone}>
+							Cancel
+						</Button>
 						<Button type="submit" loading={createUser.isPending}>
 							Create user
 						</Button>
-					</FieldButtonSlot>
-				</form>
-			)}
+					</div>
+				</FieldButtonSlot>
+			</form>
+		</Card>
+	);
+}
 
-			{usersQuery.isLoading ? (
-				<PageLoader />
-			) : (
-				<div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-					<table className="w-full text-sm">
-						<thead className="text-left text-xs text-gray-500">
+export function UserListPage() {
+	const { isAdmin, userId } = useAuth();
+	const { page, setPage } = useListParams();
+	const usersQuery = useUsers(page);
+	const [creating, setCreating] = useState(false);
+	const [editingId, setEditingId] = useState<string | null>(null);
+
+	return (
+		<>
+			<PageHeader
+				title="Users"
+				description="Who can sign in and what they can do."
+				actions={
+					!creating && (
+						<Button onClick={() => setCreating(true)}>
+							<Plus className="size-3.5" aria-hidden="true" /> New user
+						</Button>
+					)
+				}
+			/>
+
+			{creating && <CreateUserForm onDone={() => setCreating(false)} />}
+
+			<div className="space-y-4">
+				{usersQuery.error && <ErrorMessage error={usersQuery.error} />}
+
+				{usersQuery.isLoading ? (
+					<TableSkeleton rows={5} cols={3} />
+				) : (
+					<Table>
+						<THead>
 							<tr>
-								<th className="px-4 py-2">Email</th>
-								<th className="px-4 py-2">Role</th>
-								<th className="px-4 py-2" />
+								<TH>Email</TH>
+								<TH>Role</TH>
+								<TH className="w-1">
+									<span className="sr-only">Actions</span>
+								</TH>
 							</tr>
-						</thead>
-						<tbody>
+						</THead>
+						<TBody>
 							{(usersQuery.data?.data ?? []).map((user) =>
 								editingId === user.id ? (
 									<UserEditRow key={user.id} user={user} onDone={() => setEditingId(null)} />
@@ -180,17 +234,18 @@ export function UserListPage() {
 									<UserRow
 										key={user.id}
 										user={user}
+										isYou={user.id === userId}
 										canEdit={isAdmin && user.id !== userId}
 										onEdit={() => setEditingId(user.id)}
 									/>
 								),
 							)}
-						</tbody>
-					</table>
-				</div>
-			)}
+						</TBody>
+					</Table>
+				)}
 
-			{usersQuery.data && <Pagination meta={usersQuery.data} onChange={setPage} />}
-		</div>
+				{usersQuery.data && <Pagination meta={usersQuery.data} onChange={setPage} />}
+			</div>
+		</>
 	);
 }
