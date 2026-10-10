@@ -15,8 +15,17 @@ import type {
 	UpdateTenderRequest,
 } from "./types";
 
-export function listTenders(page: number, status?: TenderStatus) {
-	return fetchJson<Page<TenderListItem>>(`/api/tenders?${pageQuery(page, { status })}`);
+export type TenderSort = "created" | "deadline" | "budget" | "title";
+
+export interface TenderListParams {
+	status?: TenderStatus;
+	q?: string;
+	sort?: TenderSort;
+	dir?: "asc" | "desc";
+}
+
+export function listTenders(page: number, params: TenderListParams = {}) {
+	return fetchJson<Page<TenderListItem>>(`/api/tenders?${pageQuery(page, { ...params })}`);
 }
 
 export function getTender(id: string) {

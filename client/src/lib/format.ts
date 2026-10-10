@@ -13,6 +13,10 @@ export function formatDate(value: string): string {
 	);
 }
 
+export function formatShortDate(value: string): string {
+	return new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(value));
+}
+
 export function formatCompactCurrency(value: number): string {
 	return new Intl.NumberFormat("en-US", {
 		style: "currency",

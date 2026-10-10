@@ -3,6 +3,7 @@ import { Toaster } from "sonner";
 import { ConfirmHost } from "./components/ConfirmHost";
 import { Layout } from "./components/Layout";
 import { RequireAdmin, RequireAuth } from "./components/RequireAuth";
+import { TooltipProvider } from "./components/Tooltip";
 import { DesignPage } from "./design/DesignPage";
 import { ClientListPage } from "./routes/ClientListPage";
 import { DashboardPage } from "./routes/DashboardPage";
@@ -22,44 +23,46 @@ import { UserListPage } from "./routes/UserListPage";
 export default function App() {
 	return (
 		<BrowserRouter>
-			<Toaster position="bottom-right" closeButton />
-			<ConfirmHost />
-			<Routes>
-				<Route path="/login" element={<LoginPage />} />
-				<Route path="/_design" element={<DesignPage />} />
-				<Route
-					path="/*"
-					element={
-						<RequireAuth>
-							<Layout>
-								<Routes>
-									<Route path="/" element={<DashboardPage />} />
-									<Route path="/tenders" element={<TenderListPage />} />
-									<Route path="/tenders/new" element={<TenderCreatePage />} />
-									<Route path="/tenders/:id" element={<TenderDetailLayout />}>
-										<Route index element={<OverviewTab />} />
-										<Route path="products" element={<ProductsTab />} />
-										<Route path="proposal" element={<ProposalTab />} />
-										<Route path="payments" element={<PaymentsTab />} />
-										<Route path="history" element={<HistoryTab />} />
-									</Route>
-									<Route path="/clients" element={<ClientListPage />} />
-									<Route path="/products" element={<ProductListPage />} />
-									<Route
-										path="/users"
-										element={
-											<RequireAdmin>
-												<UserListPage />
-											</RequireAdmin>
-										}
-									/>
-									<Route path="*" element={<NotFoundPage />} />
-								</Routes>
-							</Layout>
-						</RequireAuth>
-					}
-				/>
-			</Routes>
+			<TooltipProvider>
+				<Toaster position="bottom-right" closeButton />
+				<ConfirmHost />
+				<Routes>
+					<Route path="/login" element={<LoginPage />} />
+					<Route path="/_design" element={<DesignPage />} />
+					<Route
+						path="/*"
+						element={
+							<RequireAuth>
+								<Layout>
+									<Routes>
+										<Route path="/" element={<DashboardPage />} />
+										<Route path="/tenders" element={<TenderListPage />} />
+										<Route path="/tenders/new" element={<TenderCreatePage />} />
+										<Route path="/tenders/:id" element={<TenderDetailLayout />}>
+											<Route index element={<OverviewTab />} />
+											<Route path="products" element={<ProductsTab />} />
+											<Route path="proposal" element={<ProposalTab />} />
+											<Route path="payments" element={<PaymentsTab />} />
+											<Route path="history" element={<HistoryTab />} />
+										</Route>
+										<Route path="/clients" element={<ClientListPage />} />
+										<Route path="/products" element={<ProductListPage />} />
+										<Route
+											path="/users"
+											element={
+												<RequireAdmin>
+													<UserListPage />
+												</RequireAdmin>
+											}
+										/>
+										<Route path="*" element={<NotFoundPage />} />
+									</Routes>
+								</Layout>
+							</RequireAuth>
+						}
+					/>
+				</Routes>
+			</TooltipProvider>
 		</BrowserRouter>
 	);
 }

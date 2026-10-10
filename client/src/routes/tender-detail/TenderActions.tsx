@@ -1,6 +1,7 @@
-import { CircleCheck, Lock, Send, XCircle } from "lucide-react";
+import { CircleCheck, Send, XCircle } from "lucide-react";
 import type { TenderDetail } from "../../api/types";
 import { Button } from "../../components/Button";
+import { DisabledAction } from "../../components/DisabledAction";
 import { useFinalizeTender, useLoseTender, useSendTender } from "../../hooks/useTenders";
 import { useAuth } from "../../lib/AuthContext";
 import { confirmAction } from "../../lib/confirm";
@@ -61,7 +62,7 @@ export function TenderActions({ tender }: { tender: TenderDetail }) {
 						<Send className="size-3.5" /> Send
 					</Button>
 				) : (
-					<DisabledAction label="Send" reason="Read-only accounts cannot send tenders" />
+					<DisabledAction reason="Read-only accounts cannot send tenders">Send</DisabledAction>
 				))}
 			{isActive &&
 				(canWrite ? (
@@ -69,7 +70,7 @@ export function TenderActions({ tender }: { tender: TenderDetail }) {
 						<CircleCheck className="size-3.5" /> Finalize
 					</Button>
 				) : (
-					<DisabledAction label="Finalize" reason="Read-only accounts cannot finalize tenders" />
+					<DisabledAction reason="Read-only accounts cannot finalize tenders">Finalize</DisabledAction>
 				))}
 			{isActive &&
 				(isAdmin ? (
@@ -77,18 +78,8 @@ export function TenderActions({ tender }: { tender: TenderDetail }) {
 						<XCircle className="size-3.5" /> Mark as lost
 					</Button>
 				) : (
-					<DisabledAction label="Mark as lost" reason="Only administrators can mark a tender as lost" />
+					<DisabledAction reason="Only administrators can mark a tender as lost">Mark as lost</DisabledAction>
 				))}
 		</>
-	);
-}
-
-function DisabledAction({ label, reason }: { label: string; reason: string }) {
-	return (
-		<span title={reason}>
-			<Button variant="secondary" disabled>
-				<Lock className="size-3.5" /> {label}
-			</Button>
-		</span>
 	);
 }

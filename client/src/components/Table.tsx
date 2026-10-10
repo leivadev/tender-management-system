@@ -1,4 +1,5 @@
-import type { HTMLAttributes, TdHTMLAttributes, ThHTMLAttributes } from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import type { HTMLAttributes, ReactNode, TdHTMLAttributes, ThHTMLAttributes } from "react";
 import { cn } from "../lib/cn";
 
 /** Dense data table inside a bordered card. Scrolls horizontally on narrow screens. */
@@ -42,4 +43,40 @@ export function TD({
 	...props
 }: TdHTMLAttributes<HTMLTableCellElement> & { numeric?: boolean }) {
 	return <td className={cn("px-4", numeric && "text-right font-mono tabular-nums", className)} {...props} />;
+}
+
+/** Column header that toggles sorting. `direction` is set only on the column currently sorted. */
+export function SortTH({
+	children,
+	direction,
+	onSort,
+	numeric,
+	className,
+}: {
+	children: ReactNode;
+	direction?: "asc" | "desc";
+	onSort: () => void;
+	numeric?: boolean;
+	className?: string;
+}) {
+	const Icon = direction === "asc" ? ArrowUp : direction === "desc" ? ArrowDown : ArrowUpDown;
+	return (
+		<th
+			scope="col"
+			aria-sort={direction ? (direction === "asc" ? "ascending" : "descending") : undefined}
+			className={cn("h-9 px-4 font-medium whitespace-nowrap", numeric && "text-right", className)}
+		>
+			<button
+				type="button"
+				onClick={onSort}
+				className={cn(
+					"inline-flex items-center gap-1 rounded-ctl hover:text-foreground",
+					direction && "text-foreground",
+				)}
+			>
+				{children}
+				<Icon className={cn("size-3", !direction && "opacity-50")} aria-hidden="true" />
+			</button>
+		</th>
+	);
 }

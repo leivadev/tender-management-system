@@ -20,6 +20,14 @@ const VARIANT_CLASSES: Record<Variant, string> = {
 	ghost: "text-muted-foreground hover:bg-muted hover:text-foreground",
 };
 
+const BASE_CLASSES =
+	"inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-ctl px-3 text-[13px] font-medium transition disabled:cursor-not-allowed disabled:opacity-50";
+
+/** Button look for elements that are not buttons, e.g. a router `<Link>`. */
+export function buttonClasses(variant: Variant = "primary", className?: string): string {
+	return cn(BASE_CLASSES, VARIANT_CLASSES[variant], className);
+}
+
 export function Button({
 	variant = "primary",
 	loading,
@@ -32,11 +40,7 @@ export function Button({
 	return (
 		<button
 			type={type}
-			className={cn(
-				"inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-ctl px-3 text-[13px] font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
-				VARIANT_CLASSES[variant],
-				className,
-			)}
+			className={buttonClasses(variant, className)}
 			disabled={disabled || loading}
 			{...props}
 		>
