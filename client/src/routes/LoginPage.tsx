@@ -63,13 +63,10 @@ export function LoginPage() {
 				</div>
 
 				<div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
-					<span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[color:var(--tone-positive-bg)] px-2.5 py-1 text-xs font-medium text-[color:var(--tone-positive-fg)]">
-						<span className="size-1.5 rounded-full bg-current" aria-hidden="true" /> Live deployment
-					</span>
-					<h1 className="mt-3 text-2xl font-semibold tracking-tight">See it running</h1>
+					<h1 className="text-2xl font-semibold tracking-tight">See it running</h1>
 					<p className="mt-1.5 text-sm text-muted-foreground">
-						No signup. One click opens the real app with a read-only account: live API, Postgres database and
-						file storage, no mocked responses.
+						Full-stack app to draft, send, track, resolve and collect on commercial tenders. Browse it with
+						the read-only demo account.
 					</p>
 
 					<Button className="mt-5 h-10 w-full" loading={submitting} onClick={handleDemoLogin}>
