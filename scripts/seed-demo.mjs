@@ -244,7 +244,7 @@ const urgentSlots = [0.4, 1.6]; // two active tenders due within 72h (one within
 // Tenders that reached `finalized` ("won") are spread evenly over the six calendar months the dashboard
 // charts (current one first), so the won series reads as steady growth instead of random lumps.
 const WON_PER_MONTH = [4, 9, 4, 4, 4, 3]; // index = months back; sums to 28 = 5 + 8 + 15 won tenders
-const WON_VALUE_PER_MONTH = [640_000, 620_000, 600_000, 560_000, 540_000, 500_000];
+const WON_VALUE_PER_MONTH = [720_000, 620_000, 600_000, 560_000, 540_000, 500_000];
 const monthBounds = (monthsBack) => {
 	const d = new Date(now);
 	const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - monthsBack, 1);
