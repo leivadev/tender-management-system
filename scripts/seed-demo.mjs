@@ -90,7 +90,7 @@ const productsData = [
 	{ name: 'Business laptop 14"', description: "Core i5, 16GB RAM, 512GB SSD", unitPrice: "780.00" },
 	{ name: 'Monitor 24" FHD', description: "IPS panel, 75Hz", unitPrice: "145.00" },
 	{ name: "24-port network switch", description: "Managed gigabit", unitPrice: "310.00" },
-	{ name: "Hospital stretcher", description: "Folding stretcher with rails", unitPrice: "420.00" },
+	{ name: "Hospital stretcher", description: "Folding stretcher with rails", unitPrice: "1450.00" },
 	{ name: "IV fluid kit (box of 50)", description: "Saline solution 1000ml", unitPrice: "95.00" },
 	{ name: "Nitrile gloves (box of 100)", description: "Size M, powder-free", unitPrice: "12.00" },
 	{ name: "150W LED street light", description: "Public lighting, IP65", unitPrice: "88.00" },
@@ -180,6 +180,54 @@ const catalog = [
 		],
 	},
 ];
+
+// --- line items ---------------------------------------------------------------------------
+// Which products a tender buys follows its title; quantities are rounded to purchasable lots.
+const LOT = [50, 50, 5, 5, 1, 1, 10, 50, 10, 10, 10, 10]; // per product index, same order as productsData
+const LINE_RULES = [
+	// [title pattern, product indexes, options]
+	[/rebar/i, [1]],
+	[/fencing/i, [1, 9]],
+	[/signage/i, [9]],
+	[/lighting|\bLED\b/i, [8]],
+	[/laptop|workstation|remote office/i, [2, 3], { paired: true }],
+	[/monitor/i, [3], { cap: 90_000 }],
+	[/training room/i, [3, 4], { cap: 30_000 }],
+	[/\bLAN\b|network|switching|backbone/i, [4], { cap: 40_000 }],
+	[/stretcher/i, [5], { cap: 45_000 }],
+	[/PPE|consumables|supplies|restocking/i, [6, 7]],
+	[/equipment|fit-out|ward/i, [5, 6], { cap: 80_000 }],
+	[/\boil\b/i, [11]],
+	[/rice|staples/i, [10]],
+	[
+		/drain|reinforcement|steel|framing|structur|slab|foundation|wall|road|highway|dock|housing|expansion|shell/i,
+		[0, 1],
+	],
+];
+
+function buildLines(spec) {
+	const rule = LINE_RULES.find(([pattern]) => pattern.test(spec.title));
+	const [, indexes, options = {}] = rule ?? [null, catalog[spec.clientIdx].products.slice(0, 2)];
+	const target = Math.min(spec.targetValue, (options.cap ?? Infinity) * between(0.8, 1));
+	const lot = (idx) => LOT[idx];
+	const roundToLot = (idx, qty) => Math.max(lot(idx), Math.round(qty / lot(idx)) * lot(idx));
+
+	if (options.paired) {
+		// One monitor per laptop: quantity set by the combined unit price.
+		const unitSum = indexes.reduce((sum, idx) => sum + Number(productsData[idx].unitPrice), 0);
+		const qty = roundToLot(indexes[0], target / unitSum);
+		return indexes.map((productIdx) => ({ productIdx, quantity: qty }));
+	}
+	const weights = indexes.map(() => between(0.6, 1.4));
+	const weightSum = weights.reduce((a, b) => a + b, 0);
+	return indexes.map((productIdx, i) => ({
+		productIdx,
+		quantity: roundToLot(
+			productIdx,
+			(target * weights[i]) / weightSum / Number(productsData[productIdx].unitPrice),
+		),
+	}));
+}
 
 // --- tender specs -------------------------------------------------------------------------
 const STATUS_MIX = [
@@ -379,16 +427,13 @@ try {
 				continue;
 			}
 
-			// Lines: 2-3 products from the client's pool, quantities sized to the target value.
-			const pool = catalog[spec.clientIdx].products;
-			const lineCount = Math.min(pool.length, 2 + (spec.paymentSplit < 0.4 ? 1 : 0));
-			const lines = pool.slice(0, lineCount).map((pi) => {
-				const { unitPrice } = productRows[pi];
-				const quantity = Math.max(1, Math.round(spec.targetValue / lineCount / unitPrice));
-				return { productId: productRows[pi].id, quantity, unitPrice, subtotal: round2(quantity * unitPrice) };
+			const lines = buildLines(spec).map(({ productIdx, quantity }) => {
+				const { unitPrice, id } = productRows[productIdx];
+				return { productId: id, quantity, unitPrice, subtotal: round2(quantity * unitPrice) };
 			});
 			const total = round2(lines.reduce((s, l) => s + l.subtotal, 0));
-			const maxBudget = Math.ceil((total * spec.budgetPadding) / 1000) * 1000;
+			const budgetStep = total >= 50_000 ? 5000 : 1000;
+			const maxBudget = Math.ceil((total * spec.budgetPadding) / budgetStep) * budgetStep;
 			const invoiceAmount = spec.status === "for_collection" || spec.status === "collected" ? total : null;
 			const hasProposal = spec.status !== "draft";
 			const lastEventAgo = spec.history.length
