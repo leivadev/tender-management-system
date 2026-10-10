@@ -43,6 +43,13 @@
       "when": 1791613327930,
       "tag": "0005_clever_butterfly",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791666616501,
+      "tag": "0006_cute_thundra",
+      "breakpoints": true
     }
   ]
 }

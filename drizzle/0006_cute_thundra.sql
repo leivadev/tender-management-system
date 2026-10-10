@@ -1,0 +1,1 @@
+ALTER TABLE "products" ADD CONSTRAINT "products_description_length" CHECK (char_length("products"."description") <= 5000);

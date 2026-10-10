@@ -2,7 +2,8 @@ import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
 import { getDb } from "../../db/client";
 import { registerPayment } from "../../domain/tenders/payments";
-import { MAX_LENGTH, money, optionalText } from "../../lib/validation";
+import { MAX_LENGTH } from "../../lib/limits";
+import { money, optionalText } from "../../lib/validation";
 import type { AppContext } from "../../types";
 
 const PaymentInput = z.object({

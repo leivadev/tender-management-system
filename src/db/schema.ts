@@ -13,6 +13,7 @@ import {
 	uniqueIndex,
 	uuid,
 } from "drizzle-orm/pg-core";
+import { MAX_LENGTH } from "../lib/limits";
 
 export const roleEnum = ["admin", "user", "viewer"] as const;
 
@@ -27,7 +28,7 @@ export const tenderStatusEnum = [
 
 export const tenderStatusPgEnum = pgEnum("tender_status", tenderStatusEnum);
 
-// Text length limits (DAT-12) are mirrored in src/lib/validation.ts.
+// Text length limits (DAT-12) come from src/lib/limits.ts, shared with the API validation.
 const maxLength = (column: AnyPgColumn, max: number) =>
 	sql`char_length(${column}) <= ${sql.raw(String(max))}`;
 
@@ -44,7 +45,7 @@ export const profiles = pgTable(
 	},
 	(t) => [
 		uniqueIndex("profiles_email_lower_unique").on(sql`lower(${t.email})`),
-		check("profiles_email_length", maxLength(t.email, 254)),
+		check("profiles_email_length", maxLength(t.email, MAX_LENGTH.email)),
 	],
 ).enableRLS();
 
@@ -62,9 +63,9 @@ export const clients = pgTable(
 		updatedBy: uuid("updated_by").references(() => profiles.id),
 	},
 	(t) => [
-		check("clients_name_length", maxLength(t.name, 200)),
-		check("clients_company_name_length", maxLength(t.companyName, 200)),
-		check("clients_email_length", maxLength(t.email, 254)),
+		check("clients_name_length", maxLength(t.name, MAX_LENGTH.contactName)),
+		check("clients_company_name_length", maxLength(t.companyName, MAX_LENGTH.companyName)),
+		check("clients_email_length", maxLength(t.email, MAX_LENGTH.email)),
 	],
 ).enableRLS();
 
@@ -85,7 +86,8 @@ export const products = pgTable(
 	(t) => [
 		uniqueIndex("products_name_lower_unique").on(sql`lower(${t.name})`),
 		check("products_unit_price_positive", sql`${t.unitPrice} > 0`),
-		check("products_name_length", maxLength(t.name, 200)),
+		check("products_name_length", maxLength(t.name, MAX_LENGTH.productName)),
+		check("products_description_length", maxLength(t.description, MAX_LENGTH.productDescription)),
 	],
 ).enableRLS();
 
@@ -123,8 +125,8 @@ export const tenders = pgTable(
 		index("tenders_client_id_idx").on(t.clientId),
 		check("tenders_max_budget_positive", sql`${t.maxBudget} > 0`),
 		check("tenders_invoice_amount_positive", sql`${t.invoiceAmount} is null or ${t.invoiceAmount} > 0`),
-		check("tenders_title_length", maxLength(t.title, 200)),
-		check("tenders_description_length", maxLength(t.description, 5000)),
+		check("tenders_title_length", maxLength(t.title, MAX_LENGTH.tenderTitle)),
+		check("tenders_description_length", maxLength(t.description, MAX_LENGTH.tenderDescription)),
 	],
 ).enableRLS();
 
@@ -175,8 +177,8 @@ export const payments = pgTable(
 	(t) => [
 		index("payments_tender_id_idx").on(t.tenderId),
 		check("payments_amount_positive", sql`${t.amount} > 0`),
-		check("payments_reference_length", maxLength(t.reference, 100)),
-		check("payments_notes_length", maxLength(t.notes, 500)),
+		check("payments_reference_length", maxLength(t.reference, MAX_LENGTH.paymentReference)),
+		check("payments_notes_length", maxLength(t.notes, MAX_LENGTH.paymentNote)),
 	],
 ).enableRLS();
 

@@ -1,17 +1,22 @@
 import { env } from "cloudflare:workers";
 import postgres from "postgres";
 import { beforeAll, describe, expect, it } from "vitest";
-import { api, login, uniqueName, uploadPdf } from "./helpers";
+import {
+	api,
+	expectValidationError,
+	futureDate,
+	login,
+	patchJson,
+	postJson,
+	uniqueName,
+	uploadPdf,
+} from "./helpers";
 
 let admin: string;
 let clientId: string;
 
-const post = (path: string, body: unknown, token = admin) =>
-	api(path, { method: "POST", body: JSON.stringify(body) }, token);
-const patch = (path: string, body: unknown, token = admin) =>
-	api(path, { method: "PATCH", body: JSON.stringify(body) }, token);
-
-const future = () => new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
+const post = (path: string, body: unknown) => postJson(path, body, admin);
+const patch = (path: string, body: unknown) => patchJson(path, body, admin);
 
 beforeAll(async () => {
 	admin = await login("admin@example.com", "AdminPass123!");
@@ -23,18 +28,12 @@ beforeAll(async () => {
 	clientId = client.body.client.id;
 });
 
-function expectValidationError(r: { status: number; body: any }, field: string) {
-	expect(r.status).toBe(400);
-	expect(r.body.error.code).toBe("VALIDATION_ERROR");
-	expect(r.body.error.message).toContain(field);
-}
-
 async function createTender(maxBudget = 1000) {
 	const r = await post("/api/tenders", {
 		clientId,
 		title: "Integrity Tender",
 		maxBudget,
-		deadline: future(),
+		deadline: futureDate(),
 	});
 	return r.body.tender.id as string;
 }
@@ -73,7 +72,7 @@ describe("invalid input is 400 VALIDATION_ERROR naming the field, never FORBIDDE
 
 	it("negative tender budget", async () => {
 		expectValidationError(
-			await post("/api/tenders", { clientId, title: "T", maxBudget: -5, deadline: future() }),
+			await post("/api/tenders", { clientId, title: "T", maxBudget: -5, deadline: futureDate() }),
 			"maxBudget",
 		);
 	});
@@ -99,7 +98,7 @@ describe("money range 0.01 to 9,999,999,999.99 (DAT-13)", () => {
 			"unitPrice",
 		);
 		expectValidationError(
-			await post("/api/tenders", { clientId, title: "T", maxBudget: 10_000_000_000, deadline: future() }),
+			await post("/api/tenders", { clientId, title: "T", maxBudget: 10_000_000_000, deadline: futureDate() }),
 			"maxBudget",
 		);
 	});
@@ -157,7 +156,7 @@ describe("maximum text lengths (DAT-12)", () => {
 	const longEmail = `${"a".repeat(250)}@b.co`; // 255 chars
 
 	it("tender title 200 and description 5,000", async () => {
-		const base = { clientId, maxBudget: 100, deadline: future() };
+		const base = { clientId, maxBudget: 100, deadline: futureDate() };
 		expectValidationError(await post("/api/tenders", { ...base, title: long(200) }), "title");
 		expectValidationError(
 			await post("/api/tenders", { ...base, title: "ok", description: long(5000) }),
@@ -186,6 +185,17 @@ describe("maximum text lengths (DAT-12)", () => {
 
 	it("product name", async () => {
 		expectValidationError(await post("/api/products", { name: long(200), unitPrice: 1 }), "name");
+	});
+
+	it("product description 5,000", async () => {
+		const description = long(5000);
+		expectValidationError(
+			await post("/api/products", { name: uniqueName("Desc"), unitPrice: 1, description }),
+			"description",
+		);
+		const productId = await createProduct();
+		expectValidationError(await patch(`/api/products/${productId}`, { description }), "description");
+		expect((await patch(`/api/products/${productId}`, { description: "y".repeat(5000) })).status).toBe(200);
 	});
 
 	it("payment reference 100 and note 500", async () => {
@@ -249,14 +259,20 @@ describe("exact money arithmetic (BR-06, NFR-02, A-1)", () => {
 
 	it("budget check is exact: lines of 0.10 and 0.20 fit a 0.30 budget", async () => {
 		const tenderId = await createTender(0.3);
-		const first = await post(`/api/tenders/${tenderId}/products`, { productId: await createProduct(0.1), quantity: 1 });
+		const first = await post(`/api/tenders/${tenderId}/products`, {
+			productId: await createProduct(0.1),
+			quantity: 1,
+		});
 		const second = await post(`/api/tenders/${tenderId}/products`, {
 			productId: await createProduct(0.2),
 			quantity: 1,
 		});
 		expect(first.status).toBe(201);
 		expect(second.status).toBe(201);
-		const over = await post(`/api/tenders/${tenderId}/products`, { productId: await createProduct(0.01), quantity: 1 });
+		const over = await post(`/api/tenders/${tenderId}/products`, {
+			productId: await createProduct(0.01),
+			quantity: 1,
+		});
 		expect(over.status).toBe(422);
 		expect(over.body.error.code).toBe("TENDER_BUDGET_EXCEEDED");
 	});
@@ -363,6 +379,10 @@ describe("the database rejects impossible data on its own (DAT-01..05, DAT-07..1
 			).rejects.toMatchObject(CHECK_VIOLATION);
 			await expect(
 				sql`insert into products (name, unit_price) values (${"x".repeat(201)}, 1)`,
+			).rejects.toMatchObject(CHECK_VIOLATION);
+			await expect(
+				sql`insert into products (name, unit_price, description)
+					values (${uniqueName("RawDesc")}, 1, ${"x".repeat(5001)})`,
 			).rejects.toMatchObject(CHECK_VIOLATION);
 		});
 	});

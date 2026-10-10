@@ -4,7 +4,8 @@ import { z } from "zod";
 import { getDb } from "../../db/client";
 import { tenders } from "../../db/schema";
 import { AppError } from "../../lib/errors";
-import { MAX_LENGTH, optionalText, requiredText } from "../../lib/validation";
+import { MAX_LENGTH } from "../../lib/limits";
+import { optionalText, requiredText } from "../../lib/validation";
 import type { AppContext } from "../../types";
 
 // Intentionally limited to informational fields only (title, description).

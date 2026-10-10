@@ -1,4 +1,5 @@
 import { exports } from "cloudflare:workers";
+import { expect } from "vitest";
 
 export const worker = exports.default;
 
@@ -40,4 +41,19 @@ export async function uploadPdf(tenderId: string, token: string) {
 // Product names are unique (DAT-14) and the local database persists across runs.
 export function uniqueName(prefix: string) {
 	return `${prefix} ${crypto.randomUUID().slice(0, 8)}`;
+}
+
+export const postJson = (path: string, body: unknown, token: string) =>
+	api(path, { method: "POST", body: JSON.stringify(body) }, token);
+
+export const patchJson = (path: string, body: unknown, token: string) =>
+	api(path, { method: "PATCH", body: JSON.stringify(body) }, token);
+
+export const futureDate = () => new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
+
+// SEC-10: validation failures are 400 VALIDATION_ERROR naming the field, never FORBIDDEN.
+export function expectValidationError(r: { status: number; body: any }, field: string) {
+	expect(r.status).toBe(400);
+	expect(r.body.error.code).toBe("VALIDATION_ERROR");
+	expect(r.body.error.message).toContain(field);
 }

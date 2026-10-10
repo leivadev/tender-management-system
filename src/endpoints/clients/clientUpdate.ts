@@ -4,7 +4,8 @@ import { z } from "zod";
 import { getDb } from "../../db/client";
 import { clients } from "../../db/schema";
 import { AppError } from "../../lib/errors";
-import { emailAddress, MAX_LENGTH, requiredText } from "../../lib/validation";
+import { MAX_LENGTH } from "../../lib/limits";
+import { emailAddress, requiredText } from "../../lib/validation";
 import type { AppContext } from "../../types";
 
 const ClientUpdateInput = z

@@ -4,13 +4,14 @@ import { z } from "zod";
 import { getDb } from "../../db/client";
 import { products } from "../../db/schema";
 import { AppError, isUniqueViolation } from "../../lib/errors";
-import { MAX_LENGTH, money, requiredText } from "../../lib/validation";
+import { MAX_LENGTH } from "../../lib/limits";
+import { money, optionalText, requiredText } from "../../lib/validation";
 import type { AppContext } from "../../types";
 
 const ProductUpdateInput = z
 	.object({
 		name: requiredText(MAX_LENGTH.productName).optional(),
-		description: z.string().optional(),
+		description: optionalText(MAX_LENGTH.productDescription).optional(),
 		unitPrice: money().optional(),
 		active: z.boolean().optional(),
 	})
