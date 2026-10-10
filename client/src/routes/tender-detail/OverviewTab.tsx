@@ -6,21 +6,44 @@ import { Field, FieldButtonSlot } from "../../components/Field";
 import { useInvoiceTender, useUpdateTender } from "../../hooks/useTenders";
 import { useAuth } from "../../lib/AuthContext";
 import { confirmAction } from "../../lib/confirm";
+import { toLocalInputValue } from "../../lib/datetime";
 import { formatCurrency, formatDate } from "../../lib/format";
-import { inputClass } from "../../lib/formStyles";
+import { fieldClass, inputClass } from "../../lib/formStyles";
 import { pushToast } from "../../lib/toast";
 import { useTenderContext } from "./context";
 
-function EditTenderForm({ onDone }: { onDone: () => void }) {
+function EditTenderForm({ onDone, usedBudget }: { onDone: () => void; usedBudget: number }) {
 	const { tender } = useTenderContext();
 	const updateTender = useUpdateTender(tender.id);
 	const [title, setTitle] = useState(tender.title);
 	const [description, setDescription] = useState(tender.description ?? "");
+	const [maxBudget, setMaxBudget] = useState(String(Number(tender.maxBudget)));
+	const [initialDeadline] = useState(() => toLocalInputValue(new Date(tender.deadline)));
+	const [deadline, setDeadline] = useState(initialDeadline);
+	const [deadlineError, setDeadlineError] = useState<string | null>(null);
+	// Budget and deadline are frozen once the tender leaves draft (BR-10).
+	const isDraft = tender.status === "draft";
 
 	function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
 		e.preventDefault();
+
+		// Send budget and deadline only when edited: an untouched deadline must not
+		// shift (the input drops seconds) nor block a title edit on an expired draft.
+		const budgetChanged = isDraft && Number(maxBudget) !== Number(tender.maxBudget);
+		const deadlineChanged = isDraft && deadline !== initialDeadline;
+		if (deadlineChanged && new Date(deadline).getTime() <= Date.now()) {
+			setDeadlineError("The deadline must be in the future.");
+			return;
+		}
+		setDeadlineError(null);
+
 		updateTender.mutate(
-			{ title: title.trim(), description: description.trim() },
+			{
+				title: title.trim(),
+				description: description.trim(),
+				...(budgetChanged && { maxBudget: Number(maxBudget) }),
+				...(deadlineChanged && { deadline: new Date(deadline).toISOString() }),
+			},
 			{
 				onSuccess: () => {
 					pushToast("Tender updated.");
@@ -50,6 +73,40 @@ function EditTenderForm({ onDone }: { onDone: () => void }) {
 					className={inputClass}
 				/>
 			</Field>
+			{isDraft && (
+				<div className="grid gap-x-4 sm:grid-cols-2">
+					<Field
+						label="Maximum budget"
+						htmlFor="editMaxBudget"
+						hint={`USD, not below the products total (${formatCurrency(usedBudget)})`}
+					>
+						<input
+							id="editMaxBudget"
+							type="number"
+							min={Math.max(0.01, usedBudget)}
+							step="0.01"
+							required
+							value={maxBudget}
+							onChange={(e) => setMaxBudget(e.target.value)}
+							className={inputClass}
+						/>
+					</Field>
+					<Field label="Deadline" htmlFor="editDeadline" error={deadlineError ?? undefined}>
+						<input
+							id="editDeadline"
+							type="datetime-local"
+							min={toLocalInputValue(new Date())}
+							required
+							value={deadline}
+							onChange={(e) => {
+								setDeadline(e.target.value);
+								setDeadlineError(null);
+							}}
+							className={fieldClass(Boolean(deadlineError))}
+						/>
+					</Field>
+				</div>
+			)}
 			<div className="flex gap-2">
 				<Button type="submit" loading={updateTender.isPending}>
 					Save
@@ -100,7 +157,7 @@ export function OverviewTab() {
 						}
 					/>
 					{isEditing ? (
-						<EditTenderForm onDone={() => setIsEditing(false)} />
+						<EditTenderForm onDone={() => setIsEditing(false)} usedBudget={usedBudget} />
 					) : (
 						<p className="px-4 py-3 text-[13px] leading-relaxed">
 							{tender.description || <span className="text-muted-foreground">No description.</span>}

@@ -6,15 +6,9 @@ import { Field } from "../components/Field";
 import { PageHeader } from "../components/PageHeader";
 import { useAllClients } from "../hooks/useClients";
 import { useCreateTender } from "../hooks/useTenders";
+import { toLocalInputValue } from "../lib/datetime";
 import { fieldClass, inputClass } from "../lib/formStyles";
 import { pushToast } from "../lib/toast";
-
-function localDateTimeNow(): string {
-	const now = new Date();
-	now.setSeconds(0, 0);
-	now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-	return now.toISOString().slice(0, 16);
-}
 
 export function TenderCreatePage() {
 	const navigate = useNavigate();
@@ -28,7 +22,7 @@ export function TenderCreatePage() {
 	const [deadline, setDeadline] = useState("");
 	const [deadlineError, setDeadlineError] = useState<string | null>(null);
 
-	const minDeadline = localDateTimeNow();
+	const minDeadline = toLocalInputValue(new Date());
 	const hasClients = (clientsQuery.data?.length ?? 0) > 0;
 
 	async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {

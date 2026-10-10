@@ -185,6 +185,10 @@ export interface CreateTenderRequest {
 export interface UpdateTenderRequest {
 	title?: string;
 	description?: string;
+	/** Draft only. */
+	maxBudget?: number;
+	/** ISO datetime, draft only. */
+	deadline?: string;
 }
 
 export interface AddTenderProductRequest {
