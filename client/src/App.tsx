@@ -2,7 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 import { ConfirmHost } from "./components/ConfirmHost";
 import { Layout } from "./components/Layout";
-import { RequireAuth } from "./components/RequireAuth";
+import { RequireAdmin, RequireAuth } from "./components/RequireAuth";
 import { DesignPage } from "./design/DesignPage";
 import { ClientListPage } from "./routes/ClientListPage";
 import { DashboardPage } from "./routes/DashboardPage";
@@ -45,7 +45,14 @@ export default function App() {
 									</Route>
 									<Route path="/clients" element={<ClientListPage />} />
 									<Route path="/products" element={<ProductListPage />} />
-									<Route path="/users" element={<UserListPage />} />
+									<Route
+										path="/users"
+										element={
+											<RequireAdmin>
+												<UserListPage />
+											</RequireAdmin>
+										}
+									/>
 									<Route path="*" element={<NotFoundPage />} />
 								</Routes>
 							</Layout>

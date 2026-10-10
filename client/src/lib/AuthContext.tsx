@@ -6,6 +6,8 @@ import { clearSession, getToken, isAuthenticated, setSession, subscribeSession }
 
 interface AuthContextValue {
 	isAuthenticated: boolean;
+	/** True while the profile of a logged-in session is still loading. */
+	isLoading: boolean;
 	isAdmin: boolean;
 	canWrite: boolean;
 	userId: string | null;
@@ -50,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 	const value: AuthContextValue = {
 		isAuthenticated: authed,
+		isLoading: authed && meQuery.isPending,
 		isAdmin: meQuery.data?.role === "admin",
 		canWrite: meQuery.data?.role !== "viewer",
 		userId: meQuery.data?.id ?? null,
