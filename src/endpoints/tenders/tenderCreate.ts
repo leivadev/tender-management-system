@@ -2,13 +2,14 @@ import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
 import { getDb } from "../../db/client";
 import { tenders } from "../../db/schema";
+import { MAX_LENGTH, money, optionalText, requiredText } from "../../lib/validation";
 import type { AppContext } from "../../types";
 
 const TenderInput = z.object({
 	clientId: z.uuid(),
-	title: z.string().min(1),
-	description: z.string().optional(),
-	maxBudget: z.coerce.number().positive(),
+	title: requiredText(MAX_LENGTH.tenderTitle),
+	description: optionalText(MAX_LENGTH.tenderDescription).optional(),
+	maxBudget: money(),
 	deadline: z.iso.datetime(),
 });
 

@@ -3,12 +3,13 @@ import { z } from "zod";
 import { getDb } from "../../db/client";
 import { products } from "../../db/schema";
 import { AppError, isUniqueViolation } from "../../lib/errors";
+import { MAX_LENGTH, money, requiredText } from "../../lib/validation";
 import type { AppContext } from "../../types";
 
 const ProductInput = z.object({
-	name: z.string().min(1),
+	name: requiredText(MAX_LENGTH.productName),
 	description: z.string().optional(),
-	unitPrice: z.coerce.number().positive(),
+	unitPrice: money(),
 });
 
 export class ProductCreate extends OpenAPIRoute {

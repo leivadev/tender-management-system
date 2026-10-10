@@ -3,11 +3,12 @@ import { z } from "zod";
 import { getDb } from "../../db/client";
 import { profiles, roleEnum } from "../../db/schema";
 import { AppError, isUniqueViolation } from "../../lib/errors";
+import { emailAddress } from "../../lib/validation";
 import { createAuthUser, deleteAuthUser } from "../../services/auth";
 import type { AppContext } from "../../types";
 
 const UserInput = z.object({
-	email: z.email(),
+	email: emailAddress(),
 	password: z.string().min(8),
 	role: z.enum(roleEnum).default("user"),
 });

@@ -2,12 +2,13 @@ import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
 import { getDb } from "../../db/client";
 import { registerPayment } from "../../domain/tenders/payments";
+import { MAX_LENGTH, money, optionalText } from "../../lib/validation";
 import type { AppContext } from "../../types";
 
 const PaymentInput = z.object({
-	amount: z.coerce.number().positive(),
-	reference: z.string().optional(),
-	notes: z.string().optional(),
+	amount: money(),
+	reference: optionalText(MAX_LENGTH.paymentReference).optional(),
+	notes: optionalText(MAX_LENGTH.paymentNote).optional(),
 });
 
 export class PaymentCreate extends OpenAPIRoute {

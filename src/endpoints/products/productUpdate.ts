@@ -4,13 +4,14 @@ import { z } from "zod";
 import { getDb } from "../../db/client";
 import { products } from "../../db/schema";
 import { AppError, isUniqueViolation } from "../../lib/errors";
+import { MAX_LENGTH, money, requiredText } from "../../lib/validation";
 import type { AppContext } from "../../types";
 
 const ProductUpdateInput = z
 	.object({
-		name: z.string().min(1).optional(),
+		name: requiredText(MAX_LENGTH.productName).optional(),
 		description: z.string().optional(),
-		unitPrice: z.coerce.number().positive().optional(),
+		unitPrice: money().optional(),
 		active: z.boolean().optional(),
 	})
 	.refine((body) => Object.keys(body).length > 0, { message: "At least one field must be provided." });

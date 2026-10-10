@@ -9,10 +9,11 @@ import {
 	transitionTender,
 } from "../../domain/tenders/state-machine";
 import { AppError } from "../../lib/errors";
+import { money } from "../../lib/validation";
 import type { AppContext } from "../../types";
 
 const InvoiceInput = z.object({
-	invoiceAmount: z.coerce.number().positive(),
+	invoiceAmount: money(),
 });
 
 /**

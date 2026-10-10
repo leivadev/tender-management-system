@@ -4,13 +4,14 @@ import { z } from "zod";
 import { getDb } from "../../db/client";
 import { clients } from "../../db/schema";
 import { AppError } from "../../lib/errors";
+import { emailAddress, MAX_LENGTH, requiredText } from "../../lib/validation";
 import type { AppContext } from "../../types";
 
 const ClientUpdateInput = z
 	.object({
-		name: z.string().min(1).optional(),
-		companyName: z.string().min(1).optional(),
-		email: z.email().optional(),
+		name: requiredText(MAX_LENGTH.contactName).optional(),
+		companyName: requiredText(MAX_LENGTH.companyName).optional(),
+		email: emailAddress().optional(),
 	})
 	.refine((body) => Object.keys(body).length > 0, { message: "At least one field must be provided." });
 

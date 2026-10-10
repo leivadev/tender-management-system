@@ -2,12 +2,13 @@ import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
 import { getDb } from "../../db/client";
 import { clients } from "../../db/schema";
+import { emailAddress, MAX_LENGTH, requiredText } from "../../lib/validation";
 import type { AppContext } from "../../types";
 
 const ClientInput = z.object({
-	name: z.string().min(1),
-	companyName: z.string().min(1),
-	email: z.email(),
+	name: requiredText(MAX_LENGTH.contactName),
+	companyName: requiredText(MAX_LENGTH.companyName),
+	email: emailAddress(),
 });
 
 export class ClientCreate extends OpenAPIRoute {

@@ -21,7 +21,9 @@ export async function assertWithinBudget(
 	newSubtotal: number,
 ) {
 	const currentTotal = await getTenderTotal(db, tenderId);
-	if (currentTotal + newSubtotal > maxBudget) {
+	// Compare in whole cents: 0.10 + 0.20 > 0.30 in binary floating point (BR-06).
+	const toCents = (value: number) => Math.round(value * 100);
+	if (toCents(currentTotal) + toCents(newSubtotal) > toCents(maxBudget)) {
 		throw new AppError("TENDER_BUDGET_EXCEEDED", "The tender total exceeds the maximum budget.");
 	}
 }
