@@ -154,7 +154,7 @@ export interface TenderProductLine {
 	id: string;
 	productId: string;
 	productName: string;
-	quantity: string;
+	quantity: number;
 	unitPrice: string;
 	subtotal: string;
 }

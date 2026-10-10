@@ -129,7 +129,7 @@ describe("tender list (FR-11, NFR-13)", () => {
 		await sql`
 			insert into tenders (client_id, title, max_budget, deadline, status, created_at)
 			select ${clientId}, 'Seed ' || n, 1000, now() + interval '30 days',
-				case when n % 4 = 0 then 'lost' else 'draft' end,
+				(case when n % 4 = 0 then 'lost' else 'draft' end)::tender_status,
 				now() - make_interval(secs => n)
 			from generate_series(1, ${SEEDED}) as n`;
 	}, 60_000);

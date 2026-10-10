@@ -186,7 +186,7 @@ describe("a product appears once per tender (BR-14)", () => {
 		await api(`/api/tenders/${tenderId}/products/${productId}`, { method: "DELETE" }, admin);
 		const again = await addProduct(tenderId, productId, 5);
 		expect(again.status).toBe(201);
-		expect(again.body.tenderProduct.quantity).toBe("5.00");
+		expect(again.body.tenderProduct.quantity).toBe(5);
 	});
 
 	it("the same product can be in different tenders", async () => {

@@ -532,7 +532,7 @@ describe("full lifecycle: send -> finalize -> invoice -> payments -> collected",
 		);
 		const r = await api(
 			`/api/tenders/${tenderId}/products`,
-			{ method: "POST", body: JSON.stringify({ productId: extra.body.product.id, quantity: 0.5 }) },
+			{ method: "POST", body: JSON.stringify({ productId: extra.body.product.id, quantity: 1 }) },
 			admin,
 		);
 		expect(r.status).toBe(201);

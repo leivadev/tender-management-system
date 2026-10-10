@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 
-type TenderProductLine = { name: string; quantity: string; unitPrice: string };
+type TenderProductLine = { name: string; quantity: number; unitPrice: string };
 
 type TenderSummary = {
 	title: string;
@@ -26,11 +26,6 @@ function formatCurrency(value: string | number) {
 		currency: "USD",
 		minimumFractionDigits: 2,
 	}).format(Number(value));
-}
-
-function formatQuantity(value: string) {
-	const n = Number(value);
-	return Number.isInteger(n) ? String(n) : n.toFixed(2);
 }
 
 function formatDate(date: Date) {
@@ -81,7 +76,7 @@ function productsTableHtml(products: TenderProductLine[]) {
 			(p) => `
 				<tr>
 					<td style="${EMAIL_STYLES.td}">${p.name}</td>
-					<td style="${EMAIL_STYLES.tdRight}">${formatQuantity(p.quantity)}</td>
+					<td style="${EMAIL_STYLES.tdRight}">${p.quantity}</td>
 					<td style="${EMAIL_STYLES.tdRight}">${formatCurrency(p.unitPrice)}</td>
 				</tr>`,
 		)
@@ -102,9 +97,7 @@ function productsTableHtml(products: TenderProductLine[]) {
 }
 
 function productsTableText(products: TenderProductLine[]) {
-	return products
-		.map((p) => `- ${p.name}: ${formatQuantity(p.quantity)} x ${formatCurrency(p.unitPrice)}`)
-		.join("\n");
+	return products.map((p) => `- ${p.name}: ${p.quantity} x ${formatCurrency(p.unitPrice)}`).join("\n");
 }
 
 export async function sendTenderEmail(

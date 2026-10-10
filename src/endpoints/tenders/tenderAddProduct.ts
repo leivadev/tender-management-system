@@ -6,11 +6,12 @@ import { products, tenderProducts, tenders } from "../../db/schema";
 import { assertWithinBudget } from "../../domain/tenders/rules";
 import { assertProductsEditable, type TenderStatus } from "../../domain/tenders/state-machine";
 import { AppError, isUniqueViolation } from "../../lib/errors";
+import { quantity } from "../../lib/validation";
 import type { AppContext } from "../../types";
 
 const AddProductInput = z.object({
 	productId: z.uuid(),
-	quantity: z.coerce.number().positive(),
+	quantity: quantity(),
 });
 
 export class TenderAddProduct extends OpenAPIRoute {
@@ -62,7 +63,7 @@ export class TenderAddProduct extends OpenAPIRoute {
 			}
 
 			const unitPrice = Number(product.unitPrice);
-			const subtotal = unitPrice * data.body.quantity;
+			const subtotal = (Math.round(unitPrice * 100) * data.body.quantity) / 100;
 
 			await assertWithinBudget(tx as unknown as typeof db, tenderId, Number(tender.maxBudget), subtotal);
 
@@ -71,7 +72,7 @@ export class TenderAddProduct extends OpenAPIRoute {
 				.values({
 					tenderId,
 					productId: product.id,
-					quantity: data.body.quantity.toFixed(2),
+					quantity: data.body.quantity,
 					unitPrice: unitPrice.toFixed(2),
 					subtotal: subtotal.toFixed(2),
 					createdBy: user.id,
