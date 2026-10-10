@@ -5,7 +5,7 @@ import { cn } from "../lib/cn";
 /** Dense data table inside a bordered card. Scrolls horizontally on narrow screens. */
 export function Table({ className, ...props }: HTMLAttributes<HTMLTableElement>) {
 	return (
-		<div className="overflow-x-auto rounded-card border border-border bg-card shadow-card">
+		<div className="relative overflow-x-auto rounded-card border border-border bg-card shadow-card">
 			<table className={cn("w-full min-w-max text-left text-[13px]", className)} {...props} />
 		</div>
 	);
