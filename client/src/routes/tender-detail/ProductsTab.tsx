@@ -93,7 +93,7 @@ export function ProductsTab() {
 						{tender.products.map((line) => (
 							<TR key={line.id}>
 								<TD className="font-medium">{line.productName}</TD>
-								<TD numeric>{line.quantity}</TD>
+								<TD numeric>{Number(line.quantity).toLocaleString("en-US")}</TD>
 								<TD numeric className="text-muted-foreground">
 									{formatCurrency(line.unitPrice)}
 								</TD>

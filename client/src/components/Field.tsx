@@ -18,7 +18,7 @@ export function Field({ label, htmlFor, error, hint, children }: FieldProps) {
 			</label>
 			{children}
 			<p className={`mt-1 text-xs ${error ? "text-destructive" : "text-muted-foreground"}`}>
-				{helpText ?? " "}
+				{helpText ?? "\u00A0"}
 			</p>
 		</div>
 	);
