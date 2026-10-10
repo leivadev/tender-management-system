@@ -1,4 +1,4 @@
-import { count, desc, type SQL } from "drizzle-orm";
+import { count, desc, ilike, or, type SQL } from "drizzle-orm";
 import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import type { Database } from "../db/client";
@@ -15,6 +15,18 @@ export const paginationQuery = z.object({
 
 export type Pagination = z.infer<typeof paginationQuery>;
 
+/** Optional free-text search, shared by the list endpoints that support it. */
+export const searchQuery = z.object({
+	q: z.string().trim().min(1).max(100).optional(),
+});
+
+/** Case-insensitive "contains" match of `q` against any of `columns`. LIKE wildcards in `q` are literal. */
+export function searchFilter(q: string | undefined, columns: PgColumn[]): SQL | undefined {
+	if (!q) return undefined;
+	const pattern = `%${q.replace(/[\\%_]/g, "\\$&")}%`;
+	return or(...columns.map((column) => ilike(column, pattern)));
+}
+
 export function pageSchema<T extends z.ZodType>(item: T) {
 	return z.object({
 		data: z.array(item),
@@ -26,19 +38,23 @@ export function pageSchema<T extends z.ZodType>(item: T) {
 
 type Paginatable = PgTable & { id: PgColumn; createdAt: PgColumn };
 
-/** One page of `table`, newest first (id breaks ties so pages never overlap), plus the unpaged total. */
+/**
+ * One page of `table` plus the unpaged total. Newest first unless `orderBy` is given; id always breaks
+ * ties last so pages never overlap.
+ */
 export async function paginate<T extends Paginatable>(
 	db: Database,
 	table: T,
 	{ page, pageSize }: Pagination,
 	where?: SQL,
+	orderBy: SQL[] = [desc(table.createdAt)],
 ) {
 	const [data, totals] = await Promise.all([
 		db
 			.select()
 			.from(table as PgTable)
 			.where(where)
-			.orderBy(desc(table.createdAt), desc(table.id))
+			.orderBy(...orderBy, desc(table.id))
 			.limit(pageSize)
 			.offset((page - 1) * pageSize),
 		db
