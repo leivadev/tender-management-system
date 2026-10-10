@@ -2,9 +2,8 @@ import { eq, sql } from "drizzle-orm";
 import type { Database } from "../../db/client";
 import { payments } from "../../db/schema";
 import { AppError } from "../../lib/errors";
+import { fromCents, toCents } from "./money";
 import { transitionTender } from "./state-machine";
-
-const toCents = (value: number) => Math.round(value * 100);
 
 /**
  * Registers a payment atomically: locks the tender row, validates status and
@@ -54,7 +53,7 @@ export async function registerPayment(
 			.insert(payments)
 			.values({
 				tenderId,
-				amount: (amountCents / 100).toFixed(2),
+				amount: fromCents(amountCents).toFixed(2),
 				reference: options.reference,
 				notes: options.notes,
 				createdBy: actorId,
@@ -66,6 +65,6 @@ export async function registerPayment(
 			await transitionTender(tx as unknown as Database, tenderId, "collected", actorId);
 		}
 
-		return { payment, pendingBalance: newBalanceCents / 100 };
+		return { payment, pendingBalance: fromCents(newBalanceCents) };
 	});
 }

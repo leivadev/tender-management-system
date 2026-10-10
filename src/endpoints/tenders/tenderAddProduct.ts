@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "../../db/client";
 import { products, tenderProducts, tenders } from "../../db/schema";
+import { lineSubtotal } from "../../domain/tenders/money";
 import { assertWithinBudget } from "../../domain/tenders/rules";
 import { assertProductsEditable, type TenderStatus } from "../../domain/tenders/state-machine";
 import { AppError, isUniqueViolation } from "../../lib/errors";
@@ -63,7 +64,7 @@ export class TenderAddProduct extends OpenAPIRoute {
 			}
 
 			const unitPrice = Number(product.unitPrice);
-			const subtotal = (Math.round(unitPrice * 100) * data.body.quantity) / 100;
+			const subtotal = lineSubtotal(unitPrice, data.body.quantity);
 
 			await assertWithinBudget(tx as unknown as typeof db, tenderId, Number(tender.maxBudget), subtotal);
 
