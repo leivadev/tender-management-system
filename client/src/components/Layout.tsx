@@ -26,7 +26,7 @@ const NAV_ITEMS = [
 ];
 
 const SOURCE_LINKS = [
-	{ href: "https://github.com/leivadev/tender-management-system", label: "Source", icon: Code },
+	{ href: "https://github.com/leivadev/tender-management-system", label: "GitHub repo", icon: Code },
 	{ href: "/api/docs", label: "API docs", icon: BookOpen },
 ];
 
@@ -107,9 +107,9 @@ function SidebarContent({ onNavigate, onSearch }: { onNavigate?: () => void; onS
 						href="https://leivadev.com"
 						target="_blank"
 						rel="noopener noreferrer"
-						className="underline hover:text-foreground"
+						className="font-bold underline hover:text-foreground"
 					>
-						leivadev
+						Leivadev
 					</a>
 				</p>
 				<div className="flex items-center gap-2.5 rounded-card border border-border bg-card p-2">
