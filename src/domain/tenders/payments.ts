@@ -2,6 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import type { Database } from "../../db/client";
 import { payments } from "../../db/schema";
 import { AppError } from "../../lib/errors";
+import { withLockedTender } from "./locking";
 import { fromCents, toCents } from "./money";
 import { transitionTender } from "./state-machine";
 
@@ -18,14 +19,7 @@ export async function registerPayment(
 	actorId: string | null,
 	options: { reference?: string; notes?: string } = {},
 ) {
-	return db.transaction(async (tx) => {
-		const [tender] = await tx.execute(
-			sql`select id, status, invoice_amount from tenders where id = ${tenderId} for update`,
-		);
-
-		if (!tender) {
-			throw new AppError("NOT_FOUND", `Tender ${tenderId} not found.`);
-		}
+	return withLockedTender(db, tenderId, async (tx, tender) => {
 		if (tender.status !== "for_collection") {
 			throw new AppError(
 				"BUSINESS_RULE_VIOLATION",
@@ -33,7 +27,7 @@ export async function registerPayment(
 			);
 		}
 
-		const invoiceCents = toCents(Number(tender.invoice_amount ?? 0));
+		const invoiceCents = toCents(Number(tender.invoiceAmount ?? 0));
 
 		const [paidRow] = await tx
 			.select({ paid: sql<string>`coalesce(sum(${payments.amount}), 0)` })
@@ -62,7 +56,7 @@ export async function registerPayment(
 
 		const newBalanceCents = pendingCents - amountCents;
 		if (newBalanceCents === 0) {
-			await transitionTender(tx as unknown as Database, tenderId, "collected", actorId);
+			await transitionTender(tx, tenderId, "collected", actorId);
 		}
 
 		return { payment, pendingBalance: fromCents(newBalanceCents) };

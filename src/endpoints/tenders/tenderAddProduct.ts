@@ -2,7 +2,8 @@ import { OpenAPIRoute } from "chanfana";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "../../db/client";
-import { products, tenderProducts, tenders } from "../../db/schema";
+import { products, tenderProducts } from "../../db/schema";
+import { withLockedTender } from "../../domain/tenders/locking";
 import { lineSubtotal } from "../../domain/tenders/money";
 import { assertWithinBudget } from "../../domain/tenders/rules";
 import { assertProductsEditable, type TenderStatus } from "../../domain/tenders/state-machine";
@@ -39,11 +40,7 @@ export class TenderAddProduct extends OpenAPIRoute {
 		const user = c.var.user;
 		const tenderId = data.params.id;
 
-		return db.transaction(async (tx) => {
-			const [tender] = await tx.select().from(tenders).where(eq(tenders.id, tenderId));
-			if (!tender) {
-				throw new AppError("NOT_FOUND", `Tender ${tenderId} not found.`);
-			}
+		return withLockedTender(db, tenderId, async (tx, tender) => {
 			assertProductsEditable(tender.status as TenderStatus);
 
 			const [product] = await tx.select().from(products).where(eq(products.id, data.body.productId));
@@ -66,7 +63,7 @@ export class TenderAddProduct extends OpenAPIRoute {
 			const unitPrice = Number(product.unitPrice);
 			const subtotal = lineSubtotal(unitPrice, data.body.quantity);
 
-			await assertWithinBudget(tx as unknown as typeof db, tenderId, Number(tender.maxBudget), subtotal);
+			await assertWithinBudget(tx, tenderId, Number(tender.maxBudget), subtotal);
 
 			const [tenderProduct] = await tx
 				.insert(tenderProducts)

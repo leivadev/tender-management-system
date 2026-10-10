@@ -3,12 +3,12 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "../../db/client";
 import { tenders } from "../../db/schema";
+import { reloadTender, withLockedTender } from "../../domain/tenders/locking";
 import {
 	assertValidTransition,
 	type TenderStatus,
 	transitionTender,
 } from "../../domain/tenders/state-machine";
-import { AppError } from "../../lib/errors";
 import { money } from "../../lib/validation";
 import type { AppContext } from "../../types";
 
@@ -43,27 +43,22 @@ export class TenderInvoice extends OpenAPIRoute {
 		const user = c.var.user;
 		const tenderId = data.params.id;
 
-		const [tender] = await db
-			.select({ status: tenders.status })
-			.from(tenders)
-			.where(eq(tenders.id, tenderId));
-		if (!tender) {
-			throw new AppError("NOT_FOUND", `Tender ${tenderId} not found.`);
-		}
-		assertValidTransition(tender.status as TenderStatus, "for_collection");
+		const updated = await withLockedTender(db, tenderId, async (tx, tender) => {
+			assertValidTransition(tender.status as TenderStatus, "for_collection");
 
-		await db
-			.update(tenders)
-			.set({
-				invoiceAmount: data.body.invoiceAmount.toFixed(2),
-				updatedAt: new Date(),
-				updatedBy: user.id,
-			})
-			.where(eq(tenders.id, tenderId));
+			await tx
+				.update(tenders)
+				.set({
+					invoiceAmount: data.body.invoiceAmount.toFixed(2),
+					updatedAt: new Date(),
+					updatedBy: user.id,
+				})
+				.where(eq(tenders.id, tenderId));
 
-		await transitionTender(db, tenderId, "for_collection", user.id);
+			await transitionTender(tx, tenderId, "for_collection", user.id);
+			return reloadTender(tx, tenderId);
+		});
 
-		const [updated] = await db.select().from(tenders).where(eq(tenders.id, tenderId));
 		return c.json({ success: true, tender: updated });
 	}
 }

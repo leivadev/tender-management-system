@@ -414,13 +414,13 @@ describe("tenders: creation, detail, budget", () => {
 		expect(r.body.tender.status).toBe(before.body.tender.status);
 	});
 
-	it("editing business fields via PATCH is ignored (only title/description)", async () => {
+	it("editing client or status via PATCH is ignored", async () => {
 		const before = await api(`/api/tenders/${tenderId}`, {}, admin);
 		const r = await api(
 			`/api/tenders/${tenderId}`,
 			{
 				method: "PATCH",
-				body: JSON.stringify({ title: "Another title", maxBudget: 999999, status: "collected" }),
+				body: JSON.stringify({ title: "Another title", clientId: crypto.randomUUID(), status: "collected" }),
 			},
 			admin,
 		);

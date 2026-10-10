@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "../../db/client";
 import { tenders } from "../../db/schema";
+import { withLockedTender } from "../../domain/tenders/locking";
 import { AppError } from "../../lib/errors";
 import { uploadProposal } from "../../services/storage";
 import type { AppContext } from "../../types";
@@ -35,31 +36,29 @@ export class TenderUploadProposal extends OpenAPIRoute {
 		const user = c.var.user;
 		const tenderId = data.params.id;
 
-		const [tender] = await db.select().from(tenders).where(eq(tenders.id, tenderId));
-		if (!tender) {
-			throw new AppError("NOT_FOUND", `Tender ${tenderId} not found.`);
-		}
-
 		const form = await c.req.formData();
 		const file = form.get("file");
 		if (!(file instanceof File)) {
 			throw new AppError("VALIDATION_ERROR", "Missing file in form data.");
 		}
 
-		const uploaded = await uploadProposal(c.env, tenderId, file);
+		const updated = await withLockedTender(db, tenderId, async (tx) => {
+			const uploaded = await uploadProposal(c.env, tenderId, file);
 
-		const [updated] = await db
-			.update(tenders)
-			.set({
-				proposalKey: uploaded.key,
-				proposalUrl: uploaded.url,
-				proposalFilename: uploaded.filename,
-				proposalContentType: uploaded.contentType,
-				updatedAt: new Date(),
-				updatedBy: user.id,
-			})
-			.where(eq(tenders.id, tenderId))
-			.returning();
+			const [row] = await tx
+				.update(tenders)
+				.set({
+					proposalKey: uploaded.key,
+					proposalUrl: uploaded.url,
+					proposalFilename: uploaded.filename,
+					proposalContentType: uploaded.contentType,
+					updatedAt: new Date(),
+					updatedBy: user.id,
+				})
+				.where(eq(tenders.id, tenderId))
+				.returning();
+			return row;
+		});
 
 		return c.json({ success: true, tender: updated });
 	}

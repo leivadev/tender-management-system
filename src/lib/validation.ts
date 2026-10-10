@@ -16,3 +16,9 @@ export const money = () =>
 		});
 
 export const quantity = () => z.coerce.number().int().min(1).max(QUANTITY_MAX);
+
+// BR-02: a deadline must be ahead of now, checked again when sending (BR-15).
+export const futureDeadline = () =>
+	z.iso.datetime().refine((value) => new Date(value).getTime() > Date.now(), {
+		message: "Must be in the future.",
+	});

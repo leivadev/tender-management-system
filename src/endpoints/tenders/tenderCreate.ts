@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getDb } from "../../db/client";
 import { tenders } from "../../db/schema";
 import { MAX_LENGTH } from "../../lib/limits";
-import { money, optionalText, requiredText } from "../../lib/validation";
+import { futureDeadline, money, optionalText, requiredText } from "../../lib/validation";
 import type { AppContext } from "../../types";
 
 const TenderInput = z.object({
@@ -11,7 +11,7 @@ const TenderInput = z.object({
 	title: requiredText(MAX_LENGTH.tenderTitle),
 	description: optionalText(MAX_LENGTH.tenderDescription).optional(),
 	maxBudget: money(),
-	deadline: z.iso.datetime(),
+	deadline: futureDeadline(),
 });
 
 export class TenderCreate extends OpenAPIRoute {

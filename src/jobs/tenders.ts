@@ -1,6 +1,7 @@
 import { and, eq, gt, isNull, lt, lte } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { clients, tenders } from "../db/schema";
+import { withLockedTender } from "../domain/tenders/locking";
 import { transitionTender } from "../domain/tenders/state-machine";
 import { hoursFromNow } from "../lib/date";
 import { sendReminderEmail } from "../services/email";
@@ -13,11 +14,18 @@ export async function processExpiredTenders(env: Env) {
 		.from(tenders)
 		.where(and(eq(tenders.status, "active"), lt(tenders.deadline, new Date())));
 
-	for (const tender of expired) {
-		await transitionTender(db, tender.id, "lost", null);
+	let expiredCount = 0;
+	for (const candidate of expired) {
+		// Re-check under the lock: a request may have moved the tender since the scan (BR-09).
+		const moved = await withLockedTender(db, candidate.id, async (tx, tender) => {
+			if (tender.status !== "active" || tender.deadline.getTime() >= Date.now()) return false;
+			await transitionTender(tx, tender.id, "lost", null);
+			return true;
+		});
+		if (moved) expiredCount++;
 	}
 
-	return { expiredCount: expired.length };
+	return { expiredCount };
 }
 
 export async function processTenderReminders(env: Env) {

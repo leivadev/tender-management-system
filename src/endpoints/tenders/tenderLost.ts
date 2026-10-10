@@ -1,8 +1,7 @@
 import { OpenAPIRoute } from "chanfana";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "../../db/client";
-import { tenders } from "../../db/schema";
+import { reloadTender, withLockedTender } from "../../domain/tenders/locking";
 import { transitionTender } from "../../domain/tenders/state-machine";
 import type { AppContext } from "../../types";
 
@@ -27,9 +26,11 @@ export class TenderLost extends OpenAPIRoute {
 		const user = c.var.user;
 		const tenderId = data.params.id;
 
-		await transitionTender(db, tenderId, "lost", user.id);
+		const updated = await withLockedTender(db, tenderId, async (tx) => {
+			await transitionTender(tx, tenderId, "lost", user.id);
+			return reloadTender(tx, tenderId);
+		});
 
-		const [updated] = await db.select().from(tenders).where(eq(tenders.id, tenderId));
 		return c.json({ success: true, tender: updated });
 	}
 }
