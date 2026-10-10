@@ -2,10 +2,10 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import * as api from "../api/products";
 import type { CreateProductRequest, UpdateProductRequest } from "../api/types";
 
-export function useProducts(page: number) {
+export function useProducts(page: number, q?: string) {
 	return useQuery({
-		queryKey: ["products", "list", { page }],
-		queryFn: () => api.listProducts(page),
+		queryKey: ["products", "list", { page, q }],
+		queryFn: () => api.listProducts(page, q),
 		placeholderData: keepPreviousData,
 	});
 }

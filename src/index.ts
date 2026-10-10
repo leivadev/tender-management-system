@@ -7,6 +7,7 @@ import { Me } from "./endpoints/auth/me";
 import { ClientCreate } from "./endpoints/clients/clientCreate";
 import { ClientList } from "./endpoints/clients/clientList";
 import { ClientUpdate } from "./endpoints/clients/clientUpdate";
+import { DashboardMetrics } from "./endpoints/dashboard/dashboardMetrics";
 import { DashboardSummary } from "./endpoints/dashboard/dashboardSummary";
 import { ProductCreate } from "./endpoints/products/productCreate";
 import { ProductList } from "./endpoints/products/productList";
@@ -126,6 +127,7 @@ openapi.post("/api/users", UserCreate);
 openapi.patch("/api/users/:id", UserUpdate);
 
 openapi.get("/api/dashboard", DashboardSummary);
+openapi.get("/api/dashboard/metrics", DashboardMetrics);
 
 openapi.get("/api/clients", ClientList);
 openapi.post("/api/clients", ClientCreate);

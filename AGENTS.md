@@ -21,6 +21,8 @@ Before considering any change in `src/` done, run `npm run typecheck`, `npm run 
 
 - `src/endpoints/**` — one file per endpoint, each a chanfana `OpenAPIRoute` class (Zod schema + `handle()`). This is how the Swagger UI at `/api/docs` is generated automatically (`/` serves the SPA from `client/`).
 - `client/` — standalone SPA (Vite + React + TypeScript + Tailwind + TanStack Query) with its own `package.json`. It builds to `client/dist/` and the Worker serves it through the `assets` binding in `wrangler.jsonc`. `cd client && npm run dev` runs it locally (port 5173, proxies `/api/*` to `wrangler dev` on 8787).
+  - UI conventions: semantic Tailwind tokens from `client/src/styles/index.css` (`bg-card`, `text-muted-foreground`, `bg-primary-soft`, `--tone-*`), never raw gray/blue palette classes. Shared pieces in `components/` (Radix tooltip/dialog, `Table`, `DisabledAction`, `CommandPalette` with Cmd/Ctrl+K and `g`+key shortcuts). Pages are lazy-loaded in `App.tsx`. List filters live in URL params (`useListParams`); search is server-side (`q`, plus `sort`/`dir` on tenders).
+  - Login: the one-click button is ONLY for the read-only demo account (`demo@leivadev.com`). Admin/writer credentials must never appear in `client/`.
 - `src/domain/tenders/` — the only layer that knows the tender business rules: `state-machine.ts` (transitions), `rules.ts` (budget, mandatory proposal), `payments.ts` (balance, atomic payment).
 - `src/services/` — external integrations: `storage.ts` (R2), `email.ts` (Resend), `auth.ts` (Supabase Admin API).
 - `src/jobs/tenders.ts` — expiry/reminder logic, invoked from `scheduled()` in `src/index.ts`.
@@ -47,9 +49,13 @@ STOP. Your knowledge of Cloudflare Workers APIs and limits may be out of date. C
 
 This project **does not use** Durable Objects, Queues, Vectorize or Workers AI — do not add them unless the README justifies it.
 
+## Demo data
+
+`scripts/seed-demo.mjs` seeds ~48 realistic tenders (idempotent, never deletes; `--fresh` wipes business data and refuses non-local hosts). Always pass `DATABASE_URL` inline: the one in `.env` points to PRODUCTION. Seeding production needs the user's explicit OK.
+
 ## Testing status
 
-`tests/api.test.ts`, `tests/cron.test.ts`, `tests/english.test.ts`, `tests/inactive-products.test.ts`, `tests/pagination.test.ts` and `tests/uniqueness.test.ts` — 123 cases with `@cloudflare/vitest-pool-workers` (runs inside the real Workers runtime, against the real bindings from `wrangler.jsonc` and the local Supabase). They cover auth, roles, CRUD (including editing clients/products/users/tenders via `PATCH`), budget, the 10 invalid + 4 valid state-machine transitions, product locking in the 4 terminal statuses, invoicing, payments (partial/overpayment/full), cron (expiry + reminder + idempotency), dashboard, audit, uniqueness (product names, user emails, one line per product in a tender), product deactivation (admin toggle, 422 on adding an inactive product, existing lines kept) and pagination (envelope, limits, order, 10,000-tender latency). Shared helpers live in `tests/helpers.ts`. If you add new logic, add its case there — do not assume that compiling = working.
+`tests/api.test.ts`, `tests/cron.test.ts`, `tests/dashboard.test.ts`, `tests/english.test.ts`, `tests/inactive-products.test.ts`, `tests/pagination.test.ts`, `tests/search.test.ts` and `tests/uniqueness.test.ts` — 137 cases with `@cloudflare/vitest-pool-workers` (runs inside the real Workers runtime, against the real bindings from `wrangler.jsonc` and the local Supabase). They cover auth, roles, CRUD (including editing clients/products/users/tenders via `PATCH`), budget, the 10 invalid + 4 valid state-machine transitions, product locking in the 4 terminal statuses, invoicing, payments (partial/overpayment/full), cron (expiry + reminder + idempotency), dashboard (summary + metrics), audit, uniqueness (product names, user emails, one line per product in a tender), product deactivation (admin toggle, 422 on adding an inactive product, existing lines kept) pagination (envelope, limits, order, 10,000-tender latency) and list search/sort (`q` on tenders/clients/products, `sort`/`dir` on tenders). Shared helpers live in `tests/helpers.ts`. If you add new logic, add its case there — do not assume that compiling = working.
 
 The frontend (`client/`) has no automated tests — it is verified manually in the browser.
 

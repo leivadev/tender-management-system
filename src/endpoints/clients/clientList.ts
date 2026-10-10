@@ -2,14 +2,14 @@ import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
 import { getDb } from "../../db/client";
 import { clients } from "../../db/schema";
-import { pageSchema, paginate, paginationQuery } from "../../lib/pagination";
+import { pageSchema, paginate, paginationQuery, searchFilter, searchQuery } from "../../lib/pagination";
 import type { AppContext } from "../../types";
 
 export class ClientList extends OpenAPIRoute {
 	schema = {
 		tags: ["Clients"],
-		summary: "List clients",
-		request: { query: paginationQuery },
+		summary: "List clients (optional `q` matches name, company or email)",
+		request: { query: paginationQuery.extend(searchQuery.shape) },
 		responses: {
 			"200": {
 				description: "Returns a page of clients, newest first",
@@ -21,6 +21,7 @@ export class ClientList extends OpenAPIRoute {
 	async handle(c: AppContext) {
 		const data = await this.getValidatedData<typeof this.schema>();
 		const db = getDb(c.env);
-		return c.json(await paginate(db, clients, data.query));
+		const where = searchFilter(data.query.q, [clients.name, clients.companyName, clients.email]);
+		return c.json(await paginate(db, clients, data.query, where));
 	}
 }

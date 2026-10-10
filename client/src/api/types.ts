@@ -103,6 +103,29 @@ export interface DashboardSummary {
 	}>;
 }
 
+export interface DashboardMetrics {
+	success: true;
+	kpis: {
+		openPipeline: { value: number; count: number };
+		wonThisMonth: { value: number; previousValue: number };
+		outstanding: { value: number; count: number };
+		overdue: { count: number; value: number };
+	};
+	/** Last 6 months, oldest first; `month` is "YYYY-MM" (UTC). */
+	monthly: Array<{ month: string; won: number; collected: number }>;
+	pipeline: Array<{ status: TenderStatus; count: number; value: number }>;
+	activity: Array<{
+		id: string;
+		kind: "status" | "payment";
+		tenderId: string;
+		title: string;
+		fromStatus: TenderStatus | null;
+		toStatus: TenderStatus | null;
+		amount: number | null;
+		at: string;
+	}>;
+}
+
 // --- tenders ---
 
 export interface Tender {

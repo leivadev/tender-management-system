@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Button } from "../components/Button";
+import { Button, buttonClasses } from "../components/Button";
+import { Card } from "../components/Card";
 import { Field } from "../components/Field";
+import { PageHeader } from "../components/PageHeader";
 import { useAllClients } from "../hooks/useClients";
 import { useCreateTender } from "../hooks/useTenders";
 import { fieldClass, inputClass } from "../lib/formStyles";
@@ -50,92 +52,107 @@ export function TenderCreatePage() {
 	}
 
 	return (
-		<form
-			onSubmit={handleSubmit}
-			className="max-w-lg space-y-4 rounded-lg border border-gray-200 bg-white p-6"
-		>
-			<h1 className="text-lg font-semibold text-gray-900">New tender</h1>
+		<>
+			<PageHeader
+				title="New tender"
+				description="Start with the basics. You can add products and the proposal afterwards."
+				crumbs={[{ label: "Tenders", to: "/tenders" }, { label: "New tender" }]}
+			/>
 
-			{!clientsQuery.isLoading && !hasClients && (
-				<p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
-					There are no clients yet.{" "}
-					<Link to="/clients" className="font-medium underline">
-						Create one first
-					</Link>
-					.
-				</p>
-			)}
+			<Card className="max-w-2xl">
+				<form onSubmit={handleSubmit} className="space-y-3 p-5">
+					{!clientsQuery.isLoading && !hasClients && (
+						<p className="mb-3 rounded-ctl bg-[color:var(--tone-warning-bg)] px-3 py-2 text-[13px] text-[color:var(--tone-warning-fg)]">
+							There are no clients yet.{" "}
+							<Link to="/clients" className="font-medium underline">
+								Create one first
+							</Link>
+							.
+						</p>
+					)}
 
-			<Field label="Client" htmlFor="client">
-				<select
-					id="client"
-					required
-					value={clientId}
-					onChange={(e) => setClientId(e.target.value)}
-					className={inputClass}
-				>
-					<option value="" disabled>
-						Select a client
-					</option>
-					{(clientsQuery.data ?? []).map((client) => (
-						<option key={client.id} value={client.id}>
-							{client.name}
-						</option>
-					))}
-				</select>
-			</Field>
+					<div className="grid gap-x-4 sm:grid-cols-2">
+						<Field label="Client" htmlFor="client">
+							<select
+								id="client"
+								required
+								value={clientId}
+								onChange={(e) => setClientId(e.target.value)}
+								className={inputClass}
+							>
+								<option value="" disabled>
+									Select a client
+								</option>
+								{(clientsQuery.data ?? []).map((client) => (
+									<option key={client.id} value={client.id}>
+										{client.name}
+									</option>
+								))}
+							</select>
+						</Field>
 
-			<Field label="Title" htmlFor="title">
-				<input
-					id="title"
-					required
-					minLength={3}
-					value={title}
-					onChange={(e) => setTitle(e.target.value)}
-					className={inputClass}
-				/>
-			</Field>
+						<Field label="Title" htmlFor="title">
+							<input
+								id="title"
+								required
+								minLength={3}
+								value={title}
+								onChange={(e) => setTitle(e.target.value)}
+								className={inputClass}
+							/>
+						</Field>
+					</div>
 
-			<Field label="Description" htmlFor="description">
-				<textarea
-					id="description"
-					value={description}
-					onChange={(e) => setDescription(e.target.value)}
-					className={inputClass}
-				/>
-			</Field>
+					<Field label="Description" htmlFor="description" hint="Optional">
+						<textarea
+							id="description"
+							rows={3}
+							value={description}
+							onChange={(e) => setDescription(e.target.value)}
+							className={`${inputClass} h-auto py-1.5`}
+						/>
+					</Field>
 
-			<Field label="Maximum budget" htmlFor="maxBudget">
-				<input
-					id="maxBudget"
-					type="number"
-					min="0.01"
-					step="0.01"
-					required
-					value={maxBudget}
-					onChange={(e) => setMaxBudget(e.target.value)}
-					className={inputClass}
-				/>
-			</Field>
+					<div className="grid gap-x-4 sm:grid-cols-2">
+						<Field label="Maximum budget" htmlFor="maxBudget" hint="USD, the cap for all product lines">
+							<input
+								id="maxBudget"
+								type="number"
+								min="0.01"
+								step="0.01"
+								required
+								value={maxBudget}
+								onChange={(e) => setMaxBudget(e.target.value)}
+								className={inputClass}
+							/>
+						</Field>
 
-			<Field label="Deadline" htmlFor="deadline" error={deadlineError ?? undefined}>
-				<input
-					id="deadline"
-					type="datetime-local"
-					min={minDeadline}
-					required
-					value={deadline}
-					onChange={(e) => {
-						setDeadline(e.target.value);
-						setDeadlineError(null);
-					}}
-					className={fieldClass(Boolean(deadlineError))}
-				/>
-			</Field>
+						<Field label="Deadline" htmlFor="deadline" error={deadlineError ?? undefined}>
+							<input
+								id="deadline"
+								type="datetime-local"
+								min={minDeadline}
+								required
+								value={deadline}
+								onChange={(e) => {
+									setDeadline(e.target.value);
+									setDeadlineError(null);
+								}}
+								className={fieldClass(Boolean(deadlineError))}
+							/>
+						</Field>
+					</div>
 
-			<Button type="submit" loading={createTender.isPending} disabled={!hasClients}>
-				{createTender.isPending ? "Creating…" : "Create tender"}
-			</Button>
-		</form>
+					<div className="flex justify-end gap-2 border-t border-border pt-4">
+						<Link to="/tenders" className={buttonClasses("secondary")}>
+							Cancel
+						</Link>
+						<Button type="submit" loading={createTender.isPending} disabled={!hasClients}>
+							{createTender.isPending ? "Creating…" : "Create tender"}
+						</Button>
+					</div>
+				</form>
+			</Card>
+		</>
 	);
 }

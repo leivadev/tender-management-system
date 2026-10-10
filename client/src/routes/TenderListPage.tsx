@@ -1,115 +1,197 @@
+import { FileText, Plus, SearchX } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
+import type { TenderSort } from "../api/tenders";
 import { TENDER_STATUSES, type TenderStatus } from "../api/types";
+import { buttonClasses } from "../components/Button";
+import { DisabledAction } from "../components/DisabledAction";
+import { EmptyState } from "../components/EmptyState";
 import { ErrorMessage } from "../components/ErrorMessage";
+import { PageHeader } from "../components/PageHeader";
 import { Pagination } from "../components/Pagination";
-import { PageLoader } from "../components/Spinner";
+import { SearchInput } from "../components/SearchInput";
+import { TableSkeleton } from "../components/Skeleton";
 import { StatusBadge } from "../components/StatusBadge";
+import { SortTH, Table, TBody, TD, TH, THead, TR } from "../components/Table";
 import { useTenders } from "../hooks/useTenders";
 import { useAuth } from "../lib/AuthContext";
-import { formatCurrency, formatDate } from "../lib/format";
+import { cn } from "../lib/cn";
+import { formatCurrency, formatShortDate } from "../lib/format";
 import { STATUS_LABELS } from "../lib/statusLabels";
+
+const SORTS: TenderSort[] = ["created", "deadline", "budget", "title"];
 
 function isTenderStatus(value: string | null): value is TenderStatus {
 	return TENDER_STATUSES.includes(value as TenderStatus);
 }
 
+function isSort(value: string | null): value is TenderSort {
+	return SORTS.includes(value as TenderSort);
+}
+
 export function TenderListPage() {
 	const { canWrite } = useAuth();
 	const [searchParams, setSearchParams] = useSearchParams();
+
 	const statusParam = searchParams.get("status");
 	const status = isTenderStatus(statusParam) ? statusParam : undefined;
-
+	const q = searchParams.get("q") ?? "";
+	const sortParam = searchParams.get("sort");
+	const sort = isSort(sortParam) ? sortParam : "created";
+	const dir = searchParams.get("dir") === "asc" ? "asc" : "desc";
 	const page = Math.max(1, Number.parseInt(searchParams.get("page") ?? "", 10) || 1);
 
-	function setStatus(next: TenderStatus | undefined) {
-		setSearchParams(next ? { status: next } : {});
+	/** Rewrites the query string; any filter change goes back to page 1 unless `page` is given. */
+	function update(next: {
+		status?: TenderStatus;
+		q?: string;
+		sort?: TenderSort;
+		dir?: "asc" | "desc";
+		page?: number;
+	}) {
+		const merged = { status, q, sort, dir, page: 1, ...next };
+		const params = new URLSearchParams();
+		if (merged.status) params.set("status", merged.status);
+		if (merged.q) params.set("q", merged.q);
+		if (merged.sort !== "created" || merged.dir !== "desc") {
+			params.set("sort", merged.sort);
+			params.set("dir", merged.dir);
+		}
+		if (merged.page > 1) params.set("page", String(merged.page));
+		setSearchParams(params);
 	}
 
-	function setPage(next: number) {
-		setSearchParams({ ...(status ? { status } : {}), page: String(next) });
+	function toggleSort(column: TenderSort) {
+		if (sort !== column) update({ sort: column, dir: column === "title" ? "asc" : "desc" });
+		else update({ dir: dir === "asc" ? "desc" : "asc" });
 	}
 
-	const tendersQuery = useTenders(page, status);
+	const sortDirection = (column: TenderSort) => (sort === column ? dir : undefined);
+
+	const tendersQuery = useTenders(page, { status, q: q || undefined, sort, dir });
+	const filtered = Boolean(status || q);
 
 	return (
-		<div className="space-y-4">
-			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex flex-wrap gap-2">
-					<button
-						type="button"
-						onClick={() => setStatus(undefined)}
-						className={`rounded-full px-3 py-1 text-sm transition-colors ${
-							status === undefined ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-						}`}
-					>
-						All
-					</button>
-					{TENDER_STATUSES.map((s) => (
-						<button
-							key={s}
-							type="button"
-							onClick={() => setStatus(s)}
-							className={`rounded-full px-3 py-1 text-sm transition-colors ${
-								status === s ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-							}`}
-						>
-							{STATUS_LABELS[s]}
-						</button>
-					))}
+		<>
+			<PageHeader
+				title="Tenders"
+				description="Draft, send and follow every tender through to collection."
+				actions={
+					canWrite ? (
+						<Link to="/tenders/new" className={buttonClasses()}>
+							<Plus className="size-3.5" aria-hidden="true" /> New tender
+						</Link>
+					) : (
+						<DisabledAction reason="Read-only accounts cannot create tenders">New tender</DisabledAction>
+					)
+				}
+			/>
+
+			<div className="space-y-4">
+				<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+					<fieldset className="m-0 flex min-w-0 flex-wrap gap-1.5 border-0 p-0">
+						<legend className="sr-only">Filter by status</legend>
+						{[undefined, ...TENDER_STATUSES].map((s) => (
+							<button
+								key={s ?? "all"}
+								type="button"
+								aria-pressed={status === s}
+								onClick={() => update({ status: s })}
+								className={cn(
+									"h-7 rounded-full border px-3 text-xs font-medium transition-colors",
+									status === s
+										? "border-primary bg-primary-soft text-primary"
+										: "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground",
+								)}
+							>
+								{s ? STATUS_LABELS[s] : "All"}
+							</button>
+						))}
+					</fieldset>
+					<SearchInput
+						value={q}
+						onSearch={(value) => update({ q: value })}
+						placeholder="Search by title or client"
+						className="w-full lg:w-72"
+					/>
 				</div>
-				{canWrite && (
-					<Link
-						to="/tenders/new"
-						className="inline-flex items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-					>
-						New tender
-					</Link>
-				)}
-			</div>
 
-			{tendersQuery.error && <ErrorMessage error={tendersQuery.error} />}
+				{tendersQuery.error && <ErrorMessage error={tendersQuery.error} />}
 
-			{tendersQuery.isLoading ? (
-				<PageLoader />
-			) : (
-				<div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-					<table className="w-full text-sm">
-						<thead className="text-left text-xs text-gray-500">
+				{tendersQuery.isLoading ? (
+					<TableSkeleton rows={8} cols={6} />
+				) : tendersQuery.data?.total === 0 ? (
+					<EmptyState
+						icon={filtered ? SearchX : FileText}
+						title={filtered ? "No tenders match these filters" : "No tenders yet"}
+						description={
+							filtered
+								? "Try a different search or clear the status filter."
+								: "Create your first tender to start tracking it here."
+						}
+						action={
+							filtered ? (
+								<button
+									type="button"
+									onClick={() => setSearchParams({})}
+									className="text-[13px] font-medium text-primary hover:underline"
+								>
+									Clear filters
+								</button>
+							) : undefined
+						}
+					/>
+				) : (
+					<Table>
+						<THead>
 							<tr>
-								<th className="px-4 py-2">Title</th>
-								<th className="px-4 py-2">Client</th>
-								<th className="px-4 py-2">Budget</th>
-								<th className="px-4 py-2">Due</th>
-								<th className="px-4 py-2">Status</th>
+								<SortTH direction={sortDirection("title")} onSort={() => toggleSort("title")}>
+									Title
+								</SortTH>
+								<TH>Client</TH>
+								<SortTH numeric direction={sortDirection("budget")} onSort={() => toggleSort("budget")}>
+									Budget
+								</SortTH>
+								<SortTH direction={sortDirection("deadline")} onSort={() => toggleSort("deadline")}>
+									Due
+								</SortTH>
+								<TH>Status</TH>
+								<SortTH direction={sortDirection("created")} onSort={() => toggleSort("created")}>
+									Created
+								</SortTH>
 							</tr>
-						</thead>
-						<tbody>
+						</THead>
+						<TBody>
 							{(tendersQuery.data?.data ?? []).map((tender) => (
-								<tr key={tender.id} className="border-t border-gray-100 hover:bg-gray-50">
-									<td className="px-4 py-2">
-										<Link to={`/tenders/${tender.id}`} className="text-blue-600 hover:underline">
+								<TR key={tender.id}>
+									<TD>
+										<Link
+											to={`/tenders/${tender.id}`}
+											className="font-medium text-foreground hover:text-primary hover:underline"
+										>
 											{tender.title}
 										</Link>
-									</td>
-									<td className="px-4 py-2">{tender.clientName ?? "—"}</td>
-									<td className="px-4 py-2">{formatCurrency(tender.maxBudget)}</td>
-									<td className="px-4 py-2">{formatDate(tender.deadline)}</td>
-									<td className="px-4 py-2">
+									</TD>
+									<TD className="text-muted-foreground">{tender.clientName ?? "—"}</TD>
+									<TD numeric>{formatCurrency(tender.maxBudget)}</TD>
+									<TD className="whitespace-nowrap text-muted-foreground">
+										{formatShortDate(tender.deadline)}
+									</TD>
+									<TD>
 										<StatusBadge status={tender.status} />
-									</td>
-								</tr>
+									</TD>
+									<TD className="whitespace-nowrap text-muted-foreground">
+										{formatShortDate(tender.createdAt)}
+									</TD>
+								</TR>
 							))}
-						</tbody>
-					</table>
-					{tendersQuery.data?.total === 0 && (
-						<p className="px-4 py-6 text-center text-sm text-gray-500">
-							{status ? `No tenders with status "${STATUS_LABELS[status]}".` : "No tenders yet."}
-						</p>
-					)}
-				</div>
-			)}
+						</TBody>
+					</Table>
+				)}
 
-			{tendersQuery.data && <Pagination meta={tendersQuery.data} onChange={setPage} />}
-		</div>
+				{tendersQuery.data && (
+					<Pagination meta={tendersQuery.data} onChange={(next) => update({ page: next })} />
+				)}
+			</div>
+		</>
 	);
 }

@@ -1,8 +1,8 @@
 import { fetchAllPages, fetchJson, pageQuery } from "./client";
 import type { Client, CreateClientRequest, Page, UpdateClientRequest } from "./types";
 
-export function listClients(page: number) {
-	return fetchJson<Page<Client>>(`/api/clients?${pageQuery(page)}`);
+export function listClients(page: number, q?: string) {
+	return fetchJson<Page<Client>>(`/api/clients?${pageQuery(page, { q })}`);
 }
 
 export function listAllClients() {

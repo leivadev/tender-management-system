@@ -1,10 +1,7 @@
 import type { TenderStatus } from "../api/types";
-import { STATUS_COLORS, STATUS_LABELS } from "../lib/statusLabels";
+import { STATUS_LABELS, STATUS_TONES } from "../lib/statusLabels";
+import { Badge } from "./Badge";
 
 export function StatusBadge({ status }: { status: TenderStatus }) {
-	return (
-		<span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[status]}`}>
-			{STATUS_LABELS[status]}
-		</span>
-	);
+	return <Badge tone={STATUS_TONES[status]}>{STATUS_LABELS[status]}</Badge>;
 }

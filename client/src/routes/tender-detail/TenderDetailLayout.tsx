@@ -1,7 +1,13 @@
-import { Link, NavLink, Outlet, useParams } from "react-router-dom";
+import { NavLink, Outlet, useParams } from "react-router-dom";
 import { ErrorMessage } from "../../components/ErrorMessage";
-import { PageLoader } from "../../components/Spinner";
+import { PageHeader } from "../../components/PageHeader";
+import { Skeleton } from "../../components/Skeleton";
+import { StatusBadge } from "../../components/StatusBadge";
+import { useAllClients } from "../../hooks/useClients";
 import { useTender } from "../../hooks/useTenders";
+import { cn } from "../../lib/cn";
+import { formatCurrency } from "../../lib/format";
+import { TenderActions } from "./TenderActions";
 import { TenderStepper } from "./TenderStepper";
 
 const TABS = [
@@ -12,38 +18,56 @@ const TABS = [
 	{ to: "history", label: "History" },
 ];
 
+function DetailSkeleton() {
+	return (
+		<div className="space-y-6">
+			<div className="space-y-2">
+				<Skeleton className="h-4 w-40" />
+				<Skeleton className="h-7 w-96 max-w-full" />
+			</div>
+			<Skeleton className="h-24 w-full" />
+			<Skeleton className="h-64 w-full" />
+		</div>
+	);
+}
+
 export function TenderDetailLayout() {
 	const { id } = useParams<{ id: string }>();
 	const tenderQuery = useTender(id ?? "");
+	const clientsQuery = useAllClients();
 
-	if (tenderQuery.isLoading) return <PageLoader />;
+	if (tenderQuery.isLoading) return <DetailSkeleton />;
 	if (tenderQuery.error) return <ErrorMessage error={tenderQuery.error} />;
 	if (!tenderQuery.data) return null;
 
 	const tender = tenderQuery.data;
+	const clientName = clientsQuery.data?.find((c) => c.id === tender.clientId)?.name;
 
 	return (
-		<div className="space-y-6">
-			<div>
-				<Link to="/tenders" className="text-sm text-gray-500 hover:text-gray-700">
-					← Tenders
-				</Link>
-				<h1 className="mt-1 text-lg font-semibold text-gray-900">{tender.title}</h1>
-				<TenderStepper tender={tender} />
-			</div>
+		<div className="space-y-5">
+			<PageHeader
+				crumbs={[{ label: "Tenders", to: "/tenders" }, { label: tender.title }]}
+				title={tender.title}
+				badge={<StatusBadge status={tender.status} />}
+				description={[clientName, `Budget ${formatCurrency(tender.maxBudget)}`].filter(Boolean).join(" · ")}
+				actions={<TenderActions tender={tender} />}
+			/>
 
-			<div className="flex gap-4 overflow-x-auto border-b border-gray-200">
+			<TenderStepper tender={tender} />
+
+			<div className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-border">
 				{TABS.map((tab) => (
 					<NavLink
 						key={tab.to}
 						to={tab.to}
 						end={tab.end}
 						className={({ isActive }) =>
-							`shrink-0 border-b-2 px-1 pb-2 text-sm transition-colors ${
+							cn(
+								"-mb-px shrink-0 border-b-2 px-3 pb-2 text-[13px] transition-colors",
 								isActive
-									? "border-blue-600 font-medium text-blue-600"
-									: "border-transparent text-gray-600 hover:text-gray-900"
-							}`
+									? "border-primary font-medium text-foreground"
+									: "border-transparent text-muted-foreground hover:text-foreground",
+							)
 						}
 					>
 						{tab.label}

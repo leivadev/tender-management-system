@@ -2,10 +2,10 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import * as api from "../api/clients";
 import type { CreateClientRequest, UpdateClientRequest } from "../api/types";
 
-export function useClients(page: number) {
+export function useClients(page: number, q?: string) {
 	return useQuery({
-		queryKey: ["clients", "list", { page }],
-		queryFn: () => api.listClients(page),
+		queryKey: ["clients", "list", { page, q }],
+		queryFn: () => api.listClients(page, q),
 		placeholderData: keepPreviousData,
 	});
 }

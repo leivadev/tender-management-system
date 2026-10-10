@@ -1,7 +1,10 @@
+import { Wallet } from "lucide-react";
 import { useState } from "react";
 import { BudgetBar } from "../../components/BudgetBar";
 import { Button } from "../../components/Button";
+import { EmptyState } from "../../components/EmptyState";
 import { Field, FieldButtonSlot } from "../../components/Field";
+import { Table, TBody, TD, TH, THead, TR } from "../../components/Table";
 import { useCreateTenderPayment, useTenderPayments } from "../../hooks/useTenders";
 import { useAuth } from "../../lib/AuthContext";
 import { formatCurrency, formatDate } from "../../lib/format";
@@ -45,36 +48,39 @@ export function PaymentsTab() {
 		<div className="space-y-4">
 			{tender.invoiceAmount && <BudgetBar used={paid} max={invoiceAmount} label="Collected" />}
 
-			<div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-				<table className="w-full text-sm">
-					<thead className="text-left text-xs text-gray-500">
+			{paymentsQuery.data?.length === 0 ? (
+				<EmptyState
+					icon={Wallet}
+					title="No payments recorded"
+					description="Payments appear here once the tender is invoiced and collections start."
+				/>
+			) : (
+				<Table>
+					<THead>
 						<tr>
-							<th className="px-4 py-2">Amount</th>
-							<th className="px-4 py-2">Reference</th>
-							<th className="px-4 py-2">Notes</th>
-							<th className="px-4 py-2">Date</th>
+							<TH>Date</TH>
+							<TH>Reference</TH>
+							<TH>Notes</TH>
+							<TH numeric>Amount</TH>
 						</tr>
-					</thead>
-					<tbody>
+					</THead>
+					<TBody>
 						{(paymentsQuery.data ?? []).map((payment) => (
-							<tr key={payment.id} className="border-t border-gray-100 hover:bg-gray-50">
-								<td className="px-4 py-2">{formatCurrency(payment.amount)}</td>
-								<td className="px-4 py-2">{payment.reference || "—"}</td>
-								<td className="px-4 py-2">{payment.notes || "—"}</td>
-								<td className="px-4 py-2">{formatDate(payment.paidAt)}</td>
-							</tr>
+							<TR key={payment.id}>
+								<TD className="text-muted-foreground">{formatDate(payment.paidAt)}</TD>
+								<TD>{payment.reference || "—"}</TD>
+								<TD className="text-muted-foreground">{payment.notes || "—"}</TD>
+								<TD numeric>{formatCurrency(payment.amount)}</TD>
+							</TR>
 						))}
-					</tbody>
-				</table>
-				{paymentsQuery.data?.length === 0 && (
-					<p className="px-4 py-6 text-center text-sm text-gray-500">No payments recorded.</p>
-				)}
-			</div>
+					</TBody>
+				</Table>
+			)}
 
 			{canPay ? (
 				<form
 					onSubmit={handleSubmit}
-					className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4"
+					className="flex flex-wrap items-end gap-3 rounded-card border border-border bg-card p-4 shadow-card"
 				>
 					<Field label={`Amount (balance: ${formatCurrency(pendingBalance)})`} htmlFor="amount">
 						<input
@@ -112,7 +118,7 @@ export function PaymentsTab() {
 					</FieldButtonSlot>
 					{willComplete && (
 						<FieldButtonSlot>
-							<p className="text-xs text-green-600">
+							<p className="text-xs text-[color:var(--tone-positive-fg)]">
 								This payment settles the balance — the tender will move to Collected.
 							</p>
 						</FieldButtonSlot>
@@ -120,7 +126,7 @@ export function PaymentsTab() {
 				</form>
 			) : (
 				isAdmin && (
-					<p className="text-sm text-gray-400">
+					<p className="text-[13px] text-muted-foreground">
 						Payments can only be recorded while the tender is for collection.
 					</p>
 				)

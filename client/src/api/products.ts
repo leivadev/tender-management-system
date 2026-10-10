@@ -1,8 +1,8 @@
 import { fetchAllPages, fetchJson, pageQuery } from "./client";
 import type { CreateProductRequest, Page, Product, UpdateProductRequest } from "./types";
 
-export function listProducts(page: number) {
-	return fetchJson<Page<Product>>(`/api/products?${pageQuery(page)}`);
+export function listProducts(page: number, q?: string) {
+	return fetchJson<Page<Product>>(`/api/products?${pageQuery(page, { q })}`);
 }
 
 export function listAllProducts() {

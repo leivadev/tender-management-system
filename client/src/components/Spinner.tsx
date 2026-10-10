@@ -10,7 +10,7 @@ export function Spinner({ size = "sm" }: { size?: "sm" | "md" }) {
 
 export function PageLoader({ label = "Loading…" }: { label?: string }) {
 	return (
-		<div className="flex items-center gap-2 py-10 text-sm text-gray-500">
+		<div className="flex items-center gap-2 py-10 text-sm text-muted-foreground">
 			<Spinner />
 			<span>{label}</span>
 		</div>

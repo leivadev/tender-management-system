@@ -5,14 +5,13 @@ import type {
 	CreatePaymentRequest,
 	CreateTenderRequest,
 	InvoiceTenderRequest,
-	TenderStatus,
 	UpdateTenderRequest,
 } from "../api/types";
 
-export function useTenders(page: number, status?: TenderStatus) {
+export function useTenders(page: number, params: api.TenderListParams = {}) {
 	return useQuery({
-		queryKey: ["tenders", "list", { page, status }],
-		queryFn: () => api.listTenders(page, status),
+		queryKey: ["tenders", "list", { page, ...params }],
+		queryFn: () => api.listTenders(page, params),
 		placeholderData: keepPreviousData,
 		refetchInterval: 60_000,
 	});
