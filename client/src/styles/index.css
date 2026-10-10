@@ -1,33 +1,8 @@
 @import "tailwindcss";
 
 /*
- * Design tokens ("Fintech Navy"). Semantic tokens below are the API for new code.
- * The gray/blue palette overrides re-skin screens still written with raw Tailwind
- * colors; remove them once every page uses the semantic tokens.
+ * Design tokens ("Fintech Navy"). Use the semantic tokens below, not raw palette colors.
  */
-@theme {
-	--color-gray-50: #f6f9fc;
-	--color-gray-100: #eef3f8;
-	--color-gray-200: #e3e8ee;
-	--color-gray-300: #cdd5df;
-	--color-gray-400: #8795a8;
-	--color-gray-500: #5b6b82;
-	--color-gray-600: #425466;
-	--color-gray-700: #2d3f55;
-	--color-gray-800: #18304a;
-	--color-gray-900: #061b31;
-	--color-gray-950: #03111f;
-	--color-blue-50: #f1efff;
-	--color-blue-100: #e6e2ff;
-	--color-blue-200: #d0c9ff;
-	--color-blue-300: #b4a9ff;
-	--color-blue-400: #8f7fff;
-	--color-blue-500: #6d57ff;
-	--color-blue-600: #533afd;
-	--color-blue-700: #4529e0;
-	--color-blue-800: #3a22b5;
-	--color-blue-900: #2f1d8c;
-}
 
 :root {
 	--background: #f6f9fc;
