@@ -1,6 +1,9 @@
+import { Package } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../../components/Button";
+import { EmptyState } from "../../components/EmptyState";
 import { Field, FieldButtonSlot } from "../../components/Field";
+import { Table, TBody, TD, TH, THead, TR } from "../../components/Table";
 import { useAllProducts } from "../../hooks/useProducts";
 import { useAddTenderProduct, useRemoveTenderProduct } from "../../hooks/useTenders";
 import { useAuth } from "../../lib/AuthContext";
@@ -69,26 +72,34 @@ export function ProductsTab() {
 
 	return (
 		<div className="space-y-4">
-			<div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-				<table className="w-full text-sm">
-					<thead className="text-left text-xs text-gray-500">
+			{tender.products.length === 0 ? (
+				<EmptyState
+					icon={Package}
+					title="No products yet"
+					description={editable ? "Add the first product below." : "This tender has no product lines."}
+				/>
+			) : (
+				<Table>
+					<THead>
 						<tr>
-							<th className="px-4 py-2">Product</th>
-							<th className="px-4 py-2">Quantity</th>
-							<th className="px-4 py-2">Unit price</th>
-							<th className="px-4 py-2">Subtotal</th>
-							{editable && <th className="px-4 py-2" />}
+							<TH>Product</TH>
+							<TH numeric>Quantity</TH>
+							<TH numeric>Unit price</TH>
+							<TH numeric>Subtotal</TH>
+							{editable && <TH />}
 						</tr>
-					</thead>
-					<tbody>
+					</THead>
+					<TBody>
 						{tender.products.map((line) => (
-							<tr key={line.id} className="border-t border-gray-100 hover:bg-gray-50">
-								<td className="px-4 py-2">{line.productName}</td>
-								<td className="px-4 py-2">{line.quantity}</td>
-								<td className="px-4 py-2">{formatCurrency(line.unitPrice)}</td>
-								<td className="px-4 py-2">{formatCurrency(line.subtotal)}</td>
+							<TR key={line.id}>
+								<TD className="font-medium">{line.productName}</TD>
+								<TD numeric>{line.quantity}</TD>
+								<TD numeric className="text-muted-foreground">
+									{formatCurrency(line.unitPrice)}
+								</TD>
+								<TD numeric>{formatCurrency(line.subtotal)}</TD>
 								{editable && (
-									<td className="px-4 py-2 text-right">
+									<TD className="text-right">
 										<Button
 											variant="link"
 											loading={removeProduct.isPending}
@@ -96,21 +107,23 @@ export function ProductsTab() {
 										>
 											Remove
 										</Button>
-									</td>
+									</TD>
 								)}
-							</tr>
+							</TR>
 						))}
-					</tbody>
-				</table>
-				{tender.products.length === 0 && (
-					<p className="px-4 py-6 text-center text-sm text-gray-500">No products added.</p>
-				)}
-			</div>
+						<TR className="bg-muted/50 font-semibold hover:bg-muted/50">
+							<TD colSpan={3}>Total</TD>
+							<TD numeric>{formatCurrency(usedBudget)}</TD>
+							{editable && <TD />}
+						</TR>
+					</TBody>
+				</Table>
+			)}
 
 			{editable ? (
 				<form
 					onSubmit={handleAdd}
-					className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4"
+					className="flex flex-wrap items-end gap-3 rounded-card border border-border bg-card p-4 shadow-card"
 				>
 					<Field label="Product" htmlFor="product">
 						<select
@@ -154,14 +167,14 @@ export function ProductsTab() {
 						</Button>
 					</FieldButtonSlot>
 					<FieldButtonSlot>
-						<p className="text-xs text-gray-500">
+						<p className="text-xs text-muted-foreground">
 							Remaining budget: {formatCurrency(Math.max(0, remainingBudget))}
 						</p>
 					</FieldButtonSlot>
 				</form>
 			) : (
 				canWrite && (
-					<p className="text-sm text-gray-400">
+					<p className="text-[13px] text-muted-foreground">
 						Products can only be edited while the tender is draft or active.
 					</p>
 				)

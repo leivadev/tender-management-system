@@ -1,45 +1,83 @@
+import { Check, X } from "lucide-react";
 import type { TenderDetail, TenderStatus } from "../../api/types";
+import { Card } from "../../components/Card";
+import { cn } from "../../lib/cn";
 import { STATUS_LABELS } from "../../lib/statusLabels";
 
 const HAPPY_PATH: TenderStatus[] = ["draft", "active", "finalized", "for_collection", "collected"];
 
-export function TenderStepper({ tender }: { tender: TenderDetail }) {
-	if (tender.status === "lost") {
-		return (
-			<div className="mt-3 flex items-center gap-2">
-				{HAPPY_PATH.slice(0, HAPPY_PATH.indexOf("active") + 1).map((status) => (
-					<StepDot key={status} label={STATUS_LABELS[status]} state="done" />
-				))}
-				<span className="mx-1 text-gray-300">→</span>
-				<StepDot label={STATUS_LABELS.lost} state="lost" />
-			</div>
-		);
-	}
+type StepState = "done" | "current" | "pending" | "lost";
 
-	const currentIndex = HAPPY_PATH.indexOf(tender.status);
+const shortDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
+
+function enteredAt(tender: TenderDetail, status: TenderStatus): string | null {
+	const row = tender.history.find((h) => h.toStatus === status);
+	if (row) return shortDate.format(new Date(row.changedAt));
+	return status === "draft" ? shortDate.format(new Date(tender.createdAt)) : null;
+}
+
+export function TenderStepper({ tender }: { tender: TenderDetail }) {
+	const lost = tender.status === "lost";
+	const steps: TenderStatus[] = lost ? ["draft", "active", "lost"] : HAPPY_PATH;
+	const currentIndex = steps.indexOf(tender.status);
 
 	return (
-		<div className="mt-3 flex items-center gap-2">
-			{HAPPY_PATH.map((status, i) => (
-				<div key={status} className="flex items-center gap-2">
-					<StepDot
-						label={STATUS_LABELS[status]}
-						state={i < currentIndex ? "done" : i === currentIndex ? "current" : "pending"}
-					/>
-					{i < HAPPY_PATH.length - 1 && <span className="text-gray-300">→</span>}
-				</div>
-			))}
-		</div>
+		<Card className="px-4 py-4">
+			<ol className="flex items-start">
+				{steps.map((status, i) => {
+					const state: StepState =
+						status === "lost"
+							? "lost"
+							: i < currentIndex
+								? "done"
+								: i === currentIndex
+									? "current"
+									: "pending";
+					const reached = state !== "pending";
+					return (
+						<li key={status} className="flex flex-1 items-start last:flex-none">
+							<div className="flex min-w-16 flex-col items-center gap-1.5">
+								<StepDot state={state} index={i + 1} />
+								<p className={cn("text-xs", state === "pending" ? "text-muted-foreground" : "font-semibold")}>
+									{STATUS_LABELS[status]}
+								</p>
+								<p className="font-mono text-[11px] text-muted-foreground">
+									{reached ? (enteredAt(tender, status) ?? "—") : "—"}
+								</p>
+							</div>
+							{i < steps.length - 1 && (
+								<div className={cn("mt-3 h-px flex-1", i < currentIndex ? "bg-primary" : "bg-border")} />
+							)}
+						</li>
+					);
+				})}
+			</ol>
+		</Card>
 	);
 }
 
-function StepDot({ label, state }: { label: string; state: "done" | "current" | "pending" | "lost" }) {
-	const styles = {
-		done: "bg-green-100 text-green-700",
-		current: "bg-blue-600 text-white",
-		pending: "bg-gray-100 text-gray-500",
-		lost: "bg-red-100 text-red-700",
-	}[state];
-
-	return <span className={`rounded-full px-3 py-1 text-xs font-medium ${styles}`}>{label}</span>;
+function StepDot({ state, index }: { state: StepState; index: number }) {
+	const styles: Record<StepState, string> = {
+		done: "border-primary bg-primary text-primary-foreground",
+		current: "border-primary bg-primary-soft text-primary ring-4 ring-primary/15",
+		pending: "border-border bg-card text-muted-foreground",
+		lost: "border-destructive bg-destructive text-white",
+	};
+	return (
+		<div
+			className={cn(
+				"grid size-6 place-items-center rounded-full border text-xs font-semibold",
+				styles[state],
+			)}
+			aria-current={state === "current" ? "step" : undefined}
+		>
+			{state === "done" ? (
+				<Check className="size-3.5" />
+			) : state === "lost" ? (
+				<X className="size-3.5" />
+			) : (
+				index
+			)}
+		</div>
+	);
 }

@@ -1,14 +1,9 @@
 import { useState } from "react";
 import { BudgetBar } from "../../components/BudgetBar";
 import { Button } from "../../components/Button";
+import { Card, CardHeader } from "../../components/Card";
 import { Field, FieldButtonSlot } from "../../components/Field";
-import {
-	useFinalizeTender,
-	useInvoiceTender,
-	useLoseTender,
-	useSendTender,
-	useUpdateTender,
-} from "../../hooks/useTenders";
+import { useInvoiceTender, useUpdateTender } from "../../hooks/useTenders";
 import { useAuth } from "../../lib/AuthContext";
 import { confirmAction } from "../../lib/confirm";
 import { formatCurrency, formatDate } from "../../lib/format";
@@ -36,10 +31,7 @@ function EditTenderForm({ onDone }: { onDone: () => void }) {
 	}
 
 	return (
-		<form
-			onSubmit={handleSubmit}
-			className="space-y-3 rounded-lg border border-gray-200 bg-white p-4 text-sm"
-		>
+		<form onSubmit={handleSubmit} className="space-y-3 p-4">
 			<Field label="Title" htmlFor="editTitle">
 				<input
 					id="editTitle"
@@ -72,135 +64,109 @@ function EditTenderForm({ onDone }: { onDone: () => void }) {
 
 export function OverviewTab() {
 	const { tender } = useTenderContext();
-	const sendTender = useSendTender(tender.id);
-	const finalizeTender = useFinalizeTender(tender.id);
-	const loseTender = useLoseTender(tender.id);
 	const invoiceTender = useInvoiceTender(tender.id);
 	const [invoiceAmount, setInvoiceAmount] = useState("");
 	const [isEditing, setIsEditing] = useState(false);
 
 	const usedBudget = tender.products.reduce((sum, p) => sum + Number(p.subtotal), 0);
 	const { canWrite, isAdmin } = useAuth();
-	const canSend = canWrite && tender.status === "draft";
-	const canFinalize = canWrite && tender.status === "active";
-	const canLose = isAdmin && tender.status === "active";
 	const canInvoice = isAdmin && tender.status === "finalized";
+	const amountToInvoice = invoiceAmount || (usedBudget > 0 ? usedBudget.toFixed(2) : "");
 
-	function handleSend() {
-		sendTender.mutate(undefined, {
-			onSuccess: () => pushToast("Tender sent to the client."),
-		});
-	}
-
-	function handleFinalize() {
-		finalizeTender.mutate(undefined, {
-			onSuccess: () => pushToast("Tender finalized."),
-		});
-	}
-
-	async function handleLose() {
-		const confirmed = await confirmAction({
-			title: `Mark "${tender.title}" as lost?`,
-			description: "This cannot be undone.",
-			confirmLabel: "Mark as lost",
-			destructive: true,
-		});
-		if (!confirmed) return;
-		loseTender.mutate(undefined, {
-			onSuccess: () => pushToast("Tender marked as lost."),
-		});
-	}
-
-	function handleInvoice(e: React.SubmitEvent<HTMLFormElement>) {
+	async function handleInvoice(e: React.SubmitEvent<HTMLFormElement>) {
 		e.preventDefault();
-		invoiceTender.mutate(
-			{ invoiceAmount: Number(invoiceAmount) },
-			{ onSuccess: () => pushToast("Invoice recorded.") },
-		);
+		const amount = Number(amountToInvoice);
+		const ok = await confirmAction({
+			title: `Invoice ${formatCurrency(amount)}?`,
+			description: "The tender moves to For collection and payments can be recorded.",
+			confirmLabel: "Invoice",
+		});
+		if (!ok) return;
+		invoiceTender.mutate({ invoiceAmount: amount }, { onSuccess: () => pushToast("Invoice recorded.") });
 	}
 
 	return (
-		<div className="space-y-6">
-			{isEditing ? (
-				<EditTenderForm onDone={() => setIsEditing(false)} />
-			) : (
-				<div className="grid grid-cols-2 gap-4 rounded-lg border border-gray-200 bg-white p-4 text-sm sm:grid-cols-4">
-					<div className="sm:col-span-3">
-						<p className="text-gray-500">Description</p>
-						<p>{tender.description || "—"}</p>
-					</div>
-					<div>
-						<p className="text-gray-500">Deadline</p>
-						<p>{formatDate(tender.deadline)}</p>
-					</div>
-					<div>
-						<p className="text-gray-500">Invoiced amount</p>
-						<p>{tender.invoiceAmount ? formatCurrency(tender.invoiceAmount) : "—"}</p>
-					</div>
-					{canWrite && (
-						<div className="flex items-end sm:col-start-4 sm:row-start-1 sm:justify-self-end">
-							<Button variant="link" onClick={() => setIsEditing(true)}>
-								Edit title/description
-							</Button>
-						</div>
+		<div className="grid gap-4 lg:grid-cols-3">
+			<div className="space-y-4 lg:col-span-2">
+				<Card>
+					<CardHeader
+						title="Description"
+						action={
+							canWrite && !isEditing ? (
+								<Button variant="link" onClick={() => setIsEditing(true)}>
+									Edit
+								</Button>
+							) : undefined
+						}
+					/>
+					{isEditing ? (
+						<EditTenderForm onDone={() => setIsEditing(false)} />
+					) : (
+						<p className="px-4 py-3 text-[13px] leading-relaxed">
+							{tender.description || <span className="text-muted-foreground">No description.</span>}
+						</p>
 					)}
-				</div>
-			)}
+				</Card>
 
-			<BudgetBar used={usedBudget} max={Number(tender.maxBudget)} label="Budget used" />
+				<Card className="space-y-3 p-4">
+					<BudgetBar used={usedBudget} max={Number(tender.maxBudget)} label="Budget used" />
+					{tender.status === "for_collection" && (
+						<p className="text-[13px] text-muted-foreground">
+							Record payments in the <span className="font-medium text-foreground">Payments</span> tab.
+						</p>
+					)}
+					{(tender.status === "collected" || tender.status === "lost") && (
+						<p className="text-[13px] text-muted-foreground">This tender is in a final status.</p>
+					)}
+				</Card>
 
-			<div className="flex flex-wrap items-center gap-3">
-				{canSend && (
-					<Button
-						loading={sendTender.isPending}
-						disabled={!tender.proposalKey}
-						title={!tender.proposalKey ? "Upload the proposal before sending" : undefined}
-						onClick={handleSend}
-					>
-						Send
-					</Button>
-				)}
-				{canFinalize && (
-					<Button variant="info" loading={finalizeTender.isPending} onClick={handleFinalize}>
-						Finalize
-					</Button>
-				)}
-				{canLose && (
-					<Button variant="danger" loading={loseTender.isPending} onClick={handleLose}>
-						Mark as lost
-					</Button>
-				)}
 				{canInvoice && (
-					<form className="flex flex-wrap items-end gap-2" onSubmit={handleInvoice}>
-						<Field label="Amount to invoice" htmlFor="invoiceAmount">
-							<input
-								id="invoiceAmount"
-								type="number"
-								min="0.01"
-								step="0.01"
-								required
-								value={invoiceAmount}
-								onChange={(e) => setInvoiceAmount(e.target.value)}
-								className={inputClass}
-							/>
-						</Field>
-						<FieldButtonSlot>
-							<Button variant="warning" type="submit" loading={invoiceTender.isPending}>
-								Invoice
-							</Button>
-						</FieldButtonSlot>
-					</form>
+					<Card>
+						<CardHeader title="Invoice" />
+						<form className="flex flex-wrap items-end gap-3 p-4" onSubmit={handleInvoice}>
+							<Field
+								label="Amount to invoice"
+								htmlFor="invoiceAmount"
+								hint="Prefilled from the product total"
+							>
+								<input
+									id="invoiceAmount"
+									type="number"
+									min="0.01"
+									step="0.01"
+									required
+									value={amountToInvoice}
+									onChange={(e) => setInvoiceAmount(e.target.value)}
+									className={inputClass}
+								/>
+							</Field>
+							<FieldButtonSlot>
+								<Button variant="warning" type="submit" loading={invoiceTender.isPending}>
+									Invoice
+								</Button>
+							</FieldButtonSlot>
+						</form>
+					</Card>
 				)}
 			</div>
 
-			{tender.status === "for_collection" && (
-				<p className="text-sm text-gray-400">
-					Record payments in the <span className="font-medium">Payments</span> tab.
-				</p>
-			)}
-			{(tender.status === "collected" || tender.status === "lost") && (
-				<p className="text-sm text-gray-400">This tender is in a final status.</p>
-			)}
+			<Card className="self-start">
+				<CardHeader title="Details" />
+				<dl className="divide-y divide-border text-[13px]">
+					{[
+						["Budget", formatCurrency(tender.maxBudget)],
+						["Deadline", formatDate(tender.deadline)],
+						["Invoiced", tender.invoiceAmount ? formatCurrency(tender.invoiceAmount) : "—"],
+						["Created", formatDate(tender.createdAt)],
+						["Updated", formatDate(tender.updatedAt)],
+					].map(([label, value]) => (
+						<div key={label} className="flex items-center justify-between gap-3 px-4 py-2.5">
+							<dt className="text-muted-foreground">{label}</dt>
+							<dd className="text-right font-medium tabular-nums">{value}</dd>
+						</div>
+					))}
+				</dl>
+			</Card>
 		</div>
 	);
 }
