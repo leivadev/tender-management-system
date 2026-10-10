@@ -191,9 +191,33 @@ const STATUS_MIX = [
 	...Array(6).fill("lost"),
 ];
 const statuses = shuffle(STATUS_MIX);
-const dayOfMonth = new Date(now).getUTCDate() - 1; // finalized "this month" must land in [0, dayOfMonth] days ago
 const urgentSlots = [0.4, 1.6]; // two active tenders due within 72h (one within 24h)
-let finalizedThisMonthLeft = 3;
+
+// Tenders that reached `finalized` ("won") are spread evenly over the six calendar months the dashboard
+// charts (current one first), so the won series reads as steady growth instead of random lumps.
+const WON_PER_MONTH = [4, 9, 4, 4, 4, 3]; // index = months back; sums to 28 = 5 + 8 + 15 won tenders
+const WON_VALUE_PER_MONTH = [640_000, 620_000, 600_000, 560_000, 540_000, 500_000];
+const monthBounds = (monthsBack) => {
+	const d = new Date(now);
+	const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - monthsBack, 1);
+	const end = Math.min(now, Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - monthsBack + 1, 1));
+	return [(now - end) / DAY, (now - start) / DAY]; // days ago: [most recent, oldest]
+};
+const monthsBackOf = (daysAgo) => {
+	const t = new Date(now - daysAgo * DAY);
+	const d = new Date(now);
+	return (d.getUTCFullYear() - t.getUTCFullYear()) * 12 + d.getUTCMonth() - t.getUTCMonth();
+};
+const wonSlots = WON_PER_MONTH.flatMap((count, monthsBack) => {
+	const [lo, hi] = monthBounds(monthsBack);
+	return Array.from({ length: count }, (_, i) => lo + ((i + rand()) * (hi - lo)) / count);
+}).sort((x, y) => x - y);
+// Most recent wins are still `finalized`, then `for_collection`, the oldest are `collected`.
+const slotQueues = {
+	finalized: wonSlots.slice(0, 5),
+	for_collection: wonSlots.slice(5, 13),
+	collected: wonSlots.slice(13),
+};
 
 function buildSpec(clientIdx, titleIdx, status) {
 	const cat = catalog[clientIdx];
@@ -216,28 +240,29 @@ function buildSpec(clientIdx, titleIdx, status) {
 			break;
 		}
 		case "finalized": {
-			const thisMonth = finalizedThisMonthLeft-- > 0;
-			const finalizedAgo = thisMonth ? between(0, Math.max(dayOfMonth, 0.5)) : between(4, 20);
+			const finalizedAgo = slotQueues.finalized.shift();
 			const activeAgo = finalizedAgo + between(5, 14);
 			createdAgo = activeAgo + between(1, 4);
 			spec.history.push(["active", activeAgo], ["finalized", finalizedAgo]);
 			spec.deadline = ago(finalizedAgo - between(1, 10));
+			spec.finalizedAgo = finalizedAgo;
 			break;
 		}
 		case "for_collection": {
-			const invoicedAgo = between(3, 58);
-			const finalizedAgo = invoicedAgo + between(1, 5);
+			const finalizedAgo = Math.min(Math.max(slotQueues.for_collection.shift(), 5), 33); // little is overdue
+			const invoicedAgo = finalizedAgo - between(1, 4);
 			const activeAgo = finalizedAgo + between(5, 18);
 			createdAgo = activeAgo + between(1, 4);
 			spec.history.push(["active", activeAgo], ["finalized", finalizedAgo], ["for_collection", invoicedAgo]);
 			spec.deadline = ago(finalizedAgo - between(1, 10));
 			spec.invoicedAgo = invoicedAgo;
+			spec.finalizedAgo = finalizedAgo;
 			break;
 		}
 		case "collected": {
-			const settledAgo = between(1, 150);
-			const invoicedAgo = settledAgo + between(12, 45);
-			const finalizedAgo = invoicedAgo + between(1, 5);
+			const finalizedAgo = Math.max(slotQueues.collected.shift(), 22);
+			const invoicedAgo = finalizedAgo - between(1, 5);
+			const settledAgo = Math.max(0.5, invoicedAgo - between(10, 70));
 			const activeAgo = finalizedAgo + between(5, 18);
 			createdAgo = activeAgo + between(1, 4);
 			spec.history.push(
@@ -249,6 +274,7 @@ function buildSpec(clientIdx, titleIdx, status) {
 			spec.deadline = ago(finalizedAgo - between(1, 10));
 			spec.invoicedAgo = invoicedAgo;
 			spec.settledAgo = settledAgo;
+			spec.finalizedAgo = finalizedAgo;
 			break;
 		}
 		case "lost": {
@@ -274,6 +300,22 @@ function buildSpec(clientIdx, titleIdx, status) {
 const specs = [];
 for (let c = 0; c < clientsData.length; c++) {
 	for (let t = 0; t < 8; t++) specs.push(buildSpec(c, t, statuses[c * 8 + t]));
+}
+
+// Split each month's target value among the tenders won that month.
+const wonByMonth = new Map();
+for (const spec of specs) {
+	if (spec.finalizedAgo === undefined) continue;
+	const key = monthsBackOf(spec.finalizedAgo);
+	wonByMonth.set(key, [...(wonByMonth.get(key) ?? []), spec]);
+}
+for (const [monthsBack, group] of wonByMonth) {
+	const weights = group.map(() => between(0.6, 1.6));
+	const total = weights.reduce((a, b) => a + b, 0);
+	const target = WON_VALUE_PER_MONTH[monthsBack] ?? 500_000;
+	group.forEach((spec, i) => {
+		spec.targetValue = (target * weights[i]) / total;
+	});
 }
 
 // --- database -----------------------------------------------------------------------------
