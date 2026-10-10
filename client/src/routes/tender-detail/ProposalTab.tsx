@@ -1,8 +1,11 @@
+import { Download, FileText, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { downloadTenderProposal } from "../../api/tenders";
 import { Button } from "../../components/Button";
+import { Card, CardHeader } from "../../components/Card";
 import { useUploadTenderProposal } from "../../hooks/useTenders";
 import { useAuth } from "../../lib/AuthContext";
+import { cn } from "../../lib/cn";
 import { pushToast } from "../../lib/toast";
 import { useTenderContext } from "./context";
 
@@ -12,29 +15,31 @@ export function ProposalTab() {
 	const { tender } = useTenderContext();
 	const { canWrite } = useAuth();
 	const uploadProposal = useUploadTenderProposal(tender.id);
-	const [sizeError, setSizeError] = useState<string | null>(null);
+	const [fileError, setFileError] = useState<string | null>(null);
 	const [downloading, setDownloading] = useState(false);
+	const [dragging, setDragging] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-		const file = e.target.files?.[0];
+	function resetInput() {
+		if (fileInputRef.current) fileInputRef.current.value = "";
+	}
+
+	function upload(file: File | undefined) {
 		if (!file) return;
-		setSizeError(null);
+		setFileError(null);
 		if (file.type !== "application/pdf") {
-			setSizeError("Only PDF files are accepted.");
-			if (fileInputRef.current) fileInputRef.current.value = "";
+			setFileError("Only PDF files are accepted.");
+			resetInput();
 			return;
 		}
 		if (file.size > MAX_SIZE_BYTES) {
-			setSizeError("The file exceeds the 15MB limit.");
-			if (fileInputRef.current) fileInputRef.current.value = "";
+			setFileError("The file exceeds the 15MB limit.");
+			resetInput();
 			return;
 		}
 		uploadProposal.mutate(file, {
 			onSuccess: () => pushToast("Proposal uploaded."),
-			onSettled: () => {
-				if (fileInputRef.current) fileInputRef.current.value = "";
-			},
+			onSettled: resetInput,
 		});
 	}
 
@@ -49,40 +54,75 @@ export function ProposalTab() {
 	}
 
 	return (
-		<div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4">
-			{tender.proposalKey ? (
-				<div className="flex items-center justify-between gap-3">
-					<div className="text-sm">
-						<p className="text-gray-500">Current file</p>
-						<p className="font-medium text-gray-900">{tender.proposalFilename}</p>
+		<Card className="max-w-2xl">
+			<CardHeader title="Proposal" />
+			<div className="space-y-4 p-4">
+				{tender.proposalKey ? (
+					<div className="flex items-center gap-3 rounded-ctl border border-border p-3">
+						<div className="grid size-9 shrink-0 place-items-center rounded-ctl bg-primary-soft text-primary">
+							<FileText className="size-4" aria-hidden="true" />
+						</div>
+						<div className="min-w-0 flex-1">
+							<p className="truncate text-[13px] font-medium">{tender.proposalFilename}</p>
+							<p className="text-xs text-muted-foreground">PDF</p>
+						</div>
+						<Button variant="secondary" loading={downloading} onClick={handleDownload}>
+							<Download className="size-3.5" aria-hidden="true" />
+							{downloading ? "Downloading…" : "Download"}
+						</Button>
 					</div>
-					<Button variant="secondary" loading={downloading} onClick={handleDownload}>
-						{downloading ? "Downloading…" : "Download"}
-					</Button>
-				</div>
-			) : (
-				<p className="text-sm text-gray-500">No proposal has been uploaded yet.</p>
-			)}
+				) : (
+					<p className="text-[13px] text-muted-foreground">No proposal has been uploaded yet.</p>
+				)}
 
-			{canWrite && (
-				<div>
-					<label htmlFor="proposal-file" className="mb-1 block text-sm text-gray-600">
-						{tender.proposalKey ? "Replace file (PDF, max 15MB)" : "Upload proposal (PDF, max 15MB)"}
+				{canWrite && (
+					<label
+						htmlFor="proposal-file"
+						onDragOver={(e) => {
+							e.preventDefault();
+							setDragging(true);
+						}}
+						onDragLeave={() => setDragging(false)}
+						onDrop={(e) => {
+							e.preventDefault();
+							setDragging(false);
+							upload(e.dataTransfer.files[0]);
+						}}
+						className={cn(
+							"flex cursor-pointer flex-col items-center gap-1.5 rounded-card border border-dashed px-4 py-8 text-center transition-colors",
+							dragging ? "border-primary bg-primary-soft" : "border-border hover:bg-muted/50",
+							uploadProposal.isPending && "pointer-events-none opacity-60",
+						)}
+					>
+						<Upload className="size-5 text-muted-foreground" aria-hidden="true" />
+						<span className="text-[13px] font-medium">
+							{uploadProposal.isPending
+								? "Uploading…"
+								: tender.proposalKey
+									? "Replace the file"
+									: "Upload the proposal"}
+						</span>
+						<span className="text-xs text-muted-foreground">
+							Drop a PDF here or click to browse. Max 15MB.
+						</span>
+						<input
+							id="proposal-file"
+							ref={fileInputRef}
+							type="file"
+							accept="application/pdf"
+							onChange={(e) => upload(e.target.files?.[0])}
+							disabled={uploadProposal.isPending}
+							className="sr-only"
+						/>
 					</label>
-					<input
-						id="proposal-file"
-						ref={fileInputRef}
-						type="file"
-						accept="application/pdf"
-						onChange={handleFileChange}
-						disabled={uploadProposal.isPending}
-						className="block w-full text-sm text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
-					/>
-					{uploadProposal.isPending && <p className="mt-1 text-xs text-gray-400">Uploading…</p>}
-				</div>
-			)}
+				)}
 
-			{sizeError && <p className="text-sm text-red-600">{sizeError}</p>}
-		</div>
+				{fileError && (
+					<p role="alert" className="text-[13px] text-destructive">
+						{fileError}
+					</p>
+				)}
+			</div>
+		</Card>
 	);
 }
