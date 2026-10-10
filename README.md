@@ -20,7 +20,7 @@ Full-stack app to draft, send, track, resolve and collect on commercial tenders 
 | **Email** | `demo@leivadev.com` |
 | **Password** | `Demo-Tenders-2026` |
 
-The demo account has the read-only `viewer` role, so you can browse every screen but not change data.
+The login page has an "Enter the live demo" button that signs in with this account in one click. It has the read-only `viewer` role, so you can browse every screen but not change data: write actions are disabled with a tooltip explaining why. Press `⌘K` / `Ctrl+K` anywhere to search tenders and clients or jump to a page (`g` then `d`/`t`/`c`/`p` also navigates).
 
 ![Dashboard](docs/screenshots/dashboard.png)
 
@@ -28,6 +28,7 @@ The demo account has the read-only `viewer` role, so you can browse every screen
 |---|---|
 | ![Tenders list](docs/screenshots/tenders-list.png) | ![Products](docs/screenshots/tender-products.png) |
 | ![Payments](docs/screenshots/tender-payments.png) | ![History](docs/screenshots/tender-history.png) |
+| ![Command palette](docs/screenshots/command-palette.png) | ![Login](docs/screenshots/login.png) |
 
 ## Design decisions
 
@@ -54,8 +55,8 @@ src/
 └── lib/                  # HTTP errors, dates
 
 client/                   # SPA (Vite + React + TS), served by the Worker
-tests/                    # E2E: api.test.ts, cron.test.ts
-scripts/                  # create-admin.mjs, seed-mock.mjs
+tests/                    # E2E suite (api, cron, dashboard, search, pagination, ...)
+scripts/                  # create-admin.mjs, seed-demo.mjs, seed-mock.mjs
 ```
 
 ## Getting started
@@ -107,7 +108,16 @@ node scripts/create-admin.mjs admin@example.com "YourStrongPassword123!"
 node scripts/create-admin.mjs demo@example.com "DemoPassword123!" viewer
 ```
 
-For demo data, `node scripts/seed-mock.mjs --confirm` wipes clients, products, tenders and payments and repopulates them with sample records (users are untouched).
+For demo data, `scripts/seed-demo.mjs` creates 48 tenders spread over the last six months (every status, history rows, partial and full payments), so the dashboard charts and activity feed have something to show. `DATABASE_URL` must be passed explicitly; do not reuse the production one from `.env` without meaning to.
+
+```bash
+# adds whatever is missing, never deletes; running it twice changes nothing
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres node scripts/seed-demo.mjs --confirm
+# local only: wipe all business data first (refused on non-local hosts)
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres node scripts/seed-demo.mjs --confirm --fresh
+```
+
+The older `node scripts/seed-mock.mjs --confirm` wipes clients, products, tenders and payments and repopulates them with a smaller sample (users are untouched).
 
 ### 6. Cloudflare: R2 and Hyperdrive
 
