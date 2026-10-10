@@ -31,7 +31,11 @@ export function LoginPage() {
 			await login(emailValue, passwordValue);
 			navigate("/", { replace: true });
 		} catch (err) {
-			setError(err instanceof ApiError ? mapErrorToMessage(err) : "Could not log in.");
+			if (err instanceof ApiError) {
+				setError(err.code === "UNAUTHENTICATED" ? "Invalid email or password." : mapErrorToMessage(err));
+			} else {
+				setError("Could not log in.");
+			}
 		} finally {
 			setSubmitting(false);
 		}
