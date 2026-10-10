@@ -1,10 +1,19 @@
+import { Plus, SearchX, Users } from "lucide-react";
 import { useState } from "react";
 import type { Client } from "../api/types";
 import { Button } from "../components/Button";
+import { Card, CardHeader } from "../components/Card";
+import { DisabledAction } from "../components/DisabledAction";
+import { EmptyState } from "../components/EmptyState";
+import { ErrorMessage } from "../components/ErrorMessage";
 import { Field, FieldButtonSlot } from "../components/Field";
+import { PageHeader } from "../components/PageHeader";
 import { Pagination } from "../components/Pagination";
-import { PageLoader } from "../components/Spinner";
+import { SearchInput } from "../components/SearchInput";
+import { TableSkeleton } from "../components/Skeleton";
+import { Table, TBody, TD, TH, THead, TR } from "../components/Table";
 import { useClients, useCreateClient, useUpdateClient } from "../hooks/useClients";
+import { useListParams } from "../hooks/useListParams";
 import { useAuth } from "../lib/AuthContext";
 import { inputClass } from "../lib/formStyles";
 import { pushToast } from "../lib/toast";
@@ -12,18 +21,18 @@ import { pushToast } from "../lib/toast";
 function ClientRow({ client, onEdit }: { client: Client; onEdit: () => void }) {
 	const { canWrite } = useAuth();
 	return (
-		<tr className="border-t border-gray-100 hover:bg-gray-50">
-			<td className="px-4 py-2">{client.name}</td>
-			<td className="px-4 py-2">{client.companyName}</td>
-			<td className="px-4 py-2">{client.email}</td>
-			<td className="px-4 py-2 text-right">
+		<TR>
+			<TD className="font-medium">{client.name}</TD>
+			<TD>{client.companyName}</TD>
+			<TD className="text-muted-foreground">{client.email}</TD>
+			<TD className="text-right">
 				{canWrite && (
-					<Button variant="link" onClick={onEdit}>
+					<Button variant="ghost" onClick={onEdit}>
 						Edit
 					</Button>
 				)}
-			</td>
-		</tr>
+			</TD>
+		</TR>
 	);
 }
 
@@ -46,35 +55,38 @@ function ClientEditRow({ client, onDone }: { client: Client; onDone: () => void 
 	}
 
 	return (
-		<tr className="border-t border-gray-100 bg-blue-50/40">
-			<td className="px-4 py-2">
+		<TR className="h-14 bg-primary-soft/40">
+			<TD>
 				<input
+					aria-label="Name"
 					value={name}
 					onChange={(e) => setName(e.target.value)}
-					className={`${inputClass} py-1`}
+					className={inputClass}
 					minLength={2}
 					required
 				/>
-			</td>
-			<td className="px-4 py-2">
+			</TD>
+			<TD>
 				<input
+					aria-label="Company"
 					value={companyName}
 					onChange={(e) => setCompanyName(e.target.value)}
-					className={`${inputClass} py-1`}
+					className={inputClass}
 					minLength={2}
 					required
 				/>
-			</td>
-			<td className="px-4 py-2">
+			</TD>
+			<TD>
 				<input
+					aria-label="Email"
 					type="email"
 					value={email}
 					onChange={(e) => setEmail(e.target.value)}
-					className={`${inputClass} py-1`}
+					className={inputClass}
 					required
 				/>
-			</td>
-			<td className="px-4 py-2 text-right">
+			</TD>
+			<TD>
 				<div className="flex justify-end gap-2">
 					<Button variant="secondary" onClick={onDone}>
 						Cancel
@@ -83,20 +95,16 @@ function ClientEditRow({ client, onDone }: { client: Client; onDone: () => void 
 						Save
 					</Button>
 				</div>
-			</td>
-		</tr>
+			</TD>
+		</TR>
 	);
 }
 
-export function ClientListPage() {
-	const [page, setPage] = useState(1);
-	const clientsQuery = useClients(page);
+function CreateClientForm({ onDone }: { onDone: () => void }) {
 	const createClient = useCreateClient();
 	const [name, setName] = useState("");
 	const [companyName, setCompanyName] = useState("");
 	const [email, setEmail] = useState("");
-	const { canWrite } = useAuth();
-	const [editingId, setEditingId] = useState<string | null>(null);
 
 	function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
 		e.preventDefault();
@@ -104,74 +112,133 @@ export function ClientListPage() {
 			{ name: name.trim(), companyName: companyName.trim(), email: email.trim() },
 			{
 				onSuccess: () => {
-					setName("");
-					setCompanyName("");
-					setEmail("");
 					pushToast("Client created.");
+					onDone();
 				},
 			},
 		);
 	}
 
 	return (
-		<div className="space-y-6">
-			{canWrite && (
-				<form
-					onSubmit={handleSubmit}
-					className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4"
-				>
-					<Field label="Name" htmlFor="name">
-						<input
-							id="name"
-							required
-							minLength={2}
-							value={name}
-							onChange={(e) => setName(e.target.value)}
-							className={inputClass}
-						/>
-					</Field>
-					<Field label="Company" htmlFor="companyName">
-						<input
-							id="companyName"
-							required
-							minLength={2}
-							value={companyName}
-							onChange={(e) => setCompanyName(e.target.value)}
-							className={inputClass}
-						/>
-					</Field>
-					<Field label="Email" htmlFor="email">
-						<input
-							id="email"
-							type="email"
-							required
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-							className={inputClass}
-						/>
-					</Field>
-					<FieldButtonSlot>
+		<Card className="mb-4">
+			<CardHeader title="New client" />
+			<form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3 p-4">
+				<Field label="Name" htmlFor="name">
+					<input
+						id="name"
+						required
+						minLength={2}
+						value={name}
+						onChange={(e) => setName(e.target.value)}
+						className={inputClass}
+					/>
+				</Field>
+				<Field label="Company" htmlFor="companyName">
+					<input
+						id="companyName"
+						required
+						minLength={2}
+						value={companyName}
+						onChange={(e) => setCompanyName(e.target.value)}
+						className={inputClass}
+					/>
+				</Field>
+				<Field label="Email" htmlFor="email">
+					<input
+						id="email"
+						type="email"
+						required
+						value={email}
+						onChange={(e) => setEmail(e.target.value)}
+						className={inputClass}
+					/>
+				</Field>
+				<FieldButtonSlot>
+					<div className="flex gap-2">
+						<Button variant="secondary" onClick={onDone}>
+							Cancel
+						</Button>
 						<Button type="submit" loading={createClient.isPending}>
 							Create client
 						</Button>
-					</FieldButtonSlot>
-				</form>
-			)}
+					</div>
+				</FieldButtonSlot>
+			</form>
+		</Card>
+	);
+}
 
-			{clientsQuery.isLoading ? (
-				<PageLoader />
-			) : (
-				<div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-					<table className="w-full text-sm">
-						<thead className="text-left text-xs text-gray-500">
+export function ClientListPage() {
+	const { canWrite } = useAuth();
+	const { q, page, setQ, setPage, clear } = useListParams();
+	const clientsQuery = useClients(page, q || undefined);
+	const [creating, setCreating] = useState(false);
+	const [editingId, setEditingId] = useState<string | null>(null);
+
+	return (
+		<>
+			<PageHeader
+				title="Clients"
+				description="Companies you send tenders to."
+				actions={
+					canWrite ? (
+						!creating && (
+							<Button onClick={() => setCreating(true)}>
+								<Plus className="size-3.5" aria-hidden="true" /> New client
+							</Button>
+						)
+					) : (
+						<DisabledAction reason="Read-only accounts cannot create clients">New client</DisabledAction>
+					)
+				}
+			/>
+
+			{creating && <CreateClientForm onDone={() => setCreating(false)} />}
+
+			<div className="space-y-4">
+				<SearchInput
+					value={q}
+					onSearch={setQ}
+					placeholder="Search by name, company or email"
+					className="w-full sm:w-80"
+				/>
+
+				{clientsQuery.error && <ErrorMessage error={clientsQuery.error} />}
+
+				{clientsQuery.isLoading ? (
+					<TableSkeleton rows={6} cols={4} />
+				) : clientsQuery.data?.total === 0 ? (
+					<EmptyState
+						icon={q ? SearchX : Users}
+						title={q ? "No clients match your search" : "No clients yet"}
+						description={
+							q ? "Try a different name, company or email." : "Add a client to start creating tenders."
+						}
+						action={
+							q ? (
+								<button
+									type="button"
+									onClick={clear}
+									className="text-[13px] font-medium text-primary hover:underline"
+								>
+									Clear search
+								</button>
+							) : undefined
+						}
+					/>
+				) : (
+					<Table>
+						<THead>
 							<tr>
-								<th className="px-4 py-2">Name</th>
-								<th className="px-4 py-2">Company</th>
-								<th className="px-4 py-2">Email</th>
-								<th className="px-4 py-2" />
+								<TH>Name</TH>
+								<TH>Company</TH>
+								<TH>Email</TH>
+								<TH className="w-1">
+									<span className="sr-only">Actions</span>
+								</TH>
 							</tr>
-						</thead>
-						<tbody>
+						</THead>
+						<TBody>
 							{(clientsQuery.data?.data ?? []).map((client) =>
 								editingId === client.id ? (
 									<ClientEditRow key={client.id} client={client} onDone={() => setEditingId(null)} />
@@ -179,15 +246,12 @@ export function ClientListPage() {
 									<ClientRow key={client.id} client={client} onEdit={() => setEditingId(client.id)} />
 								),
 							)}
-						</tbody>
-					</table>
-					{clientsQuery.data?.total === 0 && (
-						<p className="px-4 py-6 text-center text-sm text-gray-500">No clients yet.</p>
-					)}
-				</div>
-			)}
+						</TBody>
+					</Table>
+				)}
 
-			{clientsQuery.data && <Pagination meta={clientsQuery.data} onChange={setPage} />}
-		</div>
+				{clientsQuery.data && <Pagination meta={clientsQuery.data} onChange={setPage} />}
+			</div>
+		</>
 	);
 }
