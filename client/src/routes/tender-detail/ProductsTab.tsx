@@ -55,8 +55,13 @@ export function ProductsTab() {
 		);
 	}
 
-	function handleRemove(productLineId: string, productName: string) {
-		if (!confirmAction(`Remove "${productName}" from this tender?`)) return;
+	async function handleRemove(productLineId: string, productName: string) {
+		const confirmed = await confirmAction({
+			title: `Remove "${productName}" from this tender?`,
+			confirmLabel: "Remove",
+			destructive: true,
+		});
+		if (!confirmed) return;
 		removeProduct.mutate(productLineId, {
 			onSuccess: () => pushToast("Product removed."),
 		});

@@ -1,7 +1,8 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { Toaster } from "sonner";
+import { ConfirmHost } from "./components/ConfirmHost";
 import { Layout } from "./components/Layout";
 import { RequireAuth } from "./components/RequireAuth";
-import { ToastContainer } from "./components/ToastContainer";
 import { DesignPage } from "./design/DesignPage";
 import { ClientListPage } from "./routes/ClientListPage";
 import { DashboardPage } from "./routes/DashboardPage";
@@ -21,7 +22,8 @@ import { UserListPage } from "./routes/UserListPage";
 export default function App() {
 	return (
 		<BrowserRouter>
-			<ToastContainer />
+			<Toaster position="bottom-right" closeButton />
+			<ConfirmHost />
 			<Routes>
 				<Route path="/login" element={<LoginPage />} />
 				<Route path="/_design" element={<DesignPage />} />

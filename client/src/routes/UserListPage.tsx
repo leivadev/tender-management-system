@@ -36,11 +36,16 @@ function UserEditRow({ user, onDone }: { user: User; onDone: () => void }) {
 	const updateUser = useUpdateUser();
 	const [role, setRole] = useState<Role>(user.role);
 
-	function handleSave() {
+	async function handleSave() {
 		if (
 			user.role === "admin" &&
 			role !== "admin" &&
-			!confirmAction(`Remove the administrator role from ${user.email}?`)
+			!(await confirmAction({
+				title: `Remove the administrator role from ${user.email}?`,
+				description: "They will lose access to user management.",
+				confirmLabel: "Remove role",
+				destructive: true,
+			}))
 		)
 			return;
 		updateUser.mutate(

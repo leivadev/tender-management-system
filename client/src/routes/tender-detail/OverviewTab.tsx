@@ -98,8 +98,14 @@ export function OverviewTab() {
 		});
 	}
 
-	function handleLose() {
-		if (!confirmAction(`Mark "${tender.title}" as lost? This cannot be undone.`)) return;
+	async function handleLose() {
+		const confirmed = await confirmAction({
+			title: `Mark "${tender.title}" as lost?`,
+			description: "This cannot be undone.",
+			confirmLabel: "Mark as lost",
+			destructive: true,
+		});
+		if (!confirmed) return;
 		loseTender.mutate(undefined, {
 			onSuccess: () => pushToast("Tender marked as lost."),
 		});

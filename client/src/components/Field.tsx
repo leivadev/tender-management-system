@@ -13,11 +13,13 @@ export function Field({ label, htmlFor, error, hint, children }: FieldProps) {
 
 	return (
 		<div>
-			<label htmlFor={htmlFor} className="mb-1 block text-sm text-gray-600">
+			<label htmlFor={htmlFor} className="mb-1 block text-[13px] font-medium text-foreground">
 				{label}
 			</label>
 			{children}
-			<p className={`mt-1 text-xs ${error ? "text-red-600" : "text-gray-400"}`}>{helpText ?? " "}</p>
+			<p className={`mt-1 text-xs ${error ? "text-destructive" : "text-muted-foreground"}`}>
+				{helpText ?? " "}
+			</p>
 		</div>
 	);
 }
@@ -26,7 +28,7 @@ export function Field({ label, htmlFor, error, hint, children }: FieldProps) {
 export function FieldButtonSlot({ children }: { children: ReactNode }) {
 	return (
 		<div>
-			<p className="mb-1 block text-sm text-transparent select-none" aria-hidden="true">
+			<p className="mb-1 block text-[13px] text-transparent select-none" aria-hidden="true">
 				&nbsp;
 			</p>
 			{children}

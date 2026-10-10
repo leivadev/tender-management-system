@@ -12,7 +12,7 @@ export function Pagination({ meta, onChange }: PaginationProps) {
 	if (lastPage === 1 && meta.page === 1) return null;
 
 	return (
-		<div className="flex items-center justify-between text-sm text-gray-600">
+		<div className="flex items-center justify-between text-[13px] text-muted-foreground">
 			<span>
 				Page {meta.page} of {lastPage} · {meta.total} total
 			</span>
