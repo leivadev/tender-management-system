@@ -110,7 +110,7 @@ function KpiRow({ kpis }: { kpis: DashboardMetrics["kpis"] }) {
 				badge={
 					overdue.count > 0 && <Badge tone="negative">{formatCompactCurrency(overdue.value)} at risk</Badge>
 				}
-				note="Past deadline"
+				note="Invoiced over 30 days ago"
 			/>
 		</div>
 	);

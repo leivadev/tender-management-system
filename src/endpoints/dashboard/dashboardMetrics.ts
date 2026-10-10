@@ -7,6 +7,7 @@ import type { AppContext } from "../../types";
 
 const MONTHS_IN_SERIES = 6;
 const ACTIVITY_LIMIT = 8;
+const OVERDUE_AFTER_DAYS = 30;
 
 type Status = (typeof tenderStatusEnum)[number];
 
@@ -15,7 +16,8 @@ type Status = (typeof tenderStatusEnum)[number];
  * - tender value = sum of its product line subtotals
  * - won = tender entered `finalized` (month taken from the status history)
  * - collected = payments by `paid_at`
- * - overdue = `for_collection` tenders whose deadline already passed
+ * - overdue = `for_collection` tenders invoiced more than OVERDUE_AFTER_DAYS days ago
+ *   (the tender deadline is the bid deadline, so it says nothing about payment)
  * Months are bucketed in UTC.
  */
 export class DashboardMetrics extends OpenAPIRoute {
@@ -46,6 +48,8 @@ export class DashboardMetrics extends OpenAPIRoute {
 		// Tender value helper, reused by every query below.
 		const lineTotals = sql`(select tender_id, sum(subtotal) as total from tender_products group by tender_id)`;
 
+		const overdueCutoff = sql`now() - interval '${sql.raw(String(OVERDUE_AFTER_DAYS))} days'`;
+
 		const [kpiRows, pipelineRows, monthlyRows, activityRows] = await Promise.all([
 			db.execute(sql`
 				select
@@ -54,13 +58,19 @@ export class DashboardMetrics extends OpenAPIRoute {
 					count(*) filter (where t.status = 'for_collection') as outstanding_count,
 					coalesce(sum(coalesce(t.invoice_amount, 0) - coalesce(p.paid, 0))
 						filter (where t.status = 'for_collection'), 0) as outstanding_value,
-					count(*) filter (where t.status = 'for_collection' and t.deadline < now()) as overdue_count,
+					count(*) filter (where t.status = 'for_collection' and inv.invoiced_at < ${overdueCutoff}) as overdue_count,
 					coalesce(sum(coalesce(t.invoice_amount, 0) - coalesce(p.paid, 0))
-						filter (where t.status = 'for_collection' and t.deadline < now()), 0) as overdue_value
+						filter (where t.status = 'for_collection' and inv.invoiced_at < ${overdueCutoff}), 0) as overdue_value
 				from tenders t
 				left join ${lineTotals} lt on lt.tender_id = t.id
 				left join (select tender_id, sum(amount) as paid from payments group by tender_id) p
 					on p.tender_id = t.id
+				left join (
+					select tender_id, max(changed_at) as invoiced_at
+					from tender_status_history
+					where to_status = 'for_collection'
+					group by tender_id
+				) inv on inv.tender_id = t.id
 			`),
 			db.execute(sql`
 				select t.status, count(*) as count, coalesce(sum(lt.total), 0) as value
