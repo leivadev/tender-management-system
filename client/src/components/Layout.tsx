@@ -7,13 +7,15 @@ import {
 	LogOut,
 	Menu,
 	Package,
+	Search,
 	Users,
 	X,
 } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useCallback, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../lib/AuthContext";
 import { cn } from "../lib/cn";
+import { CommandPalette, useGlobalShortcuts } from "./CommandPalette";
 
 const NAV_ITEMS = [
 	{ to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -43,7 +45,7 @@ function Brand() {
 	);
 }
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarContent({ onNavigate, onSearch }: { onNavigate?: () => void; onSearch: () => void }) {
 	const { email, logout, isAdmin, canWrite } = useAuth();
 	const role = isAdmin ? "Administrator" : canWrite ? "Writer" : "Read-only viewer";
 	const items = NAV_ITEMS.filter((item) => isAdmin || !item.adminOnly);
@@ -51,7 +53,19 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 	return (
 		<>
 			<Brand />
-			<nav aria-label="Main" className="mt-5 flex flex-col gap-0.5">
+			<button
+				type="button"
+				onClick={() => {
+					onNavigate?.();
+					onSearch();
+				}}
+				className="mt-4 flex h-8 items-center gap-2 rounded-ctl border border-border bg-card px-2.5 text-[13px] text-muted-foreground shadow-xs transition-colors hover:bg-muted"
+			>
+				<Search className="size-3.5" aria-hidden="true" />
+				<span className="flex-1 text-left">Search…</span>
+				<kbd className="font-mono text-[10px]">⌘K</kbd>
+			</button>
+			<nav aria-label="Main" className="mt-4 flex flex-col gap-0.5">
 				{items.map((item) => (
 					<NavLink
 						key={item.to}
@@ -123,10 +137,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
 export function Layout({ children }: { children: ReactNode }) {
 	const [open, setOpen] = useState(false);
+	const [paletteOpen, setPaletteOpen] = useState(false);
+	const togglePalette = useCallback(() => setPaletteOpen((v) => !v), []);
+	useGlobalShortcuts(togglePalette);
 	return (
 		<div className="min-h-screen lg:flex">
+			<CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
 			<aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-sidebar p-3 lg:flex">
-				<SidebarContent />
+				<SidebarContent onSearch={() => setPaletteOpen(true)} />
 			</aside>
 
 			<div className="sticky top-0 z-30 flex h-12 items-center justify-between border-b border-border bg-sidebar px-3 lg:hidden">
@@ -158,7 +176,7 @@ export function Layout({ children }: { children: ReactNode }) {
 						>
 							<X className="size-4" />
 						</button>
-						<SidebarContent onNavigate={() => setOpen(false)} />
+						<SidebarContent onNavigate={() => setOpen(false)} onSearch={() => setPaletteOpen(true)} />
 					</aside>
 				</div>
 			)}
