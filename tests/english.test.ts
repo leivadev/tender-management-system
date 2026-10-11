@@ -1,4 +1,5 @@
 import { env } from "cloudflare:workers";
+import postgres from "postgres";
 import { beforeAll, describe, expect, it } from "vitest";
 import { processTenderReminders } from "../src/jobs/tenders";
 import { api, login, uniqueName, uploadPdf } from "./helpers";
@@ -67,7 +68,14 @@ describe("English product language (NFR-25)", () => {
 	});
 
 	it("reminder email is in English (NFR-25)", async () => {
-		await sendTender("Reminder Language Tender", new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString());
+		const tenderId = await sendTender(
+			"Reminder Language Tender",
+			new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+		);
+		// Sending with <48h left marks the reminder as sent (FR-29); reset it to exercise the job.
+		const sql = postgres(env.HYPERDRIVE.connectionString);
+		await sql`update tenders set reminder_sent_at = null where id = ${tenderId}`;
+		await sql.end();
 		sentEmails.length = 0;
 		await processTenderReminders(env);
 

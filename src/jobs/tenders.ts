@@ -1,7 +1,8 @@
-import { and, eq, gt, isNull, lt, lte } from "drizzle-orm";
+import { and, eq, gt, isNull, lt } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { clients, tenders } from "../db/schema";
 import { withLockedTender } from "../domain/tenders/locking";
+import { hoursRemaining, isWithinReminderWindow } from "../domain/tenders/rules";
 import { transitionTender } from "../domain/tenders/state-machine";
 import { hoursFromNow } from "../lib/date";
 import { sendReminderEmail } from "../services/email";
@@ -30,45 +31,52 @@ export async function processExpiredTenders(env: Env) {
 
 export async function processTenderReminders(env: Env) {
 	const db = getDb(env);
-	const in48h = hoursFromNow(48);
 
 	const dueSoon = await db
-		.select({
-			id: tenders.id,
-			title: tenders.title,
-			deadline: tenders.deadline,
-			clientEmail: clients.email,
-			clientName: clients.name,
-		})
+		.select({ id: tenders.id })
 		.from(tenders)
-		.innerJoin(clients, eq(tenders.clientId, clients.id))
 		.where(
 			and(
 				eq(tenders.status, "active"),
 				gt(tenders.deadline, new Date()),
-				lte(tenders.deadline, in48h),
+				lt(tenders.deadline, hoursFromNow(48)),
 				isNull(tenders.reminderSentAt),
 			),
 		);
 
 	let sentCount = 0;
-	for (const tender of dueSoon) {
-		// Atomic guard: only the first writer wins if this runs concurrently.
-		const updated = await db
-			.update(tenders)
-			.set({ reminderSentAt: new Date() })
-			.where(and(eq(tenders.id, tender.id), isNull(tenders.reminderSentAt)))
-			.returning({ id: tenders.id });
+	for (const candidate of dueSoon) {
+		try {
+			// The email goes out under the lock and the marker is set only after it
+			// succeeds: overlapping runs queue on the lock and see the marker (FR-30),
+			// and a failed send leaves it unset so the next run retries (NFR-17).
+			const sent = await withLockedTender(db, candidate.id, async (tx, tender) => {
+				if (
+					tender.status !== "active" ||
+					tender.reminderSentAt !== null ||
+					!isWithinReminderWindow(tender.deadline)
+				) {
+					return false;
+				}
 
-		if (updated.length === 0) continue;
+				const [client] = await tx.select().from(clients).where(eq(clients.id, tender.clientId));
+				if (!client) return false;
 
-		await sendReminderEmail(env, {
-			title: tender.title,
-			clientEmail: tender.clientEmail,
-			clientName: tender.clientName,
-			deadline: tender.deadline,
-		});
-		sentCount++;
+				await sendReminderEmail(env, {
+					title: tender.title,
+					clientEmail: client.email,
+					clientName: client.name,
+					deadline: tender.deadline,
+					hoursRemaining: hoursRemaining(tender.deadline),
+				});
+				await tx.update(tenders).set({ reminderSentAt: new Date() }).where(eq(tenders.id, tender.id));
+				return true;
+			});
+			if (sent) sentCount++;
+		} catch (error) {
+			// One failing tender must not block the rest of the run (NFR-17).
+			console.error(`Reminder for tender ${candidate.id} failed:`, error);
+		}
 	}
 
 	return { sentCount };

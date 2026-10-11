@@ -180,15 +180,22 @@ export async function sendTenderEmail(
 
 export async function sendReminderEmail(
 	env: Env,
-	tender: { title: string; clientEmail: string; clientName: string; deadline: Date },
+	tender: {
+		title: string;
+		clientEmail: string;
+		clientName: string;
+		deadline: Date;
+		hoursRemaining: number;
+	},
 ) {
 	const resend = new Resend(env.RESEND_API_KEY);
+	const hoursLabel = `${tender.hoursRemaining} ${tender.hoursRemaining === 1 ? "hour" : "hours"}`;
 
 	const html = `
 		<div style="${EMAIL_STYLES.body}">
 			<p>Dear ${escapeHtml(tender.clientName)},</p>
 			<h1 style="${EMAIL_STYLES.heading}">Reminder: ${escapeHtml(tender.title)}</h1>
-			<p>This is a reminder that this tender is due on <strong>${formatDate(tender.deadline)}</strong>.</p>
+			<p>This is a reminder that this tender is due on <strong>${formatDate(tender.deadline)}</strong>, in ${hoursLabel} from now.</p>
 			<p style="${EMAIL_STYLES.footer}">This is an automated message from the tender management system.</p>
 		</div>
 	`;
@@ -196,7 +203,7 @@ export async function sendReminderEmail(
 	const text = [
 		`Dear ${tender.clientName},`,
 		"",
-		`This is a reminder that the tender "${tender.title}" is due on ${formatDate(tender.deadline)}.`,
+		`This is a reminder that the tender "${tender.title}" is due on ${formatDate(tender.deadline)}, in ${hoursLabel} from now.`,
 	].join("\n");
 
 	const { data, error } = await resend.emails.send({

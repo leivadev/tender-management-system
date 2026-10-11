@@ -71,3 +71,16 @@ export function assertDeadlineInFuture(deadline: Date) {
 		);
 	}
 }
+
+const REMINDER_WINDOW_MS = 48 * 60 * 60 * 1000;
+
+/** True while fewer than 48 hours remain to a deadline still ahead of us (FR-26). */
+export function isWithinReminderWindow(deadline: Date, now = Date.now()) {
+	const remaining = deadline.getTime() - now;
+	return remaining > 0 && remaining < REMINDER_WINDOW_MS;
+}
+
+/** Whole hours left, rounded up so the email never says "0 hours" (FR-26). */
+export function hoursRemaining(deadline: Date, now = Date.now()) {
+	return Math.max(1, Math.ceil((deadline.getTime() - now) / (60 * 60 * 1000)));
+}
