@@ -2,8 +2,8 @@ import { env } from "cloudflare:workers";
 import { beforeAll, describe, expect, it } from "vitest";
 import { processTenderReminders } from "../src/jobs/tenders";
 import { api, login, uniqueName, uploadPdf } from "./helpers";
+import type { SentEmail } from "./setup";
 
-type SentEmail = { subject: string; html: string; text: string };
 const sentEmails = (globalThis as unknown as { __sentEmails: SentEmail[] }).__sentEmails;
 
 // Accented letters, inverted punctuation, and common Spanish words used by the old copy.

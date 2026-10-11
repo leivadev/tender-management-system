@@ -27,6 +27,17 @@ export class TenderSend extends OpenAPIRoute {
 				description: "Tender sent",
 				content: { "application/json": { schema: z.object({ success: z.boolean(), tender: z.any() }) } },
 			},
+			"502": {
+				description:
+					"The email provider failed (code `EMAIL_DELIVERY_FAILED`). The tender stays a draft and the send can be retried.",
+				content: {
+					"application/json": {
+						schema: z.object({
+							error: z.object({ code: z.literal("EMAIL_DELIVERY_FAILED"), message: z.string() }),
+						}),
+					},
+				},
+			},
 		},
 	};
 
