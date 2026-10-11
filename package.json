@@ -19,7 +19,7 @@
     "@supabase/server": "^0.1.0",
     "@supabase/supabase-js": "^2.58.0",
     "chanfana": "^3.3.0",
-    "drizzle-orm": "^0.44.0",
+    "drizzle-orm": "^0.45.4",
     "hono": "^4.12.12",
     "postgres": "^3.4.5",
     "resend": "^4.0.0",
