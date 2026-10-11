@@ -2,12 +2,13 @@ import { OpenAPIRoute } from "chanfana";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "../../db/client";
-import { clients, products, tenderProducts, tenders } from "../../db/schema";
+import { clients, products, tenderProducts } from "../../db/schema";
 import { reloadTender, withLockedTender } from "../../domain/tenders/locking";
 import {
 	assertDeadlineInFuture,
 	assertHasProposal,
 	isWithinReminderWindow,
+	markReminderSent,
 } from "../../domain/tenders/rules";
 import {
 	assertValidTransition,
@@ -97,7 +98,7 @@ export class TenderSend extends OpenAPIRoute {
 			await transitionTender(tx, tenderId, "active", user.id);
 			// With less than 48h left the client was just told the deadline; no reminder (FR-29).
 			if (isWithinReminderWindow(tender.deadline)) {
-				await tx.update(tenders).set({ reminderSentAt: new Date() }).where(eq(tenders.id, tenderId));
+				await markReminderSent(tx, tenderId);
 			}
 			return reloadTender(tx, tenderId);
 		});

@@ -1,6 +1,6 @@
 import { eq, sql } from "drizzle-orm";
 import type { Database } from "../../db/client";
-import { tenderProducts } from "../../db/schema";
+import { tenderProducts, tenders } from "../../db/schema";
 import { AppError } from "../../lib/errors";
 import type { Tender } from "./locking";
 import { toCents } from "./money";
@@ -84,4 +84,9 @@ export function isWithinReminderWindow(deadline: Date, now = Date.now()) {
 /** Whole hours left, rounded down so the email never overstates; floor of 1 avoids "0 hours" (FR-26). */
 export function hoursRemaining(deadline: Date, now = Date.now()) {
 	return Math.max(1, Math.floor((deadline.getTime() - now) / (60 * 60 * 1000)));
+}
+
+/** Records the reminder as sent; call through the `tx` of `withLockedTender()` (FR-29, FR-30). */
+export async function markReminderSent(tx: Database, tenderId: string) {
+	await tx.update(tenders).set({ reminderSentAt: new Date() }).where(eq(tenders.id, tenderId));
 }

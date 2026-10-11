@@ -186,6 +186,7 @@ export async function sendReminderEmail(
 		clientName: string;
 		deadline: Date;
 		hoursRemaining: number;
+		timeoutMs: number;
 	},
 ) {
 	const resend = new Resend(env.RESEND_API_KEY);
@@ -206,13 +207,21 @@ export async function sendReminderEmail(
 		`This is a reminder that the tender "${tender.title}" is due on ${formatDate(tender.deadline)}, in ${hoursLabel} from now.`,
 	].join("\n");
 
-	const { data, error } = await resend.emails.send({
-		from: env.MAIL_FROM,
-		to: [tender.clientEmail],
-		subject: `Reminder: tender "${tender.title}" is due soon`,
-		html,
-		text,
+	// The scheduled job sends under a row lock, so a hung provider must not hold it forever.
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	const timeout = new Promise<never>((_, reject) => {
+		timer = setTimeout(() => reject(new Error("Resend timed out")), tender.timeoutMs);
 	});
+	const { data, error } = await Promise.race([
+		resend.emails.send({
+			from: env.MAIL_FROM,
+			to: [tender.clientEmail],
+			subject: `Reminder: tender "${tender.title}" is due soon`,
+			html,
+			text,
+		}),
+		timeout,
+	]).finally(() => clearTimeout(timer));
 
 	if (error) {
 		throw new Error(`Resend error: ${error.message}`);

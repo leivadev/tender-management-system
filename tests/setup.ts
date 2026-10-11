@@ -15,13 +15,14 @@ export const sentEmails: SentEmail[] = [];
 (globalThis as { __sentEmails?: typeof sentEmails }).__sentEmails = sentEmails;
 
 // Tests flip this to make the stub behave like a failing email provider.
-export const resendStub = { fail: false, network: false };
+export const resendStub = { fail: false, network: false, hang: false };
 (globalThis as { __resendStub?: typeof resendStub }).__resendStub = resendStub;
 
 globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
 	const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
 	if (url.startsWith("https://api.resend.com/")) {
 		if (resendStub.network) throw new TypeError("fetch failed");
+		if (resendStub.hang) return new Promise<Response>(() => {});
 		if (resendStub.fail) {
 			return Response.json(
 				{ name: "validation_error", message: "Provider rejected the email.", statusCode: 422 },

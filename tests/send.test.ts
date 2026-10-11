@@ -1,7 +1,5 @@
-import { env } from "cloudflare:workers";
-import postgres from "postgres";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
-import { api, futureDate, login, uniqueName, uploadPdf, worker } from "./helpers";
+import { api, expireDeadline, futureDate, login, uniqueName, uploadPdf, worker } from "./helpers";
 import type { SentEmail } from "./setup";
 
 const sentEmails = (globalThis as unknown as { __sentEmails: SentEmail[] }).__sentEmails;
@@ -112,12 +110,7 @@ describe("send: email first, then transition (FR-17, NFR-16)", () => {
 
 	it("a deadline not in the future sends no email and stays draft (FR-17, BR-15)", async () => {
 		const tenderId = await readyTender();
-		const sql = postgres(env.HYPERDRIVE.connectionString);
-		try {
-			await sql`update tenders set deadline = now() - interval '1 hour' where id = ${tenderId}`;
-		} finally {
-			await sql.end();
-		}
+		await expireDeadline(tenderId);
 		sentEmails.length = 0;
 
 		const r = await send(tenderId);

@@ -1,4 +1,5 @@
-import { exports } from "cloudflare:workers";
+import { env, exports } from "cloudflare:workers";
+import postgres from "postgres";
 import { expect } from "vitest";
 
 export const worker = exports.default;
@@ -57,3 +58,22 @@ export function expectValidationError(r: { status: number; body: any }, field: s
 	expect(r.body.error.code).toBe("VALIDATION_ERROR");
 	expect(r.body.error.message).toContain(field);
 }
+
+/** Runs raw SQL on a throwaway connection, for state the API cannot reach (e.g. past deadlines). */
+export async function withSql<T>(run: (sql: postgres.Sql) => Promise<T>) {
+	const sql = postgres(env.HYPERDRIVE.connectionString);
+	try {
+		return await run(sql);
+	} finally {
+		await sql.end();
+	}
+}
+
+export const expireDeadline = (tenderId: string) =>
+	withSql((sql) => sql`update tenders set deadline = now() - interval '1 hour' where id = ${tenderId}`);
+
+export const clearReminder = (tenderId: string) =>
+	withSql((sql) => sql`update tenders set reminder_sent_at = null where id = ${tenderId}`);
+
+export const setDeadlineIn = (tenderId: string, ms: number) =>
+	withSql((sql) => sql`update tenders set deadline = ${new Date(Date.now() + ms)} where id = ${tenderId}`);

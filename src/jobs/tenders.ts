@@ -2,7 +2,12 @@ import { and, eq, gt, isNull, lt } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { clients, tenders } from "../db/schema";
 import { withLockedTender } from "../domain/tenders/locking";
-import { hoursRemaining, isWithinReminderWindow, REMINDER_WINDOW_HOURS } from "../domain/tenders/rules";
+import {
+	hoursRemaining,
+	isWithinReminderWindow,
+	markReminderSent,
+	REMINDER_WINDOW_HOURS,
+} from "../domain/tenders/rules";
 import { transitionTender } from "../domain/tenders/state-machine";
 import { hoursFromNow } from "../lib/date";
 import { sendReminderEmail } from "../services/email";
@@ -29,10 +34,10 @@ export async function processExpiredTenders(env: Env) {
 	return { expiredCount };
 }
 
-export async function processTenderReminders(env: Env) {
+export async function processTenderReminders(env: Env, { sendTimeoutMs = 10_000 } = {}) {
 	const db = getDb(env);
 
-	const dueSoon = await db
+	const candidates = await db
 		.select({ id: tenders.id })
 		.from(tenders)
 		.where(
@@ -45,7 +50,7 @@ export async function processTenderReminders(env: Env) {
 		);
 
 	let sentCount = 0;
-	for (const candidate of dueSoon) {
+	for (const candidate of candidates) {
 		try {
 			// The email goes out under the lock and the marker is set only after it
 			// succeeds: overlapping runs queue on the lock and see the marker (FR-30),
@@ -68,8 +73,9 @@ export async function processTenderReminders(env: Env) {
 					clientName: client.name,
 					deadline: tender.deadline,
 					hoursRemaining: hoursRemaining(tender.deadline),
+					timeoutMs: sendTimeoutMs,
 				});
-				await tx.update(tenders).set({ reminderSentAt: new Date() }).where(eq(tenders.id, tender.id));
+				await markReminderSent(tx, tender.id);
 				return true;
 			});
 			if (sent) sentCount++;

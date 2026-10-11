@@ -1,13 +1,13 @@
 import { env } from "cloudflare:workers";
-import postgres from "postgres";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { processExpiredTenders, processTenderReminders } from "../src/jobs/tenders";
-import { api, login, uniqueName, uploadPdf } from "./helpers";
+import { api, clearReminder, expireDeadline, login, setDeadlineIn, uniqueName, uploadPdf } from "./helpers";
 import type { SentEmail } from "./setup";
 
 const sentEmails = (globalThis as unknown as { __sentEmails: SentEmail[] }).__sentEmails;
-const resendStub = (globalThis as unknown as { __resendStub: { fail: boolean; network: boolean } })
-	.__resendStub;
+const resendStub = (
+	globalThis as unknown as { __resendStub: { fail: boolean; network: boolean; hang: boolean } }
+).__resendStub;
 
 const HOUR = 60 * 60 * 1000;
 
@@ -30,6 +30,7 @@ beforeAll(async () => {
 afterEach(() => {
 	resendStub.fail = false;
 	resendStub.network = false;
+	resendStub.hang = false;
 });
 
 async function createActiveTender(deadlineIso: string, title = uniqueName("Cron Fixture")) {
@@ -47,18 +48,6 @@ async function createActiveTender(deadlineIso: string, title = uniqueName("Cron 
 	return { tenderId, title };
 }
 
-async function sql<T>(run: (db: postgres.Sql) => Promise<T>) {
-	const db = postgres(env.HYPERDRIVE.connectionString);
-	try {
-		return await run(db);
-	} finally {
-		await db.end();
-	}
-}
-
-const clearReminder = (tenderId: string) =>
-	sql((db) => db`update tenders set reminder_sent_at = null where id = ${tenderId}`);
-
 const remindersFor = (title: string) =>
 	sentEmails.filter((e) => e.subject.startsWith("Reminder") && e.subject.includes(title));
 
@@ -68,7 +57,7 @@ const reminderSentAt = async (tenderId: string) =>
 describe("processExpiredTenders", () => {
 	it("active + expired deadline -> lost, with history changedBy=null (FR-28)", async () => {
 		const { tenderId } = await createActiveTender(new Date(Date.now() + 60_000).toISOString());
-		await sql((db) => db`update tenders set deadline = now() - interval '1 hour' where id = ${tenderId}`);
+		await expireDeadline(tenderId);
 
 		await processExpiredTenders(env);
 
@@ -90,7 +79,7 @@ describe("processExpiredTenders", () => {
 
 	it("repeated and overlapping runs record a single transition (FR-30)", async () => {
 		const { tenderId } = await createActiveTender(new Date(Date.now() + 60_000).toISOString());
-		await sql((db) => db`update tenders set deadline = now() - interval '1 hour' where id = ${tenderId}`);
+		await expireDeadline(tenderId);
 
 		await Promise.all([processExpiredTenders(env), processExpiredTenders(env)]);
 		await processExpiredTenders(env);
@@ -188,10 +177,41 @@ describe("processTenderReminders", () => {
 		expect(await reminderSentAt(tenderId)).not.toBeNull();
 	});
 
+	it("states whole hours rounded down: 47.5h left -> 47 hours (FR-26)", async () => {
+		const { tenderId, title } = await createActiveTender(new Date(Date.now() + 5 * 24 * HOUR).toISOString());
+		await setDeadlineIn(tenderId, 47.5 * HOUR);
+
+		await processTenderReminders(env);
+
+		expect(remindersFor(title)[0].text).toMatch(/in 47 hours from now/);
+	});
+
+	it("uses the singular for the last hour (FR-26)", async () => {
+		const { tenderId, title } = await createActiveTender(new Date(Date.now() + 5 * 24 * HOUR).toISOString());
+		await setDeadlineIn(tenderId, 30 * 60_000);
+
+		await processTenderReminders(env);
+
+		expect(remindersFor(title)[0].text).toMatch(/in 1 hour from now/);
+	});
+
+	it("a hung provider times out, leaves the marker unset and frees the lock (NFR-17)", async () => {
+		const { tenderId, title } = await createActiveTender(new Date(Date.now() + 24 * HOUR).toISOString());
+		await clearReminder(tenderId);
+
+		resendStub.hang = true;
+		await processTenderReminders(env, { sendTimeoutMs: 100 });
+		expect(await reminderSentAt(tenderId)).toBeNull();
+
+		resendStub.hang = false;
+		await processTenderReminders(env);
+		expect(remindersFor(title)).toHaveLength(1);
+	});
+
 	it("skips a tender whose deadline already passed (FR-26, FR-28)", async () => {
 		const { tenderId, title } = await createActiveTender(new Date(Date.now() + 60_000).toISOString());
 		await clearReminder(tenderId);
-		await sql((db) => db`update tenders set deadline = now() - interval '1 hour' where id = ${tenderId}`);
+		await expireDeadline(tenderId);
 
 		await processTenderReminders(env);
 
@@ -206,6 +226,32 @@ describe("send with <48h remaining (FR-29)", () => {
 		expect(await reminderSentAt(tenderId)).not.toBeNull();
 		await processTenderReminders(env);
 		expect(remindersFor(title)).toHaveLength(0);
+	});
+
+	it("a failed send leaves the draft without a marker; the retry sets it (FR-29, NFR-16)", async () => {
+		const create = await api(
+			"/api/tenders",
+			{
+				method: "POST",
+				body: JSON.stringify({
+					clientId,
+					title: uniqueName("Failed Send"),
+					maxBudget: 1000,
+					deadline: new Date(Date.now() + 24 * HOUR).toISOString(),
+				}),
+			},
+			admin,
+		);
+		const tenderId = create.body.tender.id as string;
+		await uploadPdf(tenderId, admin);
+
+		resendStub.fail = true;
+		expect((await api(`/api/tenders/${tenderId}/send`, { method: "POST" }, admin)).status).toBe(502);
+		expect(await reminderSentAt(tenderId)).toBeNull();
+
+		resendStub.fail = false;
+		expect((await api(`/api/tenders/${tenderId}/send`, { method: "POST" }, admin)).status).toBe(200);
+		expect(await reminderSentAt(tenderId)).not.toBeNull();
 	});
 
 	it("leaves the marker unset when 48h or more remain (FR-29)", async () => {

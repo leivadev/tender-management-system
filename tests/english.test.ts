@@ -1,8 +1,7 @@
 import { env } from "cloudflare:workers";
-import postgres from "postgres";
 import { beforeAll, describe, expect, it } from "vitest";
 import { processTenderReminders } from "../src/jobs/tenders";
-import { api, login, uniqueName, uploadPdf } from "./helpers";
+import { api, clearReminder, login, uniqueName, uploadPdf } from "./helpers";
 import type { SentEmail } from "./setup";
 
 const sentEmails = (globalThis as unknown as { __sentEmails: SentEmail[] }).__sentEmails;
@@ -73,9 +72,7 @@ describe("English product language (NFR-25)", () => {
 			new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
 		);
 		// Sending with <48h left marks the reminder as sent (FR-29); reset it to exercise the job.
-		const sql = postgres(env.HYPERDRIVE.connectionString);
-		await sql`update tenders set reminder_sent_at = null where id = ${tenderId}`;
-		await sql.end();
+		await clearReminder(tenderId);
 		sentEmails.length = 0;
 		await processTenderReminders(env);
 
