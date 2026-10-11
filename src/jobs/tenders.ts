@@ -2,7 +2,7 @@ import { and, eq, gt, isNull, lt } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { clients, tenders } from "../db/schema";
 import { withLockedTender } from "../domain/tenders/locking";
-import { hoursRemaining, isWithinReminderWindow } from "../domain/tenders/rules";
+import { hoursRemaining, isWithinReminderWindow, REMINDER_WINDOW_HOURS } from "../domain/tenders/rules";
 import { transitionTender } from "../domain/tenders/state-machine";
 import { hoursFromNow } from "../lib/date";
 import { sendReminderEmail } from "../services/email";
@@ -39,7 +39,7 @@ export async function processTenderReminders(env: Env) {
 			and(
 				eq(tenders.status, "active"),
 				gt(tenders.deadline, new Date()),
-				lt(tenders.deadline, hoursFromNow(48)),
+				lt(tenders.deadline, hoursFromNow(REMINDER_WINDOW_HOURS)),
 				isNull(tenders.reminderSentAt),
 			),
 		);

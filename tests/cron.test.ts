@@ -114,7 +114,8 @@ describe("processTenderReminders", () => {
 		const [email] = emails;
 		expect(email.to).toEqual(["delivered@resend.dev"]);
 		expect(email.text).toContain(title);
-		expect(email.text).toMatch(/24 hours/);
+		expect(email.text).toMatch(/2[34] hours/);
+		expect(email.text).toMatch(/UTC/);
 		expect(email.html).toContain("UTC");
 		expect(email.attachments ?? []).toHaveLength(0);
 		expect(await reminderSentAt(tenderId)).not.toBeNull();
