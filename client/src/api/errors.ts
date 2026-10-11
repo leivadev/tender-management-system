@@ -8,6 +8,7 @@ export type ErrorCode =
 	| "TENDER_BUDGET_EXCEEDED"
 	| "INVALID_TENDER_TRANSITION"
 	| "RATE_LIMITED"
+	| "EMAIL_DELIVERY_FAILED"
 	| "INTERNAL_ERROR";
 
 export class ApiError extends Error {
@@ -31,6 +32,8 @@ const MESSAGES: Record<ErrorCode, string> = {
 	TENDER_BUDGET_EXCEEDED: "The tender's maximum budget would be exceeded.",
 	INVALID_TENDER_TRANSITION: "That status transition is not valid right now.",
 	RATE_LIMITED: "Too many requests, try again in a few seconds.",
+	EMAIL_DELIVERY_FAILED:
+		"The email could not be delivered. The tender is still a draft; try sending it again.",
 	INTERNAL_ERROR: "An unexpected error occurred.",
 };
 
