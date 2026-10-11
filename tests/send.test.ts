@@ -224,7 +224,7 @@ describe("send: HTML escaping (FR-27)", () => {
 
 describe("send: error contract (OpenAPI)", () => {
 	it("documents the 502 EMAIL_DELIVERY_FAILED response on the send operation", async () => {
-		const { body: spec } = await api("/openapi.json");
+		const { body: spec } = await api("/api/openapi.json");
 		const op = spec.paths["/api/tenders/{id}/send"].post;
 		expect(op.responses["502"]).toBeDefined();
 		expect(JSON.stringify(op.responses["502"])).toContain("EMAIL_DELIVERY_FAILED");

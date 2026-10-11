@@ -81,6 +81,7 @@ app.onError(async (err, c) => {
 
 const openapi = fromHono(app, {
 	docs_url: "/api/docs",
+	openapi_url: "/api/openapi.json",
 	schema: {
 		security: [{ bearerAuth: [] }],
 	},
