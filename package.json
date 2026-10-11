@@ -16,7 +16,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@supabase/server": "^0.1.0",
+    "@supabase/server": "^1.9.1",
     "@supabase/supabase-js": "^2.58.0",
     "chanfana": "^3.3.0",
     "drizzle-orm": "^0.45.4",
