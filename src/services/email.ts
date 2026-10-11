@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { AppError } from "../lib/errors";
 
 type TenderProductLine = { name: string; quantity: number; unitPrice: string };
 
@@ -18,6 +19,16 @@ function arrayBufferToBase64(buffer: ArrayBuffer) {
 		binary += String.fromCharCode(byte);
 	}
 	return btoa(binary);
+}
+
+// Values interpolated into email HTML come from users (FR-27).
+function escapeHtml(value: string) {
+	return value
+		.replaceAll("&", "&amp;")
+		.replaceAll("<", "&lt;")
+		.replaceAll(">", "&gt;")
+		.replaceAll('"', "&quot;")
+		.replaceAll("'", "&#39;");
 }
 
 function formatCurrency(value: string | number) {
@@ -75,7 +86,7 @@ function productsTableHtml(products: TenderProductLine[]) {
 		.map(
 			(p) => `
 				<tr>
-					<td style="${EMAIL_STYLES.td}">${p.name}</td>
+					<td style="${EMAIL_STYLES.td}">${escapeHtml(p.name)}</td>
 					<td style="${EMAIL_STYLES.tdRight}">${p.quantity}</td>
 					<td style="${EMAIL_STYLES.tdRight}">${formatCurrency(p.unitPrice)}</td>
 				</tr>`,
@@ -109,15 +120,15 @@ export async function sendTenderEmail(
 
 	const html = `
 		<div style="${EMAIL_STYLES.body}">
-			<p>Dear ${tender.clientName},</p>
-			<h1 style="${EMAIL_STYLES.heading}">Tender: ${tender.title}</h1>
+			<p>Dear ${escapeHtml(tender.clientName)},</p>
+			<h1 style="${EMAIL_STYLES.heading}">Tender: ${escapeHtml(tender.title)}</h1>
 			<p>We are formally sending you the following tender:</p>
 			${productsTableHtml(tender.products)}
 			${summaryHtml([
 				{ label: "Maximum budget", value: formatCurrency(tender.maxBudget) },
 				{ label: "Deadline", value: formatDate(tender.deadline) },
 			])}
-			<p>The proposal document is attached (${proposal.filename}).</p>
+			<p>The proposal document is attached (${escapeHtml(proposal.filename)}).</p>
 			<p style="${EMAIL_STYLES.footer}">This is an automated message from the tender management system.</p>
 		</div>
 	`;
@@ -135,25 +146,36 @@ export async function sendTenderEmail(
 		`The proposal document is attached (${proposal.filename}).`,
 	].join("\n");
 
-	const { data, error } = await resend.emails.send({
-		from: env.MAIL_FROM,
-		to: [tender.clientEmail],
-		subject: `Tender sent: ${tender.title}`,
-		html,
-		text,
-		attachments: [
-			{
-				filename: proposal.filename,
-				content: arrayBufferToBase64(proposal.content),
-			},
-		],
-	});
-
-	if (error) {
-		throw new Error(`Resend error: ${error.message}`);
+	// The provider can answer with an error or fail at the network level; both
+	// surface as 502 so the caller knows nothing was sent and may retry (NFR-16).
+	const failure = new AppError(
+		"EMAIL_DELIVERY_FAILED",
+		"The email could not be delivered; the tender was not sent. Try again.",
+	);
+	let result: Awaited<ReturnType<typeof resend.emails.send>>;
+	try {
+		result = await resend.emails.send({
+			from: env.MAIL_FROM,
+			to: [tender.clientEmail],
+			subject: `Tender sent: ${tender.title}`,
+			html,
+			text,
+			attachments: [
+				{
+					filename: proposal.filename,
+					content: arrayBufferToBase64(proposal.content),
+				},
+			],
+		});
+	} catch {
+		throw failure;
 	}
 
-	return data;
+	if (result.error) {
+		throw failure;
+	}
+
+	return result.data;
 }
 
 export async function sendReminderEmail(
@@ -164,8 +186,8 @@ export async function sendReminderEmail(
 
 	const html = `
 		<div style="${EMAIL_STYLES.body}">
-			<p>Dear ${tender.clientName},</p>
-			<h1 style="${EMAIL_STYLES.heading}">Reminder: ${tender.title}</h1>
+			<p>Dear ${escapeHtml(tender.clientName)},</p>
+			<h1 style="${EMAIL_STYLES.heading}">Reminder: ${escapeHtml(tender.title)}</h1>
 			<p>This is a reminder that this tender is due on <strong>${formatDate(tender.deadline)}</strong>.</p>
 			<p style="${EMAIL_STYLES.footer}">This is an automated message from the tender management system.</p>
 		</div>
