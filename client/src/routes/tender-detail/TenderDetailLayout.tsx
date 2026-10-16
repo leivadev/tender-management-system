@@ -3,7 +3,6 @@ import { ErrorMessage } from "../../components/ErrorMessage";
 import { PageHeader } from "../../components/PageHeader";
 import { Skeleton } from "../../components/Skeleton";
 import { StatusBadge } from "../../components/StatusBadge";
-import { useAllClients } from "../../hooks/useClients";
 import { useTender } from "../../hooks/useTenders";
 import { cn } from "../../lib/cn";
 import { formatCurrency } from "../../lib/format";
@@ -34,14 +33,12 @@ function DetailSkeleton() {
 export function TenderDetailLayout() {
 	const { id } = useParams<{ id: string }>();
 	const tenderQuery = useTender(id ?? "");
-	const clientsQuery = useAllClients();
 
 	if (tenderQuery.isLoading) return <DetailSkeleton />;
 	if (tenderQuery.error) return <ErrorMessage error={tenderQuery.error} />;
 	if (!tenderQuery.data) return null;
 
 	const tender = tenderQuery.data;
-	const clientName = clientsQuery.data?.find((c) => c.id === tender.clientId)?.name;
 
 	return (
 		<div className="space-y-5">
@@ -49,7 +46,9 @@ export function TenderDetailLayout() {
 				crumbs={[{ label: "Tenders", to: "/tenders" }, { label: tender.title }]}
 				title={tender.title}
 				badge={<StatusBadge status={tender.status} />}
-				description={[clientName, `Budget ${formatCurrency(tender.maxBudget)}`].filter(Boolean).join(" · ")}
+				description={[tender.clientName, `Budget ${formatCurrency(tender.maxBudget)}`]
+					.filter(Boolean)
+					.join(" · ")}
 				actions={<TenderActions tender={tender} />}
 			/>
 

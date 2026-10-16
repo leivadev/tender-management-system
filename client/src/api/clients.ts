@@ -1,8 +1,8 @@
 import { fetchAllPages, fetchJson, pageQuery } from "./client";
-import type { Client, CreateClientRequest, Page, UpdateClientRequest } from "./types";
+import type { ArchivedFilter, Client, CreateClientRequest, Page, UpdateClientRequest } from "./types";
 
-export function listClients(page: number, q?: string) {
-	return fetchJson<Page<Client>>(`/api/clients?${pageQuery(page, { q })}`);
+export function listClients(page: number, q?: string, archived?: ArchivedFilter) {
+	return fetchJson<Page<Client>>(`/api/clients?${pageQuery(page, { q, archived })}`);
 }
 
 export function listAllClients() {
@@ -21,4 +21,12 @@ export function updateClient(id: string, payload: UpdateClientRequest) {
 		method: "PATCH",
 		body: JSON.stringify(payload),
 	});
+}
+
+export function archiveClient(id: string) {
+	return fetchJson<{ success: true; client: Client }>(`/api/clients/${id}/archive`, { method: "POST" });
+}
+
+export function restoreClient(id: string) {
+	return fetchJson<{ success: true; client: Client }>(`/api/clients/${id}/restore`, { method: "POST" });
 }

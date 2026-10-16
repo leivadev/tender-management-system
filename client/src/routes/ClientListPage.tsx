@@ -1,6 +1,7 @@
 import { Plus, SearchX, Users } from "lucide-react";
 import { useState } from "react";
-import type { Client } from "../api/types";
+import type { ArchivedFilter, Client } from "../api/types";
+import { Badge } from "../components/Badge";
 import { Button } from "../components/Button";
 import { Card, CardHeader } from "../components/Card";
 import { DisabledAction } from "../components/DisabledAction";
@@ -12,25 +13,72 @@ import { Pagination } from "../components/Pagination";
 import { SearchInput } from "../components/SearchInput";
 import { TableSkeleton } from "../components/Skeleton";
 import { Table, TBody, TD, TH, THead, TR } from "../components/Table";
-import { useClients, useCreateClient, useUpdateClient } from "../hooks/useClients";
+import {
+	useArchiveClient,
+	useClients,
+	useCreateClient,
+	useRestoreClient,
+	useUpdateClient,
+} from "../hooks/useClients";
 import { useListParams } from "../hooks/useListParams";
 import { useAuth } from "../lib/AuthContext";
+import { confirmAction } from "../lib/confirm";
 import { inputClass } from "../lib/formStyles";
 import { pushToast } from "../lib/toast";
 
 function ClientRow({ client, onEdit }: { client: Client; onEdit: () => void }) {
-	const { canWrite } = useAuth();
+	const { canWrite, isAdmin } = useAuth();
+	const archiveClient = useArchiveClient();
+	const restoreClient = useRestoreClient();
+	const isArchived = client.archivedAt !== null;
+
+	async function handleArchive() {
+		const ok = await confirmAction({
+			title: `Archive ${client.companyName}?`,
+			description:
+				"It will disappear from lists and cannot be used for new tenders. Its existing tenders are kept. You can restore it later.",
+			confirmLabel: "Archive client",
+			destructive: true,
+		});
+		if (!ok) return;
+		archiveClient.mutate(client.id, { onSuccess: () => pushToast("Client archived.") });
+	}
+
+	async function handleRestore() {
+		const ok = await confirmAction({
+			title: `Restore ${client.companyName}?`,
+			description: "It will appear in lists again and can be used for new tenders.",
+			confirmLabel: "Restore client",
+		});
+		if (!ok) return;
+		restoreClient.mutate(client.id, { onSuccess: () => pushToast("Client restored.") });
+	}
+
 	return (
 		<TR>
-			<TD className="font-medium">{client.name}</TD>
+			<TD className="font-medium">
+				{client.name} {isArchived && <Badge>Archived</Badge>}
+			</TD>
 			<TD>{client.companyName}</TD>
 			<TD className="text-muted-foreground">{client.email}</TD>
 			<TD className="text-right">
-				{canWrite && (
-					<Button variant="ghost" onClick={onEdit}>
-						Edit
-					</Button>
-				)}
+				<div className="flex justify-end gap-1">
+					{canWrite && (
+						<Button variant="ghost" onClick={onEdit}>
+							Edit
+						</Button>
+					)}
+					{isAdmin &&
+						(isArchived ? (
+							<Button variant="ghost" loading={restoreClient.isPending} onClick={handleRestore}>
+								Restore
+							</Button>
+						) : (
+							<Button variant="ghost" loading={archiveClient.isPending} onClick={handleArchive}>
+								Archive
+							</Button>
+						))}
+				</div>
 			</TD>
 		</TR>
 	);
@@ -169,9 +217,9 @@ function CreateClientForm({ onDone }: { onDone: () => void }) {
 }
 
 export function ClientListPage() {
-	const { canWrite } = useAuth();
-	const { q, page, setQ, setPage, clear } = useListParams();
-	const clientsQuery = useClients(page, q || undefined);
+	const { canWrite, isAdmin } = useAuth();
+	const { q, page, archived, setQ, setPage, setArchived, clear } = useListParams();
+	const clientsQuery = useClients(page, q || undefined, isAdmin ? archived : undefined);
 	const [creating, setCreating] = useState(false);
 	const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -196,12 +244,26 @@ export function ClientListPage() {
 			{creating && <CreateClientForm onDone={() => setCreating(false)} />}
 
 			<div className="space-y-4">
-				<SearchInput
-					value={q}
-					onSearch={setQ}
-					placeholder="Search by name, company or email"
-					className="w-full sm:w-80"
-				/>
+				<div className="flex flex-wrap items-center gap-3">
+					<SearchInput
+						value={q}
+						onSearch={setQ}
+						placeholder="Search by name, company or email"
+						className="w-full sm:w-80"
+					/>
+					{isAdmin && (
+						<select
+							aria-label="Archived clients"
+							value={archived ?? ""}
+							onChange={(e) => setArchived((e.target.value || undefined) as ArchivedFilter)}
+							className={`${inputClass} w-auto`}
+						>
+							<option value="">Active clients</option>
+							<option value="include">Active and archived</option>
+							<option value="only">Archived only</option>
+						</select>
+					)}
+				</div>
 
 				{clientsQuery.error && <ErrorMessage error={clientsQuery.error} />}
 

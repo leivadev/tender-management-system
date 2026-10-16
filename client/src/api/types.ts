@@ -56,9 +56,13 @@ export interface Client {
 	name: string;
 	companyName: string;
 	email: string;
+	archivedAt: string | null;
+	archivedBy: string | null;
 	createdAt: string;
 	updatedAt: string;
 }
+
+export type ArchivedFilter = "only" | "include";
 
 export interface CreateClientRequest {
 	name: string;
@@ -169,6 +173,7 @@ export interface TenderStatusHistoryRow {
 }
 
 export interface TenderDetail extends Tender {
+	clientName: string | null;
 	products: TenderProductLine[];
 	history: TenderStatusHistoryRow[];
 }
