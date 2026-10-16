@@ -212,26 +212,28 @@ describe("invoiced amount bounds (BR-16, DAT-13)", () => {
 });
 
 describe("invoice correction locking (BR-09)", () => {
-	it("a payment racing a correction never leaves a payment on a changed invoice", async () => {
+	it("a correction waits on the tender lock, then re-checks payments (BR-09, FR-50)", async () => {
 		const tenderId = await invoicedTender(100);
+		let correction: ReturnType<typeof correct> | undefined;
+		let settled = false;
 
-		const [pay, fix] = await Promise.all([
-			postJson(`/api/tenders/${tenderId}/payments`, { amount: 40 }, admin),
-			correct(tenderId, 40),
-		]);
+		await withSql((sql) =>
+			sql.begin(async (tx) => {
+				await tx`select id from tenders where id = ${tenderId} for update`;
+				correction = correct(tenderId, 40).finally(() => {
+					settled = true;
+				});
+				await new Promise((r) => setTimeout(r, 500));
+				// Without the row lock the correction would already have finished.
+				expect(settled).toBe(false);
+				await tx`insert into payments (tender_id, amount) values (${tenderId}, 10)`;
+			}),
+		);
 
+		const r = await correction;
+		expect(r?.status).toBe(422);
+		expect(r?.body.error.code).toBe("BUSINESS_RULE_VIOLATION");
 		const detail = (await api(`/api/tenders/${tenderId}`, {}, admin)).body.tender;
-		const payments = (await api(`/api/tenders/${tenderId}/payments`, {}, admin)).body.payments;
-		if (pay.status === 201 && fix.status === 200) {
-			// correction ran first: payment of 40 settled the new 40.00 invoice
-			expect(detail.status).toBe("collected");
-			expect(detail.invoiceAmount).toBe("40.00");
-		} else {
-			// payment ran first: the correction was refused and the invoice is intact
-			expect(pay.status).toBe(201);
-			expect(fix.status).toBe(422);
-			expect(detail.invoiceAmount).toBe("100.00");
-		}
-		expect(payments).toHaveLength(1);
+		expect(detail.invoiceAmount).toBe("100.00");
 	});
 });
