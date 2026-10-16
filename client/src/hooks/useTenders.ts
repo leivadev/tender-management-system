@@ -135,6 +135,14 @@ export function useInvoiceTender(tenderId: string) {
 	});
 }
 
+export function useCorrectTenderInvoice(tenderId: string) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (payload: InvoiceTenderRequest) => api.correctTenderInvoice(tenderId, payload),
+		onSuccess: () => invalidateTenderWrites(queryClient, tenderId),
+	});
+}
+
 export function useCreateTenderPayment(tenderId: string) {
 	const queryClient = useQueryClient();
 	return useMutation({

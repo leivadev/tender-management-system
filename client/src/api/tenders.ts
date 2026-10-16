@@ -99,6 +99,13 @@ export function invoiceTender(tenderId: string, payload: InvoiceTenderRequest) {
 	});
 }
 
+export function correctTenderInvoice(tenderId: string, payload: InvoiceTenderRequest) {
+	return fetchJson<{ success: true; tender: Tender }>(`/api/tenders/${tenderId}/invoice`, {
+		method: "PATCH",
+		body: JSON.stringify(payload),
+	});
+}
+
 export function getTenderHistory(tenderId: string) {
 	return fetchJson<{ success: true; history: TenderStatusHistoryRow[] }>(`/api/tenders/${tenderId}/history`);
 }

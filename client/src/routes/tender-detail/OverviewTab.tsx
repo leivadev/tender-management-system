@@ -3,7 +3,12 @@ import { BudgetBar } from "../../components/BudgetBar";
 import { Button } from "../../components/Button";
 import { Card, CardHeader } from "../../components/Card";
 import { Field, FieldButtonSlot } from "../../components/Field";
-import { useInvoiceTender, useUpdateTender } from "../../hooks/useTenders";
+import {
+	useCorrectTenderInvoice,
+	useInvoiceTender,
+	useTenderPayments,
+	useUpdateTender,
+} from "../../hooks/useTenders";
 import { useAuth } from "../../lib/AuthContext";
 import { confirmAction } from "../../lib/confirm";
 import { toLocalInputValue } from "../../lib/datetime";
@@ -122,12 +127,23 @@ function EditTenderForm({ onDone, usedBudget }: { onDone: () => void; usedBudget
 export function OverviewTab() {
 	const { tender } = useTenderContext();
 	const invoiceTender = useInvoiceTender(tender.id);
+	const correctInvoice = useCorrectTenderInvoice(tender.id);
+	const payments = useTenderPayments(tender.id);
 	const [invoiceAmount, setInvoiceAmount] = useState("");
+	const [correctedAmount, setCorrectedAmount] = useState("");
 	const [isEditing, setIsEditing] = useState(false);
 
 	const usedBudget = tender.products.reduce((sum, p) => sum + Number(p.subtotal), 0);
 	const { canWrite, isAdmin } = useAuth();
 	const canInvoice = isAdmin && tender.status === "finalized";
+	// FR-50: only before the first payment, once the invoice exists.
+	const canCorrectInvoice =
+		isAdmin &&
+		tender.status === "for_collection" &&
+		payments.data !== undefined &&
+		payments.data.length === 0;
+	const amountToCorrect =
+		correctedAmount || (tender.invoiceAmount ? Number(tender.invoiceAmount).toFixed(2) : "");
 	const amountToInvoice = invoiceAmount || (usedBudget > 0 ? usedBudget.toFixed(2) : "");
 
 	async function handleInvoice(e: React.SubmitEvent<HTMLFormElement>) {
@@ -140,6 +156,26 @@ export function OverviewTab() {
 		});
 		if (!ok) return;
 		invoiceTender.mutate({ invoiceAmount: amount }, { onSuccess: () => pushToast("Invoice recorded.") });
+	}
+
+	async function handleCorrectInvoice(e: React.SubmitEvent<HTMLFormElement>) {
+		e.preventDefault();
+		const amount = Number(amountToCorrect);
+		const ok = await confirmAction({
+			title: `Correct invoice to ${formatCurrency(amount)}?`,
+			description: "The status does not change. This is only possible until the first payment is recorded.",
+			confirmLabel: "Correct invoice",
+		});
+		if (!ok) return;
+		correctInvoice.mutate(
+			{ invoiceAmount: amount },
+			{
+				onSuccess: () => {
+					setCorrectedAmount("");
+					pushToast("Invoice corrected.");
+				},
+			},
+		);
 	}
 
 	return (
@@ -200,6 +236,35 @@ export function OverviewTab() {
 							<FieldButtonSlot>
 								<Button variant="warning" type="submit" loading={invoiceTender.isPending}>
 									Invoice
+								</Button>
+							</FieldButtonSlot>
+						</form>
+					</Card>
+				)}
+
+				{canCorrectInvoice && (
+					<Card>
+						<CardHeader title="Correct invoice" />
+						<form className="flex flex-wrap items-end gap-3 p-4" onSubmit={handleCorrectInvoice}>
+							<Field
+								label="Invoiced amount"
+								htmlFor="correctedInvoiceAmount"
+								hint="Editable until the first payment is recorded"
+							>
+								<input
+									id="correctedInvoiceAmount"
+									type="number"
+									min="0.01"
+									step="0.01"
+									required
+									value={amountToCorrect}
+									onChange={(e) => setCorrectedAmount(e.target.value)}
+									className={inputClass}
+								/>
+							</Field>
+							<FieldButtonSlot>
+								<Button variant="warning" type="submit" loading={correctInvoice.isPending}>
+									Correct
 								</Button>
 							</FieldButtonSlot>
 						</form>
