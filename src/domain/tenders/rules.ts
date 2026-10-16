@@ -1,6 +1,6 @@
 import { eq, sql } from "drizzle-orm";
 import type { Database } from "../../db/client";
-import { tenderProducts, tenders } from "../../db/schema";
+import { payments, tenderProducts, tenders } from "../../db/schema";
 import { AppError } from "../../lib/errors";
 import type { Tender } from "./locking";
 import { toCents } from "./money";
@@ -99,4 +99,25 @@ export function hoursRemaining(deadline: Date, now = Date.now()) {
 /** Records the reminder as sent; call through the `tx` of `withLockedTender()` (FR-29, FR-30). */
 export async function markReminderSent(tx: Database, tenderId: string) {
 	await tx.update(tenders).set({ reminderSentAt: new Date() }).where(eq(tenders.id, tenderId));
+}
+
+/** FR-50: the invoiced amount can be corrected only in `for_collection` and before the first payment. */
+export async function assertInvoiceCorrectable(db: Database, tender: Pick<Tender, "id" | "status">) {
+	if (tender.status !== "for_collection") {
+		throw new AppError(
+			"BUSINESS_RULE_VIOLATION",
+			"The invoiced amount can only be corrected while the tender is in for_collection.",
+		);
+	}
+	const [firstPayment] = await db
+		.select({ id: payments.id })
+		.from(payments)
+		.where(eq(payments.tenderId, tender.id))
+		.limit(1);
+	if (firstPayment) {
+		throw new AppError(
+			"BUSINESS_RULE_VIOLATION",
+			"The invoiced amount cannot be corrected once a payment is registered.",
+		);
+	}
 }

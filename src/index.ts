@@ -21,6 +21,7 @@ import { TenderDownloadProposal } from "./endpoints/tenders/tenderDownloadPropos
 import { TenderFinalize } from "./endpoints/tenders/tenderFinalize";
 import { TenderHistory } from "./endpoints/tenders/tenderHistory";
 import { TenderInvoice } from "./endpoints/tenders/tenderInvoice";
+import { TenderInvoiceCorrect } from "./endpoints/tenders/tenderInvoiceCorrect";
 import { TenderList } from "./endpoints/tenders/tenderList";
 import { TenderLost } from "./endpoints/tenders/tenderLost";
 import { TenderRemoveProduct } from "./endpoints/tenders/tenderRemoveProduct";
@@ -120,6 +121,7 @@ app.use("/api/users/:id", adminOnly);
 app.on("POST", "/api/products", adminOnly);
 app.on("PATCH", "/api/products/:id", adminOnly);
 app.on("POST", "/api/tenders/:id/invoice", adminOnly);
+app.on("PATCH", "/api/tenders/:id/invoice", adminOnly);
 app.on("POST", "/api/tenders/:id/payments", adminOnly);
 app.on("POST", "/api/tenders/:id/lost", adminOnly);
 
@@ -150,6 +152,7 @@ openapi.post("/api/tenders/:id/send", TenderSend);
 openapi.post("/api/tenders/:id/finalize", TenderFinalize);
 openapi.post("/api/tenders/:id/lost", TenderLost);
 openapi.post("/api/tenders/:id/invoice", TenderInvoice);
+openapi.patch("/api/tenders/:id/invoice", TenderInvoiceCorrect);
 openapi.get("/api/tenders/:id/history", TenderHistory);
 openapi.post("/api/tenders/:id/payments", PaymentCreate);
 openapi.get("/api/tenders/:id/payments", PaymentList);
