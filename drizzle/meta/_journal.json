@@ -50,6 +50,13 @@
       "when": 1791666616501,
       "tag": "0006_cute_thundra",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792194684607,
+      "tag": "0007_flowery_luminals",
+      "breakpoints": true
     }
   ]
 }

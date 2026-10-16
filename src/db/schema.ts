@@ -57,6 +57,10 @@ export const clients = pgTable(
 		companyName: text("company_name").notNull(),
 		email: text("email").notNull(),
 
+		// DAT-11: archive marker and who set it; restoring clears both.
+		archivedAt: timestamp("archived_at", { withTimezone: true }),
+		archivedBy: uuid("archived_by").references(() => profiles.id),
+
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 		createdBy: uuid("created_by").references(() => profiles.id),
