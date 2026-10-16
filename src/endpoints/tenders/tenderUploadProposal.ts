@@ -4,8 +4,9 @@ import { z } from "zod";
 import { getDb } from "../../db/client";
 import { tenders } from "../../db/schema";
 import { withLockedTender } from "../../domain/tenders/locking";
+import { assertProposalEditable } from "../../domain/tenders/rules";
 import { AppError } from "../../lib/errors";
-import { uploadProposal } from "../../services/storage";
+import { deleteProposalQuietly, readProposalFile, storeProposal } from "../../services/storage";
 import type { AppContext } from "../../types";
 
 export class TenderUploadProposal extends OpenAPIRoute {
@@ -42,8 +43,11 @@ export class TenderUploadProposal extends OpenAPIRoute {
 			throw new AppError("VALIDATION_ERROR", "Missing file in form data.");
 		}
 
-		const updated = await withLockedTender(db, tenderId, async (tx) => {
-			const uploaded = await uploadProposal(c.env, tenderId, file);
+		const bytes = await readProposalFile(file);
+
+		const { updated, previousKey } = await withLockedTender(db, tenderId, async (tx, tender) => {
+			assertProposalEditable(tender.status);
+			const uploaded = await storeProposal(c.env, tenderId, file.name, bytes);
 
 			const [row] = await tx
 				.update(tenders)
@@ -57,9 +61,11 @@ export class TenderUploadProposal extends OpenAPIRoute {
 				})
 				.where(eq(tenders.id, tenderId))
 				.returning();
-			return row;
+			return { updated: row, previousKey: tender.proposalKey };
 		});
 
+		// Only after the new object is stored and the row committed (FR-54).
+		if (previousKey) await deleteProposalQuietly(c.env, previousKey);
 		return c.json({ success: true, tender: updated });
 	}
 }

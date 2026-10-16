@@ -41,6 +41,16 @@ export function assertHasProposal(tender: Pick<Tender, "proposalKey">) {
 	return tender.proposalKey;
 }
 
+/** The proposal can be uploaded or replaced only while the tender is a draft (FR-34, FR-35). */
+export function assertProposalEditable(status: TenderStatus) {
+	if (status !== "draft") {
+		throw new AppError(
+			"BUSINESS_RULE_VIOLATION",
+			`The proposal can only be uploaded or replaced while the tender is a draft (current status: ${status}).`,
+		);
+	}
+}
+
 /** New budget must still cover the lines already in the tender (FR-43, BR-01). */
 export async function assertBudgetCoversLines(db: Database, tenderId: string, newBudget: number) {
 	const currentTotal = await getTenderTotal(db, tenderId);
