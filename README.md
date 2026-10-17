@@ -182,6 +182,8 @@ Upload the production secrets from an env file with the remote project values (s
 
 The script refuses to run if `SUPABASE_URL` is local, shows the target and asks for confirmation. Or set them one by one with `npx wrangler secret put <KEY>` (`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `RESEND_API_KEY`, `MAIL_FROM`, `APP_BASE_URL`).
 
+Authentication provider settings (rate limits, token lifetime, password policy, backups) are listed in [docs/deployment.md](docs/deployment.md); apply them to the remote project before going live.
+
 Then create the production admin with `scripts/create-admin.mjs`, pointing `SUPABASE_URL`, `SUPABASE_SECRET_KEY` and `DATABASE_URL` at the remote project.
 
 ## License
