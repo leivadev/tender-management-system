@@ -1,3 +1,4 @@
+import { env } from "cloudflare:workers";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { api, expireDeadline, futureDate, login, uniqueName, uploadPdf, worker } from "./helpers";
 import type { SentEmail } from "./setup";
@@ -175,7 +176,7 @@ describe("send: email content (FR-25, NFR-28)", () => {
 		await send(tenderId);
 
 		const email = sentEmails[0];
-		expect(email.from).toContain("noreply@leivadev.com");
+		expect(email.from).toBe(env.MAIL_FROM);
 		expect(email).not.toHaveProperty("reply_to");
 	});
 });
