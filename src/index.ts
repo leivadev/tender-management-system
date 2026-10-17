@@ -53,22 +53,26 @@ const CODE_BY_STATUS: Record<number, ErrorCode> = {
 	429: "RATE_LIMITED",
 };
 
+type FieldIssue = { field: string; message: string };
+
 // chanfana reports Zod failures as an HTTPException wrapping `{ errors: [{ message, path }] }`.
-async function validationMessage(err: HTTPException): Promise<string | null> {
+async function validationIssues(err: HTTPException): Promise<FieldIssue[]> {
 	try {
 		const body = (await err.getResponse().clone().json()) as {
 			errors?: Array<{ message: string; path?: string[] }>;
 		};
-		if (!body.errors?.length) return null;
-		return body.errors
-			.map((e) => {
-				const field = (e.path ?? []).filter((p) => p !== "body" && p !== "query").join(".");
-				return field ? `${field}: ${e.message}` : e.message;
-			})
-			.join("; ");
+		return (body.errors ?? []).map((e) => ({
+			field: (e.path ?? []).filter((p) => p !== "body" && p !== "query").join("."),
+			message: e.message,
+		}));
 	} catch {
-		return null;
+		return [];
 	}
+}
+
+function issuesMessage(issues: FieldIssue[]): string | null {
+	if (!issues.length) return null;
+	return issues.map((i) => (i.field ? `${i.field}: ${i.message}` : i.message)).join("; ");
 }
 
 app.onError(async (err, c) => {
@@ -79,8 +83,11 @@ app.onError(async (err, c) => {
 	// instead of our AppError type.
 	if (err instanceof HTTPException) {
 		const code = CODE_BY_STATUS[err.status] ?? "INTERNAL_ERROR";
-		const message = err.message || (await validationMessage(err)) || "Request failed.";
-		return c.json({ error: { code, message } }, err.status);
+		const issues = err.message ? [] : await validationIssues(err);
+		const message = err.message || issuesMessage(issues) || "Request failed.";
+		// UI-02: per-field detail so the SPA can show each message next to its input.
+		const fields = issues.filter((i) => i.field);
+		return c.json({ error: { code, message, ...(fields.length && { fields }) } }, err.status);
 	}
 	console.error(err);
 	return c.json({ error: { code: "INTERNAL_ERROR", message: "Unexpected error." } }, 500);

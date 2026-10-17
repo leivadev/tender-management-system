@@ -801,6 +801,31 @@ describe("input validation", () => {
 		expect(r.body.error.message).not.toContain("Unauthorized");
 	});
 
+	// UI-02: the SPA needs the failing field names to show each error next to its input.
+	it("validation errors list each failing field with its message (UI-02)", async () => {
+		const r = await api(
+			"/api/products",
+			{ method: "POST", body: JSON.stringify({ name: "P", unitPrice: -99 }) },
+			admin,
+		);
+		expect(r.status).toBe(400);
+		expect(r.body.error.fields).toEqual(
+			expect.arrayContaining([expect.objectContaining({ field: "unitPrice", message: expect.any(String) })]),
+		);
+		for (const f of r.body.error.fields) expect(f.field).not.toMatch(/^(body|query)$/);
+	});
+
+	// UI-01: the SPA shows `error.message` verbatim, so every rejection class must carry one.
+	it("rejections carry a human-readable message the SPA can show (UI-01)", async () => {
+		const unauthenticated = await api("/api/users");
+		expect(unauthenticated.status).toBe(401);
+		expect(unauthenticated.body.error.message).toBeTruthy();
+
+		const missing = await api(`/api/tenders/${crypto.randomUUID()}`, {}, admin);
+		expect(missing.status).toBe(404);
+		expect(missing.body.error.message).toMatch(/not found/i);
+	});
+
 	it("zero payment -> VALIDATION_ERROR", async () => {
 		const r = await api(
 			`/api/tenders/${crypto.randomUUID()}/payments`,
