@@ -38,6 +38,21 @@ Until it is enabled, the limit applies to the Worker as a whole. A provider `429
 
 **Residual risk (accepted):** an access token issued before logout stays valid until its `exp` claim, at most 1 hour, because the Worker verifies JWTs locally against the provider's JWKS. Archived accounts are closed immediately regardless (SEC-19). The lifetime is not reduced further to keep the provider's default behaviour and avoid constant re-login.
 
+## Browser-side security (SEC-08, SEC-18)
+
+**Session storage.** The SPA keeps the access token in `localStorage` (key `tenders.session`), the storage the provider's SPA client library uses. Any script that runs in the page origin can read it, so an XSS would leak the session. Mitigations: the CSP below stops injected and third-party scripts from running, the SPA never injects raw HTML from API data (SEC-18), and tokens live at most 1 hour (SEC-17). Accepted over cookies: there are no cookie-based credentials, so CSRF does not apply, and it matches the provider's recommended SPA setup.
+
+**Content Security Policy.** `client/public/_headers` is copied into `client/dist/` and applied by the static-assets layer to every SPA response (`/`, `/docs`, ...):
+
+| Directive | Value | Why |
+|---|---|---|
+| `default-src`, `script-src`, `connect-src` | `'self'` | no third-party scripts, no inline or `eval` script, API calls only to this origin |
+| `style-src` | `'self' 'unsafe-inline'` | Radix, Recharts, Sonner and Swagger UI set inline `style` attributes; inline *styles* cannot execute script. The only relaxed directive |
+| `img-src`, `font-src` | `'self' data:` | small assets are inlined by Vite |
+| `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'` | | no plugins, no `<base>` hijack, no framing |
+
+Swagger UI (`/docs`) works under this policy. The Worker's own responses (`/api/*`, `/openapi.json`) are JSON and do not carry the header. `nosniff` and `Referrer-Policy: same-origin` ride along in the same file. A change to `_headers` only takes effect after `npm run deploy` rebuilds `client/`; `vite dev` (port 5173) does not apply it, `wrangler dev` does.
+
 ## Password policy (FR-03, SEC-20)
 
 - Minimum 12 characters, no composition rules, enforced in the API (`POST /api/users`) and at the provider.
