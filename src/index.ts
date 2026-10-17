@@ -39,8 +39,10 @@ import { UserRestore } from "./endpoints/users/userRestore";
 import { UserUpdate } from "./endpoints/users/userUpdate";
 import { processExpiredTenders, processTenderReminders } from "./jobs/tenders";
 import { AppError, type ErrorCode, errorBody } from "./lib/errors";
+import { logUnexpectedError } from "./lib/logging";
 import { type AppBindings, loadProfile, supabaseAuth } from "./middleware/auth";
 import { blockViewerWrites, requireRole } from "./middleware/roles";
+import type { AppContext } from "./types";
 
 const app = new Hono<AppBindings>();
 
@@ -75,6 +77,15 @@ function issuesMessage(issues: FieldIssue[]): string | null {
 	return issues.map((i) => (i.field ? `${i.field}: ${i.message}` : i.message)).join("; ");
 }
 
+function internalErrorResponse(err: unknown, c: AppContext) {
+	const correlationId = logUnexpectedError(err, { method: c.req.method, path: c.req.path });
+	c.header("X-Correlation-Id", correlationId);
+	return c.json(
+		{ error: { code: "INTERNAL_ERROR", message: "Unexpected error.", correlation_id: correlationId } },
+		500,
+	);
+}
+
 app.onError(async (err, c) => {
 	if (err instanceof AppError) {
 		return c.json(errorBody(err), err.status as 400);
@@ -82,15 +93,16 @@ app.onError(async (err, c) => {
 	// withSupabase (@supabase/server) and chanfana throw a plain Hono HTTPException
 	// instead of our AppError type.
 	if (err instanceof HTTPException) {
-		const code = CODE_BY_STATUS[err.status] ?? "INTERNAL_ERROR";
+		const code = CODE_BY_STATUS[err.status];
+		// Section 3.1.4: a status outside the contract is an unexpected failure, not a new code.
+		if (!code) return internalErrorResponse(err, c);
 		const issues = err.message ? [] : await validationIssues(err);
 		const message = err.message || issuesMessage(issues) || "Request failed.";
 		// UI-02: per-field detail so the SPA can show each message next to its input.
 		const fields = issues.filter((i) => i.field);
 		return c.json({ error: { code, message, ...(fields.length && { fields }) } }, err.status);
 	}
-	console.error(err);
-	return c.json({ error: { code: "INTERNAL_ERROR", message: "Unexpected error." } }, 500);
+	return internalErrorResponse(err, c);
 });
 
 // FR-45: the spec needs a session. Hono runs handlers in registration order, so this must be

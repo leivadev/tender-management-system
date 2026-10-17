@@ -1,4 +1,5 @@
 import { AppError } from "../lib/errors";
+import { logUnexpectedError } from "../lib/logging";
 
 const MAX_SIZE_BYTES = 15 * 1024 * 1024; // 15 MB (BR-13)
 const PDF_MAGIC = new TextEncoder().encode("%PDF-");
@@ -48,7 +49,7 @@ export async function deleteProposalQuietly(env: Env, key: string) {
 	try {
 		await env.PROPOSALS_R2.delete(key);
 	} catch (error) {
-		console.error(`Failed to delete proposal object ${key}:`, error);
+		logUnexpectedError(error, { action: "delete-proposal-object", key });
 	}
 }
 

@@ -10,6 +10,7 @@ import {
 } from "../domain/tenders/rules";
 import { transitionTender } from "../domain/tenders/state-machine";
 import { hoursFromNow } from "../lib/date";
+import { logUnexpectedError } from "../lib/logging";
 import { sendReminderEmail } from "../services/email";
 
 export async function processExpiredTenders(env: Env) {
@@ -32,7 +33,7 @@ export async function processExpiredTenders(env: Env) {
 			if (moved) expiredCount++;
 		} catch (error) {
 			// One failing tender must not block the rest of the run (NFR-17).
-			console.error(`Expiry of tender ${candidate.id} failed:`, error);
+			logUnexpectedError(error, { action: "expire-tender", tenderId: candidate.id });
 		}
 	}
 
@@ -87,7 +88,7 @@ export async function processTenderReminders(env: Env, { sendTimeoutMs = 10_000 
 			if (sent) sentCount++;
 		} catch (error) {
 			// One failing tender must not block the rest of the run (NFR-17).
-			console.error(`Reminder for tender ${candidate.id} failed:`, error);
+			logUnexpectedError(error, { action: "remind-tender", tenderId: candidate.id });
 		}
 	}
 

@@ -60,3 +60,11 @@ Supabase backs up Pro, Team and Enterprise projects daily. Retention: Pro 7 days
 2. Set the values above in the dashboard (or `PATCH /v1/projects/{ref}/config/auth`).
 3. Fill in the backup table and the date applied here.
 4. Smoke test: sign in, sign out, create a user with an 11-character password (expect `400`).
+
+## Logs and correlation ids (NFR-27, NFR-19, NFR-20, SEC-07)
+
+An unexpected failure answers `500 INTERNAL_ERROR` with a `correlation_id` in the error body and in the `X-Correlation-Id` header. The same id is on the matching log line (`src/lib/logging.ts`), so a reported id finds the failure in `wrangler tail` or the Workers logs. Cron and best-effort cleanup failures are logged the same way, with their own id.
+
+Log lines are JSON with the id, request method and path, and the error's shape: class name, driver codes (SQLSTATE, constraint, table, column) and stack frames. Error messages are never logged, because driver and provider messages can echo query parameters, emails or tokens.
+
+**Residual risk (accepted):** Workers `observability` also records each request URL. List searches send `?q=` in the URL, so a search for an email is visible in those platform logs, outside the application's control.

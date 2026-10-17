@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getDb } from "../../db/client";
 import { profiles, roleEnum } from "../../db/schema";
 import { AppError, isUniqueViolation } from "../../lib/errors";
+import { logUnexpectedError } from "../../lib/logging";
 import { emailAddress } from "../../lib/validation";
 import { createAuthUser, deleteAuthUser } from "../../services/auth";
 import type { AppContext } from "../../types";
@@ -47,7 +48,9 @@ export class UserCreate extends OpenAPIRoute {
 			.returning()
 			.catch(async (err) => {
 				// Don't leave an auth user without a profile behind.
-				await deleteAuthUser(c.env, authUser.id).catch((cleanupErr) => console.error(cleanupErr));
+				await deleteAuthUser(c.env, authUser.id).catch((cleanupErr) =>
+					logUnexpectedError(cleanupErr, { action: "delete-orphan-auth-user" }),
+				);
 				if (isUniqueViolation(err)) {
 					throw new AppError("CONFLICT", `A user with email ${data.body.email} already exists.`);
 				}
