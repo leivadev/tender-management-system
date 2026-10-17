@@ -1,6 +1,6 @@
 import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
-import { getSupabaseAdminClient } from "../../services/auth";
+import { signOutSession } from "../../services/auth";
 import type { AppContext } from "../../types";
 
 export class Logout extends OpenAPIRoute {
@@ -19,8 +19,7 @@ export class Logout extends OpenAPIRoute {
 		const authHeader = c.req.header("Authorization") ?? "";
 		const jwt = authHeader.replace(/^Bearer\s+/i, "");
 
-		const admin = getSupabaseAdminClient(c.env);
-		await admin.auth.admin.signOut(jwt);
+		await signOutSession(c.env, jwt);
 
 		return c.json({ success: true });
 	}

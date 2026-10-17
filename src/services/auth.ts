@@ -5,10 +5,44 @@ import { AppError } from "../lib/errors";
  * Admin client authenticated with the secret key. Only ever instantiated
  * inside the Worker — the secret key must never reach the browser.
  */
-export function getSupabaseAdminClient(env: Env) {
+export function getSupabaseAdminClient(env: Env, headers?: Record<string, string>) {
 	return createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
 		auth: { autoRefreshToken: false, persistSession: false },
+		global: { headers },
 	});
+}
+
+/**
+ * Password sign-in on behalf of an end user (FR-06). The provider's per-IP rate limit only sees
+ * the Worker's address unless it is told the real one; `Sb-Forwarded-For` is honoured for
+ * requests made with a secret key once IP forwarding is enabled on the project, so this user-facing
+ * call deliberately uses the secret-key client. It never leaves the Worker (invariant 4).
+ */
+export async function signInWithPassword(
+	env: Env,
+	email: string,
+	password: string,
+	clientIp: string | undefined,
+) {
+	const client = getSupabaseAdminClient(env, clientIp ? { "Sb-Forwarded-For": clientIp } : undefined);
+	const { data, error } = await client.auth.signInWithPassword({ email, password });
+
+	if (error?.status === 429 || error?.code === "over_request_rate_limit") {
+		throw new AppError("RATE_LIMITED", "Too many sign-in attempts. Try again in a few minutes.");
+	}
+	if (error || !data.session) {
+		throw new AppError("UNAUTHENTICATED", "Invalid email or password.");
+	}
+
+	return data.session;
+}
+
+/** Provider sign-out with the default `global` scope: ends the session and revokes its refresh tokens (FR-02). */
+export async function signOutSession(env: Env, accessToken: string) {
+	const { error } = await getSupabaseAdminClient(env).auth.admin.signOut(accessToken);
+	if (error) {
+		throw new Error(`Failed to sign out: ${error.message}`);
+	}
 }
 
 export async function createAuthUser(env: Env, email: string, password: string) {

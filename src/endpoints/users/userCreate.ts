@@ -9,7 +9,8 @@ import type { AppContext } from "../../types";
 
 const UserInput = z.object({
 	email: emailAddress(),
-	password: z.string().min(8),
+	// SEC-20: minimum length only, no composition rules.
+	password: z.string().min(12),
 	role: z.enum(roleEnum).default("user"),
 });
 

@@ -1,7 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
 import { OpenAPIRoute } from "chanfana";
 import { z } from "zod";
-import { AppError } from "../../lib/errors";
+import { signInWithPassword } from "../../services/auth";
 import type { AppContext } from "../../types";
 
 const LoginInput = z.object({
@@ -35,21 +34,17 @@ export class Login extends OpenAPIRoute {
 
 	async handle(c: AppContext) {
 		const data = await this.getValidatedData<typeof this.schema>();
-		const supabase = createClient(c.env.SUPABASE_URL, c.env.SUPABASE_PUBLISHABLE_KEY);
-
-		const { data: authData, error } = await supabase.auth.signInWithPassword({
-			email: data.body.email,
-			password: data.body.password,
-		});
-
-		if (error || !authData.session) {
-			throw new AppError("UNAUTHENTICATED", "Invalid email or password.");
-		}
+		const session = await signInWithPassword(
+			c.env,
+			data.body.email,
+			data.body.password,
+			c.req.header("CF-Connecting-IP"),
+		);
 
 		return c.json({
 			success: true,
-			access_token: authData.session.access_token,
-			expires_at: authData.session.expires_at,
+			access_token: session.access_token,
+			expires_at: session.expires_at,
 		});
 	}
 }

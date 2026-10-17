@@ -31,7 +31,7 @@ const MESSAGES: Record<ErrorCode, string> = {
 	BUSINESS_RULE_VIOLATION: "The operation violates a business rule.",
 	TENDER_BUDGET_EXCEEDED: "The tender's maximum budget would be exceeded.",
 	INVALID_TENDER_TRANSITION: "That status transition is not valid right now.",
-	RATE_LIMITED: "Too many requests, try again in a few seconds.",
+	RATE_LIMITED: "Too many attempts, try again in a few minutes.",
 	EMAIL_DELIVERY_FAILED:
 		"The email could not be delivered. The tender is still a draft; try sending it again.",
 	INTERNAL_ERROR: "An unexpected error occurred.",
