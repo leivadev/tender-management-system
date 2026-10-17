@@ -26,7 +26,7 @@ export function ProductsTab() {
 	const [budgetError, setBudgetError] = useState<string | null>(null);
 
 	const { canWrite } = useAuth();
-	const statusEditable = EDITABLE_STATUSES.has(tender.status);
+	const statusEditable = EDITABLE_STATUSES.has(tender.status) && !tender.archivedAt;
 	const editable = canWrite && statusEditable;
 	const usedBudget = tender.products.reduce((sum, p) => sum + Number(p.subtotal), 0);
 	const remainingBudget = Number(tender.maxBudget) - usedBudget;
@@ -175,7 +175,9 @@ export function ProductsTab() {
 			) : (
 				canWrite && (
 					<p className="text-[13px] text-muted-foreground">
-						Products can only be edited while the tender is draft or active.
+						{tender.archivedAt
+							? "Archived tenders are read-only."
+							: "Products can only be edited while the tender is draft or active."}
 					</p>
 				)
 			)}

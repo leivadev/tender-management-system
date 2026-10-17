@@ -1,7 +1,8 @@
 import { FileText, Plus, SearchX } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { TenderSort } from "../api/tenders";
-import { TENDER_STATUSES, type TenderStatus } from "../api/types";
+import { type ArchivedFilter, TENDER_STATUSES, type TenderStatus } from "../api/types";
+import { Badge } from "../components/Badge";
 import { buttonClasses } from "../components/Button";
 import { DisabledAction } from "../components/DisabledAction";
 import { EmptyState } from "../components/EmptyState";
@@ -16,6 +17,7 @@ import { useTenders } from "../hooks/useTenders";
 import { useAuth } from "../lib/AuthContext";
 import { cn } from "../lib/cn";
 import { formatCurrency, formatShortDate } from "../lib/format";
+import { inputClass } from "../lib/formStyles";
 import { STATUS_LABELS } from "../lib/statusLabels";
 
 const SORTS: TenderSort[] = ["created", "deadline", "budget", "title"];
@@ -29,7 +31,7 @@ function isSort(value: string | null): value is TenderSort {
 }
 
 export function TenderListPage() {
-	const { canWrite } = useAuth();
+	const { canWrite, isAdmin } = useAuth();
 	const [searchParams, setSearchParams] = useSearchParams();
 
 	const statusParam = searchParams.get("status");
@@ -39,6 +41,9 @@ export function TenderListPage() {
 	const sort = isSort(sortParam) ? sortParam : "created";
 	const dir = searchParams.get("dir") === "asc" ? "asc" : "desc";
 	const page = Math.max(1, Number.parseInt(searchParams.get("page") ?? "", 10) || 1);
+	const archivedParam = searchParams.get("archived");
+	const archived: ArchivedFilter | undefined =
+		archivedParam === "only" || archivedParam === "include" ? archivedParam : undefined;
 
 	/** Rewrites the query string; any filter change goes back to page 1 unless `page` is given. */
 	function update(next: {
@@ -46,9 +51,10 @@ export function TenderListPage() {
 		q?: string;
 		sort?: TenderSort;
 		dir?: "asc" | "desc";
+		archived?: ArchivedFilter | undefined;
 		page?: number;
 	}) {
-		const merged = { status, q, sort, dir, page: 1, ...next };
+		const merged = { status, q, sort, dir, archived, page: 1, ...next };
 		const params = new URLSearchParams();
 		if (merged.status) params.set("status", merged.status);
 		if (merged.q) params.set("q", merged.q);
@@ -56,6 +62,7 @@ export function TenderListPage() {
 			params.set("sort", merged.sort);
 			params.set("dir", merged.dir);
 		}
+		if (merged.archived) params.set("archived", merged.archived);
 		if (merged.page > 1) params.set("page", String(merged.page));
 		setSearchParams(params);
 	}
@@ -67,8 +74,14 @@ export function TenderListPage() {
 
 	const sortDirection = (column: TenderSort) => (sort === column ? dir : undefined);
 
-	const tendersQuery = useTenders(page, { status, q: q || undefined, sort, dir });
-	const filtered = Boolean(status || q);
+	const tendersQuery = useTenders(page, {
+		status,
+		q: q || undefined,
+		sort,
+		dir,
+		archived: isAdmin ? archived : undefined,
+	});
+	const filtered = Boolean(status || q || (isAdmin && archived));
 
 	return (
 		<>
@@ -107,12 +120,26 @@ export function TenderListPage() {
 							</button>
 						))}
 					</fieldset>
-					<SearchInput
-						value={q}
-						onSearch={(value) => update({ q: value })}
-						placeholder="Search by title or client"
-						className="w-full lg:w-72"
-					/>
+					<div className="flex flex-wrap items-center gap-3">
+						{isAdmin && (
+							<select
+								aria-label="Archived tenders"
+								value={archived ?? ""}
+								onChange={(e) => update({ archived: (e.target.value || undefined) as ArchivedFilter })}
+								className={`${inputClass} w-auto`}
+							>
+								<option value="">Active tenders</option>
+								<option value="include">Active and archived</option>
+								<option value="only">Archived only</option>
+							</select>
+						)}
+						<SearchInput
+							value={q}
+							onSearch={(value) => update({ q: value })}
+							placeholder="Search by title or client"
+							className="w-full lg:w-72"
+						/>
+					</div>
 				</div>
 
 				{tendersQuery.error && <ErrorMessage error={tendersQuery.error} />}
@@ -169,7 +196,8 @@ export function TenderListPage() {
 											className="font-medium text-foreground hover:text-primary hover:underline"
 										>
 											{tender.title}
-										</Link>
+										</Link>{" "}
+										{tender.archivedAt && <Badge>Archived</Badge>}
 									</TD>
 									<TD className="text-muted-foreground">{tender.clientName ?? "—"}</TD>
 									<TD numeric>{formatCurrency(tender.maxBudget)}</TD>

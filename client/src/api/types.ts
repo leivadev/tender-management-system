@@ -146,6 +146,7 @@ export interface Tender {
 	proposalContentType: string | null;
 	invoiceAmount: string | null;
 	reminderSentAt: string | null;
+	archivedAt: string | null;
 	createdAt: string;
 	updatedAt: string;
 }

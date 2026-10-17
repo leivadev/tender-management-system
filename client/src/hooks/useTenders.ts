@@ -143,6 +143,22 @@ export function useCorrectTenderInvoice(tenderId: string) {
 	});
 }
 
+export function useArchiveTender(tenderId: string) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: () => api.archiveTender(tenderId),
+		onSuccess: () => invalidateTenderWrites(queryClient, tenderId),
+	});
+}
+
+export function useRestoreTender(tenderId: string) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: () => api.restoreTender(tenderId),
+		onSuccess: () => invalidateTenderWrites(queryClient, tenderId),
+	});
+}
+
 export function useCreateTenderPayment(tenderId: string) {
 	const queryClient = useQueryClient();
 	return useMutation({

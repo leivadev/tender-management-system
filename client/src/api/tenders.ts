@@ -1,6 +1,7 @@
 import { fetchBlob, fetchJson, pageQuery } from "./client";
 import type {
 	AddTenderProductRequest,
+	ArchivedFilter,
 	CreatePaymentRequest,
 	CreatePaymentResponse,
 	CreateTenderRequest,
@@ -22,6 +23,7 @@ export interface TenderListParams {
 	q?: string;
 	sort?: TenderSort;
 	dir?: "asc" | "desc";
+	archived?: ArchivedFilter;
 }
 
 export function listTenders(page: number, params: TenderListParams = {}) {
@@ -104,6 +106,14 @@ export function correctTenderInvoice(tenderId: string, payload: InvoiceTenderReq
 		method: "PATCH",
 		body: JSON.stringify(payload),
 	});
+}
+
+export function archiveTender(tenderId: string) {
+	return fetchJson<{ success: true; tender: Tender }>(`/api/tenders/${tenderId}/archive`, { method: "POST" });
+}
+
+export function restoreTender(tenderId: string) {
+	return fetchJson<{ success: true; tender: Tender }>(`/api/tenders/${tenderId}/restore`, { method: "POST" });
 }
 
 export function getTenderHistory(tenderId: string) {

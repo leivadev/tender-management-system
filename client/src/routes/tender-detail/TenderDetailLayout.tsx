@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useParams } from "react-router-dom";
+import { Badge } from "../../components/Badge";
 import { ErrorMessage } from "../../components/ErrorMessage";
 import { PageHeader } from "../../components/PageHeader";
 import { Skeleton } from "../../components/Skeleton";
@@ -45,12 +46,23 @@ export function TenderDetailLayout() {
 			<PageHeader
 				crumbs={[{ label: "Tenders", to: "/tenders" }, { label: tender.title }]}
 				title={tender.title}
-				badge={<StatusBadge status={tender.status} />}
+				badge={
+					<>
+						<StatusBadge status={tender.status} />
+						{tender.archivedAt && <Badge>Archived</Badge>}
+					</>
+				}
 				description={[tender.clientName, `Budget ${formatCurrency(tender.maxBudget)}`]
 					.filter(Boolean)
 					.join(" · ")}
 				actions={<TenderActions tender={tender} />}
 			/>
+
+			{tender.archivedAt && (
+				<p className="rounded-md border border-border bg-muted px-3 py-2 text-[13px] text-muted-foreground">
+					This tender is archived and read-only. An administrator can restore it.
+				</p>
+			)}
 
 			<TenderStepper tender={tender} />
 

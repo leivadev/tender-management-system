@@ -185,7 +185,7 @@ export function OverviewTab() {
 					<CardHeader
 						title="Description"
 						action={
-							canWrite && !isEditing ? (
+							canWrite && !isEditing && !tender.archivedAt ? (
 								<Button variant="link" onClick={() => setIsEditing(true)}>
 									Edit
 								</Button>

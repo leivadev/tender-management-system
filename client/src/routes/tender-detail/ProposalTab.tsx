@@ -75,7 +75,7 @@ export function ProposalTab() {
 					<p className="text-[13px] text-muted-foreground">No proposal has been uploaded yet.</p>
 				)}
 
-				{canWrite && (
+				{canWrite && !tender.archivedAt && (
 					<label
 						htmlFor="proposal-file"
 						onDragOver={(e) => {

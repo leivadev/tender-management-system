@@ -1,12 +1,21 @@
-import { CircleCheck, Send, XCircle } from "lucide-react";
-import type { TenderDetail } from "../../api/types";
+import { Archive, ArchiveRestore, CircleCheck, Send, XCircle } from "lucide-react";
+import type { TenderDetail, TenderStatus } from "../../api/types";
 import { Button } from "../../components/Button";
 import { DisabledAction } from "../../components/DisabledAction";
-import { useFinalizeTender, useLoseTender, useSendTender } from "../../hooks/useTenders";
+import {
+	useArchiveTender,
+	useFinalizeTender,
+	useLoseTender,
+	useRestoreTender,
+	useSendTender,
+} from "../../hooks/useTenders";
 import { useAuth } from "../../lib/AuthContext";
 import { confirmAction } from "../../lib/confirm";
 import { formatCurrency } from "../../lib/format";
 import { pushToast } from "../../lib/toast";
+
+// FR-44: mirrors the server rule; the API stays the authority.
+const ARCHIVABLE_STATUSES: TenderStatus[] = ["draft", "collected", "lost"];
 
 /** Status-transition buttons for the page header. Each one confirms before mutating. */
 export function TenderActions({ tender }: { tender: TenderDetail }) {
@@ -14,9 +23,14 @@ export function TenderActions({ tender }: { tender: TenderDetail }) {
 	const sendTender = useSendTender(tender.id);
 	const finalizeTender = useFinalizeTender(tender.id);
 	const loseTender = useLoseTender(tender.id);
+	const archiveTender = useArchiveTender(tender.id);
+	const restoreTender = useRestoreTender(tender.id);
 
-	const isDraft = tender.status === "draft";
-	const isActive = tender.status === "active";
+	// FR-47: an archived tender is read-only, so only Restore is offered.
+	const isArchived = tender.archivedAt !== null;
+	const isDraft = tender.status === "draft" && !isArchived;
+	const isActive = tender.status === "active" && !isArchived;
+	const canArchive = isAdmin && !isArchived && ARCHIVABLE_STATUSES.includes(tender.status);
 
 	async function handleSend() {
 		const ok = await confirmAction({
@@ -47,6 +61,28 @@ export function TenderActions({ tender }: { tender: TenderDetail }) {
 		});
 		if (!ok) return;
 		loseTender.mutate(undefined, { onSuccess: () => pushToast("Tender marked as lost.") });
+	}
+
+	async function handleArchive() {
+		const ok = await confirmAction({
+			title: `Archive "${tender.title}"?`,
+			description:
+				"It will disappear from lists and the dashboard and become read-only. Status, history and proposal are kept. You can restore it later.",
+			confirmLabel: "Archive tender",
+			destructive: true,
+		});
+		if (!ok) return;
+		archiveTender.mutate(undefined, { onSuccess: () => pushToast("Tender archived.") });
+	}
+
+	async function handleRestore() {
+		const ok = await confirmAction({
+			title: `Restore "${tender.title}"?`,
+			description: "It will appear in lists again and become editable.",
+			confirmLabel: "Restore tender",
+		});
+		if (!ok) return;
+		restoreTender.mutate(undefined, { onSuccess: () => pushToast("Tender restored.") });
 	}
 
 	return (
@@ -80,6 +116,16 @@ export function TenderActions({ tender }: { tender: TenderDetail }) {
 				) : (
 					<DisabledAction reason="Only administrators can mark a tender as lost">Mark as lost</DisabledAction>
 				))}
+			{canArchive && (
+				<Button variant="ghost" loading={archiveTender.isPending} onClick={handleArchive}>
+					<Archive className="size-3.5" /> Archive
+				</Button>
+			)}
+			{isAdmin && isArchived && (
+				<Button variant="ghost" loading={restoreTender.isPending} onClick={handleRestore}>
+					<ArchiveRestore className="size-3.5" /> Restore
+				</Button>
+			)}
 		</>
 	);
 }
