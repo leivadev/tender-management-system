@@ -325,5 +325,8 @@ describe("dashboard window and archived exclusion (FR-31)", () => {
 		const upcoming = (await dashboard()).body.upcoming as { id: string }[];
 
 		expect(upcoming.map((t) => t.id)).not.toContain(id);
+
+		// Undo the raw update: left active, the row would reach the expiry cron once its deadline passes.
+		await withSql((sql) => sql`update tenders set status = 'draft' where id = ${id}`);
 	});
 });
