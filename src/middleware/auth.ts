@@ -78,6 +78,11 @@ export function loadProfile(): MiddlewareHandler<AppBindings> {
 			throw new AppError("FORBIDDEN", "No profile found for this user.");
 		}
 
+		// SEC-19: an archived account is locked out even while its access token is still valid.
+		if (profile.archivedAt) {
+			throw new AppError("UNAUTHENTICATED", "Missing or invalid session.");
+		}
+
 		c.set("user", {
 			id: profile.id,
 			email: profile.email,

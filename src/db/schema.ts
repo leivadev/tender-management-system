@@ -42,6 +42,11 @@ export const profiles = pgTable(
 		updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 		// Nullable: the first bootstrap admin has no creator.
 		createdBy: uuid("created_by").references((): AnyPgColumn => profiles.id),
+		updatedBy: uuid("updated_by").references((): AnyPgColumn => profiles.id),
+
+		// DAT-11: archive marker and who set it; restoring clears both.
+		archivedAt: timestamp("archived_at", { withTimezone: true }),
+		archivedBy: uuid("archived_by").references((): AnyPgColumn => profiles.id),
 	},
 	(t) => [
 		uniqueIndex("profiles_email_lower_unique").on(sql`lower(${t.email})`),

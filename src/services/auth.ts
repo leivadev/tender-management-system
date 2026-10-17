@@ -35,3 +35,16 @@ export async function deleteAuthUser(env: Env, id: string) {
 		throw new Error(`Failed to delete auth user: ${error.message}`);
 	}
 }
+
+// ~100 years: Supabase has no "ban forever", only a duration.
+const BAN_DURATION = "876000h";
+
+/** Bans or unbans the user at the auth provider; a banned user cannot sign in or refresh a session. */
+export async function setAuthUserBanned(env: Env, id: string, banned: boolean) {
+	const { error } = await getSupabaseAdminClient(env).auth.admin.updateUserById(id, {
+		ban_duration: banned ? BAN_DURATION : "none",
+	});
+	if (error) {
+		throw new Error(`Failed to ${banned ? "ban" : "unban"} auth user: ${error.message}`);
+	}
+}

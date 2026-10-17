@@ -1,19 +1,18 @@
 import { OpenAPIRoute } from "chanfana";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "../../db/client";
-import { profiles, roleEnum } from "../../db/schema";
-import { AppError } from "../../lib/errors";
+import { roleEnum } from "../../db/schema";
+import { changeUserRole } from "../../domain/users/archiving";
 import type { AppContext } from "../../types";
 
-const UserUpdateInput = z.object({
+const UserUpdateInput = z.strictObject({
 	role: z.enum(roleEnum),
 });
 
 export class UserUpdate extends OpenAPIRoute {
 	schema = {
 		tags: ["Users"],
-		summary: "Update a user's role (admin only)",
+		summary: "Update a user's role (admin only); 409 for your own role or the last admin",
 		request: {
 			params: z.object({ id: z.uuid() }),
 			body: { content: { "application/json": { schema: UserUpdateInput } } },
@@ -28,18 +27,7 @@ export class UserUpdate extends OpenAPIRoute {
 
 	async handle(c: AppContext) {
 		const data = await this.getValidatedData<typeof this.schema>();
-		const db = getDb(c.env);
-
-		const [profile] = await db
-			.update(profiles)
-			.set({ role: data.body.role, updatedAt: new Date() })
-			.where(eq(profiles.id, data.params.id))
-			.returning();
-
-		if (!profile) {
-			throw new AppError("NOT_FOUND", `User ${data.params.id} not found.`);
-		}
-
-		return c.json({ success: true, user: profile });
+		const user = await changeUserRole(getDb(c.env), data.params.id, data.body.role, c.var.user.id);
+		return c.json({ success: true, user });
 	}
 }
