@@ -17,10 +17,10 @@ export function subscribeConfirm(fn: Listener): () => void {
 	};
 }
 
-/** Opens the app-wide confirmation dialog (mounted once in App). Resolves true on confirm. */
+/** Opens the app-wide confirmation dialog (mounted once in App). Resolves true on confirm. UI-05: never the native dialog. */
 export function confirmAction(options: ConfirmOptions): Promise<boolean> {
 	return new Promise((resolve) => {
-		if (!listener) return resolve(window.confirm(options.title));
+		if (!listener) return resolve(false);
 		listener({ options, resolve });
 	});
 }
