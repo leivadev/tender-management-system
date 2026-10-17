@@ -86,9 +86,20 @@ app.onError(async (err, c) => {
 	return c.json({ error: { code: "INTERNAL_ERROR", message: "Unexpected error." } }, 500);
 });
 
+// FR-45: the spec needs a session. Hono runs handlers in registration order, so this must be
+// registered before `fromHono` adds the `/openapi.json` route.
+// chanfana also serves a YAML twin of the spec.
+for (const path of ["/openapi.json", "/openapi.yaml"]) {
+	app.use(path, supabaseAuth());
+	app.use(path, loadProfile());
+}
+
+// FR-45: the API serves no documentation pages (`docs_url`/`redoc_url` null). The spec lives at
+// `/openapi.json` behind the same session check as `/api/*`; Swagger UI is the SPA route `/docs` (FR-32).
 const openapi = fromHono(app, {
-	docs_url: "/api/docs",
-	openapi_url: "/api/openapi.json",
+	docs_url: null,
+	redoc_url: null,
+	openapi_url: "/openapi.json",
 	schema: {
 		security: [{ bearerAuth: [] }],
 	},
@@ -174,6 +185,11 @@ openapi.patch("/api/tenders/:id/invoice", TenderInvoiceCorrect);
 openapi.get("/api/tenders/:id/history", TenderHistory);
 openapi.post("/api/tenders/:id/payments", PaymentCreate);
 openapi.get("/api/tenders/:id/payments", PaymentList);
+
+// Unknown API paths (e.g. the retired `/api/docs`) are a 404, never the SPA shell.
+app.all("/api/*", () => {
+	throw new AppError("NOT_FOUND", "Route not found.");
+});
 
 app.get("*", (c) => c.env.ASSETS.fetch(c.req.raw));
 
