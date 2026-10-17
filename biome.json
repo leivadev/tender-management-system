@@ -14,7 +14,8 @@
 			"vitest.config.mts",
 			"biome.json",
 			"client/src/**/*.ts",
-			"client/src/**/*.tsx"
+			"client/src/**/*.tsx",
+			"client/vitest.config.ts"
 		]
 	},
 	"formatter": {

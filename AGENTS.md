@@ -13,6 +13,7 @@ API on Cloudflare Workers (Hono + chanfana/OpenAPI) to draft, send, track, resol
 | `npm run db:generate` | Generate a Drizzle migration from `src/db/schema.ts` |
 | `npm run db:migrate` | Apply migrations (uses `DATABASE_URL` from `.env`, not Hyperdrive) |
 | `npm run test` | `vitest run` — E2E suite against a real local Supabase (see `tests/`) |
+| `npm run test:client` | SPA component tests (Vitest + Testing Library + jsdom, `client/src/**/*.test.tsx`) — run when touching `client/` |
 | `npm run deploy` | Build `client/` + `wrangler deploy` to production |
 
 Before considering any change in `src/` done, run `npm run typecheck`, `npm run check` and `npm run test` — all must be clean. `test` needs the local Supabase running (see README, section "Supabase local").
@@ -59,14 +60,14 @@ This project **does not use** Durable Objects, Queues, Vectorize or Workers AI �
 
 `tests/api.test.ts`, `tests/auth-hardening.test.ts`, `tests/client-archive.test.ts`, `tests/cron.test.ts`, `tests/dashboard.test.ts`, `tests/english.test.ts`, `tests/inactive-products.test.ts`, `tests/integrity.test.ts`, `tests/invoice-correction.test.ts`, `tests/pagination.test.ts`, `tests/search.test.ts`, `tests/send.test.ts`, `tests/tender-mutations.test.ts`, `tests/uniqueness.test.ts` and `tests/user-archive.test.ts` — 308 cases with `@cloudflare/vitest-pool-workers` (runs inside the real Workers runtime, against the real bindings from `wrangler.jsonc` and the local Supabase). They cover auth, roles, login rate limiting (forwarded IP, provider 429 -> `RATE_LIMITED`, stubbed in `tests/setup.ts`), logout revoking sessions, password policy (min 12, no password endpoints), CRUD (including editing clients/products/users/tenders via `PATCH`), budget, the 10 invalid + 4 valid state-machine transitions, product locking in the 4 terminal statuses, invoicing, invoice correction (admin only, `for_collection` without payments, no cap, status unchanged), payments (partial/overpayment/full), cron (expiry, 48h reminder with hours remaining, retry after email failure or timeout, overlapping runs, send with <48h marking the reminder), dashboard (summary + metrics), audit, uniqueness (product names, user emails, one line per product in a tender), client archive/restore (admin only, `archived=only|include`, 409 with open tenders, 422 on new tenders, race with tender creation), user archive (ban + session revocation, 401 for archived tokens, self-protection, last-admin lock), product deactivation (admin toggle, 422 on adding an inactive product, existing lines kept) data integrity (text limits, money bounds, CHECK constraints, indexes), row-locked mutations (concurrent line additions, send, double send, budget vs lines), draft-only budget/deadline edits and deadline rules (past deadline, send 422, drafts never expire), pagination (envelope, limits, order, 10,000-tender latency), send (email first, 502 `EMAIL_DELIVERY_FAILED`, content, HTML escaping) and list search/sort (`q` on tenders/clients/products, `sort`/`dir` on tenders). Shared helpers live in `tests/helpers.ts`. If you add new logic, add its case there — do not assume that compiling = working.
 
-The frontend (`client/`) has no automated tests — it is verified manually in the browser.
+The frontend (`client/`) has a small jsdom suite (`npm run test:client`) for accessibility/behaviour rules (UI-04..09: confirm dialog, inline-edit keys, headings, mobile list columns, drawer); layout and visuals are still verified manually in the browser. Shared helpers: `client/src/test/render.tsx`.
 
 Note: `vitest run` may show 1-2 "Stream was cancelled" errors at the end — that is Miniflare closing Postgres.js connections when the test file finishes, not a real failure (the asserts do run and do fail the suite if something is wrong).
 
 ## Known pending items
 
 - Deployed to production (`wrangler deploy` + secrets via `wrangler secret put`) — but the Cron Trigger was never confirmed firing on its own in that real environment (locally it does not fire automatically).
-- The frontend (`client/`) has no automated tests (only the backend, via `npm run test`).
+- The frontend test suite only covers the accessibility rules above; no end-to-end browser tests.
 
 Before deploying to production or touching secrets, confirm with the user — these are steps with external effects.
 

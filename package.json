@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "check": "biome check .",
     "check:fix": "biome check --write .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:client": "npm --prefix client test"
   },
   "dependencies": {
     "@supabase/server": "^0.1.0",
