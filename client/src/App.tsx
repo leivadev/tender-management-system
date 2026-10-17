@@ -15,6 +15,7 @@ const ClientListPage = lazy(() =>
 const DashboardPage = lazy(() =>
 	import("./routes/DashboardPage").then((m) => ({ default: m.DashboardPage })),
 );
+const DocsPage = lazy(() => import("./routes/DocsPage").then((m) => ({ default: m.DocsPage })));
 const ProductListPage = lazy(() =>
 	import("./routes/ProductListPage").then((m) => ({ default: m.ProductListPage })),
 );
@@ -69,6 +70,7 @@ export default function App() {
 												<Route path="payments" element={<PaymentsTab />} />
 												<Route path="history" element={<HistoryTab />} />
 											</Route>
+											<Route path="/docs" element={<DocsPage />} />
 											<Route path="/clients" element={<ClientListPage />} />
 											<Route path="/products" element={<ProductListPage />} />
 											<Route

@@ -28,6 +28,7 @@
     "react-router-dom": "^7.18.2",
     "recharts": "^3.10.1",
     "sonner": "^2.0.8",
+    "swagger-ui-dist": "^5.33.3",
     "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {

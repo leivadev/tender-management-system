@@ -23,11 +23,11 @@ const NAV_ITEMS = [
 	{ to: "/clients", label: "Clients", icon: Building2 },
 	{ to: "/products", label: "Products", icon: Package },
 	{ to: "/users", label: "Users", icon: Users, adminOnly: true },
+	{ to: "/docs", label: "API docs", icon: BookOpen },
 ];
 
 const SOURCE_LINKS = [
 	{ href: "https://github.com/leivadev/tender-management-system", label: "GitHub repo", icon: Code },
-	{ href: "/api/docs", label: "API docs", icon: BookOpen },
 ];
 
 function Brand() {

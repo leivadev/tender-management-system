@@ -1,5 +1,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import {
+	BookOpen,
 	Building2,
 	CornerDownLeft,
 	FileText,
@@ -38,6 +39,7 @@ export const NAV_SHORTCUTS = [
 	{ key: "c", label: "Clients", to: "/clients", icon: Building2 },
 	{ key: "p", label: "Products", to: "/products", icon: Package },
 	{ key: "u", label: "Users", to: "/users", icon: Users, adminOnly: true },
+	{ key: "a", label: "API docs", to: "/docs", icon: BookOpen },
 ] as const;
 
 function isTypingTarget(target: EventTarget | null): boolean {

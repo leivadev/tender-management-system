@@ -1,4 +1,4 @@
-import { BookOpen, Check, Clock, Cloud, Code, Database, Eye, FileText, HardDrive, Mail } from "lucide-react";
+import { Check, Clock, Cloud, Code, Database, Eye, FileText, HardDrive, Mail } from "lucide-react";
 import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ApiError, mapErrorToMessage } from "../api/errors";
@@ -128,14 +128,6 @@ export function LoginPage() {
 						className="flex items-center gap-1 hover:text-foreground"
 					>
 						<Code className="size-3.5" aria-hidden="true" /> GitHub repo
-					</a>
-					<a
-						href="/api/docs"
-						target="_blank"
-						rel="noopener noreferrer"
-						className="flex items-center gap-1 hover:text-foreground"
-					>
-						<BookOpen className="size-3.5" aria-hidden="true" /> API docs
 					</a>
 					<span className="ml-auto">
 						Built by{" "}
