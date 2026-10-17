@@ -18,17 +18,22 @@ export async function processExpiredTenders(env: Env) {
 	const expired = await db
 		.select({ id: tenders.id })
 		.from(tenders)
-		.where(and(eq(tenders.status, "active"), lt(tenders.deadline, new Date())));
+		.where(and(eq(tenders.status, "active"), lt(tenders.deadline, new Date()), isNull(tenders.archivedAt)));
 
 	let expiredCount = 0;
 	for (const candidate of expired) {
-		// Re-check under the lock: a request may have moved the tender since the scan (BR-09).
-		const moved = await withLockedTender(db, candidate.id, async (tx, tender) => {
-			if (tender.status !== "active" || tender.deadline.getTime() >= Date.now()) return false;
-			await transitionTender(tx, tender.id, "lost", null);
-			return true;
-		});
-		if (moved) expiredCount++;
+		try {
+			// Re-check under the lock: a request may have moved the tender since the scan (BR-09).
+			const moved = await withLockedTender(db, candidate.id, async (tx, tender) => {
+				if (tender.status !== "active" || tender.deadline.getTime() >= Date.now()) return false;
+				await transitionTender(tx, tender.id, "lost", null);
+				return true;
+			});
+			if (moved) expiredCount++;
+		} catch (error) {
+			// One failing tender must not block the rest of the run (NFR-17).
+			console.error(`Expiry of tender ${candidate.id} failed:`, error);
+		}
 	}
 
 	return { expiredCount };
@@ -46,6 +51,7 @@ export async function processTenderReminders(env: Env, { sendTimeoutMs = 10_000 
 				gt(tenders.deadline, new Date()),
 				lt(tenders.deadline, hoursFromNow(REMINDER_WINDOW_HOURS)),
 				isNull(tenders.reminderSentAt),
+				isNull(tenders.archivedAt),
 			),
 		);
 
