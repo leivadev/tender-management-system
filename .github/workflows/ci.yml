@@ -31,6 +31,8 @@ jobs:
       - run: npm run check
       - run: npm --prefix client ci
       - run: npm run test:client
+      # tests/spa-security.test.ts reads the built SPA (CSP headers) through the ASSETS binding.
+      - run: npm --prefix client run build
 
       - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1
         with:
