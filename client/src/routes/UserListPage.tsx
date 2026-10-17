@@ -1,6 +1,6 @@
 import { Plus } from "lucide-react";
 import { useState } from "react";
-import type { Role, User } from "../api/types";
+import type { ArchivedFilter, Role, User } from "../api/types";
 import { Badge, type Tone } from "../components/Badge";
 import { Button } from "../components/Button";
 import { Card, CardHeader } from "../components/Card";
@@ -11,7 +11,7 @@ import { Pagination } from "../components/Pagination";
 import { TableSkeleton } from "../components/Skeleton";
 import { Table, TBody, TD, TH, THead, TR } from "../components/Table";
 import { useListParams } from "../hooks/useListParams";
-import { useCreateUser, useUpdateUser, useUsers } from "../hooks/useUsers";
+import { useArchiveUser, useCreateUser, useRestoreUser, useUpdateUser, useUsers } from "../hooks/useUsers";
 import { useAuth } from "../lib/AuthContext";
 import { confirmAction } from "../lib/confirm";
 import { inputClass } from "../lib/formStyles";
@@ -40,20 +40,60 @@ function UserRow({
 	canEdit: boolean;
 	onEdit: () => void;
 }) {
+	const archiveUser = useArchiveUser();
+	const restoreUser = useRestoreUser();
+	const isArchived = user.archivedAt !== null;
+
+	async function handleArchive() {
+		const ok = await confirmAction({
+			title: `Archive ${user.email}?`,
+			description:
+				"They will be signed out immediately and cannot log in again. Their data is kept. You can restore them later.",
+			confirmLabel: "Archive user",
+			destructive: true,
+		});
+		if (!ok) return;
+		archiveUser.mutate(user.id, { onSuccess: () => pushToast("User archived.") });
+	}
+
+	async function handleRestore() {
+		const ok = await confirmAction({
+			title: `Restore ${user.email}?`,
+			description: "They can log in again with their previous role.",
+			confirmLabel: "Restore user",
+		});
+		if (!ok) return;
+		restoreUser.mutate(user.id, { onSuccess: () => pushToast("User restored.") });
+	}
+
 	return (
 		<TR>
 			<TD className="font-medium">
 				{user.email}
-				{isYou && <span className="ml-2 text-xs font-normal text-muted-foreground">(you)</span>}
+				{isYou && <span className="ml-2 text-xs font-normal text-muted-foreground">(you)</span>}{" "}
+				{isArchived && <Badge>Archived</Badge>}
 			</TD>
 			<TD>
 				<Badge tone={ROLE_TONES[user.role]}>{ROLE_LABELS[user.role]}</Badge>
 			</TD>
 			<TD className="text-right">
 				{canEdit && (
-					<Button variant="ghost" onClick={onEdit}>
-						Edit
-					</Button>
+					<div className="flex justify-end gap-1">
+						{!isArchived && (
+							<Button variant="ghost" onClick={onEdit}>
+								Edit
+							</Button>
+						)}
+						{isArchived ? (
+							<Button variant="ghost" loading={restoreUser.isPending} onClick={handleRestore}>
+								Restore
+							</Button>
+						) : (
+							<Button variant="ghost" loading={archiveUser.isPending} onClick={handleArchive}>
+								Archive
+							</Button>
+						)}
+					</div>
 				)}
 			</TD>
 		</TR>
@@ -189,8 +229,8 @@ function CreateUserForm({ onDone }: { onDone: () => void }) {
 
 export function UserListPage() {
 	const { isAdmin, userId } = useAuth();
-	const { page, setPage } = useListParams();
-	const usersQuery = useUsers(page);
+	const { page, archived, setPage, setArchived } = useListParams();
+	const usersQuery = useUsers(page, archived);
 	const [creating, setCreating] = useState(false);
 	const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -211,6 +251,17 @@ export function UserListPage() {
 			{creating && <CreateUserForm onDone={() => setCreating(false)} />}
 
 			<div className="space-y-4">
+				<select
+					aria-label="Archived users"
+					value={archived ?? ""}
+					onChange={(e) => setArchived((e.target.value || undefined) as ArchivedFilter)}
+					className={`${inputClass} w-auto`}
+				>
+					<option value="">Active users</option>
+					<option value="include">Active and archived</option>
+					<option value="only">Archived only</option>
+				</select>
+
 				{usersQuery.error && <ErrorMessage error={usersQuery.error} />}
 
 				{usersQuery.isLoading ? (

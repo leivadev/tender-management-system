@@ -35,6 +35,8 @@ export interface User {
 	id: string;
 	email: string;
 	role: Role;
+	archivedAt: string | null;
+	archivedBy: string | null;
 }
 
 // --- users ---
