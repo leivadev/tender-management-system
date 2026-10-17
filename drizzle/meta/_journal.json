@@ -71,6 +71,13 @@
       "when": 1792196063311,
       "tag": "0009_safe_klaw",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792216036133,
+      "tag": "0010_revoke_data_api_access",
+      "breakpoints": true
     }
   ]
 }

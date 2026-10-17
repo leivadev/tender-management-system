@@ -54,6 +54,16 @@ Supabase backs up Pro, Team and Enterprise projects daily. Retention: Pro 7 days
 | Daily backups enabled | _to be confirmed by the maintainer_ |
 | Retention | _to be confirmed by the maintainer (7 days on Pro)_ |
 
+## Data API exposure (SEC-03, SEC-12, SEC-13, SEC-14)
+
+The app reaches Postgres only through the Worker (Hyperdrive, owner role). The provider's Data API (PostgREST/GraphQL) must reach nothing:
+
+- RLS is enabled on every `public` table (`enableRLS()` in `src/db/schema.ts`) and no policy exists.
+- Migration `0010_revoke_data_api_access` revokes all privileges on `public` tables and sequences from `anon` and `authenticated`, and alters the default privileges so tables and sequences created later are not granted to them. Supabase would otherwise grant them automatically.
+- Hosted dashboard, **Project Settings → Data API → Exposed schemas**: remove `public` (SEC-13). Locally `supabase/config.toml` lists only `graphql_public`. This remote change needs the maintainer's approval, like the values above.
+
+`tests/data-exposure.test.ts` checks RLS, policies, grants, the privileges of a table created on the spot, and that `anon`/`authenticated` are denied (`42501`) on every table. It also calls `/rest/v1` with the public key; the local stack runs without PostgREST (README), so there that only proves no data comes back. Run the migration against production only with the maintainer's approval.
+
 ## Applying to production
 
 1. Maintainer approves the change.
