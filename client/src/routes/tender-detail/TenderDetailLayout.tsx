@@ -21,6 +21,7 @@ const TABS = [
 function DetailSkeleton() {
 	return (
 		<div className="space-y-6">
+			<h1 className="sr-only">Loading tender</h1>
 			<div className="space-y-2">
 				<Skeleton className="h-4 w-40" />
 				<Skeleton className="h-7 w-96 max-w-full" />
@@ -36,7 +37,13 @@ export function TenderDetailLayout() {
 	const tenderQuery = useTender(id ?? "");
 
 	if (tenderQuery.isLoading) return <DetailSkeleton />;
-	if (tenderQuery.error) return <ErrorMessage error={tenderQuery.error} />;
+	if (tenderQuery.error)
+		return (
+			<>
+				<PageHeader crumbs={[{ label: "Tenders", to: "/tenders" }]} title="Tender unavailable" />
+				<ErrorMessage error={tenderQuery.error} />
+			</>
+		);
 	if (!tenderQuery.data) return null;
 
 	const tender = tenderQuery.data;

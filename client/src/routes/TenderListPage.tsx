@@ -19,7 +19,21 @@ import { formatCurrency, formatShortDate } from "../lib/format";
 import { inputClass } from "../lib/formStyles";
 import { STATUS_LABELS } from "../lib/statusLabels";
 
+const FROM_MD = "hidden md:table-cell";
+
 const SORTS: TenderSort[] = ["created", "deadline", "budget", "title"];
+
+/** UI-04: below md the sortable column headers are hidden, so the same orderings are offered in a select. */
+const SORT_OPTIONS: { value: `${TenderSort}:${"asc" | "desc"}`; label: string }[] = [
+	{ value: "created:desc", label: "Newest first" },
+	{ value: "created:asc", label: "Oldest first" },
+	{ value: "deadline:asc", label: "Due soonest" },
+	{ value: "deadline:desc", label: "Due latest" },
+	{ value: "budget:desc", label: "Budget, high to low" },
+	{ value: "budget:asc", label: "Budget, low to high" },
+	{ value: "title:asc", label: "Title A–Z" },
+	{ value: "title:desc", label: "Title Z–A" },
+];
 
 function isTenderStatus(value: string | null): value is TenderStatus {
 	return TENDER_STATUSES.includes(value as TenderStatus);
@@ -130,6 +144,21 @@ export function TenderListPage() {
 								<option value="only">Archived only</option>
 							</select>
 						)}
+						<select
+							aria-label="Sort by"
+							value={`${sort}:${dir}`}
+							onChange={(e) => {
+								const [nextSort, nextDir] = e.target.value.split(":") as [TenderSort, "asc" | "desc"];
+								update({ sort: nextSort, dir: nextDir });
+							}}
+							className={`${inputClass} w-auto md:hidden`}
+						>
+							{SORT_OPTIONS.map((o) => (
+								<option key={o.value} value={o.value}>
+									{o.label}
+								</option>
+							))}
+						</select>
 						<SearchInput
 							value={q}
 							onSearch={(value) => update({ q: value })}
@@ -165,21 +194,29 @@ export function TenderListPage() {
 						}
 					/>
 				) : (
-					<Table>
+					<Table className="min-w-0 md:min-w-max">
 						<THead>
 							<tr>
 								<SortTH direction={sortDirection("title")} onSort={() => toggleSort("title")}>
 									Title
 								</SortTH>
-								<TH>Client</TH>
+								<TH className={FROM_MD}>Client</TH>
 								<SortTH numeric direction={sortDirection("budget")} onSort={() => toggleSort("budget")}>
 									Budget
 								</SortTH>
-								<SortTH direction={sortDirection("deadline")} onSort={() => toggleSort("deadline")}>
+								<SortTH
+									className={FROM_MD}
+									direction={sortDirection("deadline")}
+									onSort={() => toggleSort("deadline")}
+								>
 									Due
 								</SortTH>
-								<TH>Status</TH>
-								<SortTH direction={sortDirection("created")} onSort={() => toggleSort("created")}>
+								<TH className={FROM_MD}>Status</TH>
+								<SortTH
+									className={FROM_MD}
+									direction={sortDirection("created")}
+									onSort={() => toggleSort("created")}
+								>
 									Created
 								</SortTH>
 							</tr>
@@ -195,16 +232,26 @@ export function TenderListPage() {
 											{tender.title}
 										</Link>{" "}
 										{tender.archivedAt && <Badge>Archived</Badge>}
+										{/* UI-04: below md Client, Due, Status and Created are folded in here, so nothing hides behind a sideways scroll. */}
+										<div
+											data-testid="tender-mobile-summary"
+											className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground md:hidden"
+										>
+											<StatusBadge status={tender.status} />
+											<span>Due {formatShortDate(tender.deadline)}</span>
+											<span>{tender.clientName ?? "—"}</span>
+											<span>Created {formatShortDate(tender.createdAt)}</span>
+										</div>
 									</TD>
-									<TD className="text-muted-foreground">{tender.clientName ?? "—"}</TD>
+									<TD className={cn("text-muted-foreground", FROM_MD)}>{tender.clientName ?? "—"}</TD>
 									<TD numeric>{formatCurrency(tender.maxBudget)}</TD>
-									<TD className="whitespace-nowrap text-muted-foreground">
+									<TD className={cn("whitespace-nowrap text-muted-foreground", FROM_MD)}>
 										{formatShortDate(tender.deadline)}
 									</TD>
-									<TD>
+									<TD className={FROM_MD}>
 										<StatusBadge status={tender.status} />
 									</TD>
-									<TD className="whitespace-nowrap text-muted-foreground">
+									<TD className={cn("whitespace-nowrap text-muted-foreground", FROM_MD)}>
 										{formatShortDate(tender.createdAt)}
 									</TD>
 								</TR>

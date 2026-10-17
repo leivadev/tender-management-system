@@ -24,6 +24,7 @@ import { useListParams } from "../hooks/useListParams";
 import { useAuth } from "../lib/AuthContext";
 import { confirmAction } from "../lib/confirm";
 import { fieldClass, inputClass } from "../lib/formStyles";
+import { inlineEditKeys } from "../lib/inlineEdit";
 import { pushToast } from "../lib/toast";
 
 function ClientRow({ client, onEdit }: { client: Client; onEdit: () => void }) {
@@ -104,7 +105,10 @@ function ClientEditRow({ client, onDone }: { client: Client; onDone: () => void 
 	}
 
 	return (
-		<TR className="h-14 bg-primary-soft/40">
+		<TR
+			className="h-14 bg-primary-soft/40"
+			onKeyDown={inlineEditKeys({ onSave: handleSave, onCancel: onDone, busy: updateClient.isPending })}
+		>
 			<TD>
 				<input
 					aria-label="Name"

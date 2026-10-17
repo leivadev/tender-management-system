@@ -16,6 +16,7 @@ import { useArchiveUser, useCreateUser, useRestoreUser, useUpdateUser, useUsers 
 import { useAuth } from "../lib/AuthContext";
 import { confirmAction } from "../lib/confirm";
 import { fieldClass, inputClass } from "../lib/formStyles";
+import { inlineEditKeys } from "../lib/inlineEdit";
 import { pushToast } from "../lib/toast";
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -130,7 +131,10 @@ function UserEditRow({ user, onDone }: { user: User; onDone: () => void }) {
 	}
 
 	return (
-		<TR className="h-14 bg-primary-soft/40">
+		<TR
+			className="h-14 bg-primary-soft/40"
+			onKeyDown={inlineEditKeys({ onSave: handleSave, onCancel: onDone, busy: updateUser.isPending })}
+		>
 			<TD className="font-medium">{user.email}</TD>
 			<TD>
 				<select

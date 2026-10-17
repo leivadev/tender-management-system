@@ -18,6 +18,7 @@ import { useCreateProduct, useProducts, useUpdateProduct } from "../hooks/usePro
 import { useAuth } from "../lib/AuthContext";
 import { formatCurrency } from "../lib/format";
 import { fieldClass } from "../lib/formStyles";
+import { inlineEditKeys } from "../lib/inlineEdit";
 import { pushToast } from "../lib/toast";
 
 function ProductRow({ product, onEdit }: { product: Product; onEdit: () => void }) {
@@ -74,7 +75,10 @@ function ProductEditRow({ product, onDone }: { product: Product; onDone: () => v
 	}
 
 	return (
-		<TR className="h-14 bg-primary-soft/40">
+		<TR
+			className="h-14 bg-primary-soft/40"
+			onKeyDown={inlineEditKeys({ onSave: handleSave, onCancel: onDone, busy: updateProduct.isPending })}
+		>
 			<TD>
 				<input
 					aria-label="Name"
