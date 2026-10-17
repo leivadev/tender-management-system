@@ -1,3 +1,4 @@
+import * as Dialog from "@radix-ui/react-dialog";
 import {
 	BookOpen,
 	Building2,
@@ -142,46 +143,47 @@ export function Layout({ children }: { children: ReactNode }) {
 	useGlobalShortcuts(togglePalette);
 	return (
 		<div className="min-h-screen lg:flex">
+			<a
+				href="#main"
+				className="sr-only z-50 rounded-ctl bg-card px-3 py-2 text-[13px] font-medium shadow-card focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
+			>
+				Skip to content
+			</a>
 			<CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
 			<aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-sidebar p-3 lg:flex">
 				<SidebarContent onSearch={() => setPaletteOpen(true)} />
 			</aside>
 
-			<div className="sticky top-0 z-30 flex h-12 items-center justify-between border-b border-border bg-sidebar px-3 lg:hidden">
-				<Brand />
-				<button
-					type="button"
-					onClick={() => setOpen(true)}
-					aria-label="Open menu"
-					className="grid size-8 place-items-center rounded-ctl text-muted-foreground hover:bg-muted"
-				>
-					<Menu className="size-5" />
-				</button>
-			</div>
+			<Dialog.Root open={open} onOpenChange={setOpen}>
+				<div className="sticky top-0 z-30 flex h-12 items-center justify-between border-b border-border bg-sidebar px-3 lg:hidden">
+					<Brand />
+					<Dialog.Trigger
+						aria-label="Open menu"
+						className="grid size-8 place-items-center rounded-ctl text-muted-foreground hover:bg-muted"
+					>
+						<Menu className="size-5" />
+					</Dialog.Trigger>
+				</div>
 
-			{open && (
-				<div className="fixed inset-0 z-40 lg:hidden">
-					<button
-						type="button"
-						aria-label="Close menu"
-						className="absolute inset-0 bg-foreground/30"
-						onClick={() => setOpen(false)}
-					/>
-					<aside className="absolute inset-y-0 left-0 flex w-64 flex-col bg-sidebar p-3 shadow-card">
-						<button
-							type="button"
-							onClick={() => setOpen(false)}
+				<Dialog.Portal>
+					<Dialog.Overlay className="fixed inset-0 z-40 bg-foreground/30 lg:hidden" />
+					<Dialog.Content
+						aria-describedby={undefined}
+						className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-sidebar p-3 shadow-card lg:hidden"
+					>
+						<Dialog.Title className="sr-only">Navigation menu</Dialog.Title>
+						<Dialog.Close
 							aria-label="Close menu"
 							className="absolute top-3 right-3 grid size-7 place-items-center rounded-ctl text-muted-foreground hover:bg-muted"
 						>
 							<X className="size-4" />
-						</button>
+						</Dialog.Close>
 						<SidebarContent onNavigate={() => setOpen(false)} onSearch={() => setPaletteOpen(true)} />
-					</aside>
-				</div>
-			)}
+					</Dialog.Content>
+				</Dialog.Portal>
+			</Dialog.Root>
 
-			<main className="min-w-0 flex-1">
+			<main id="main" className="min-w-0 flex-1">
 				<div className="mx-auto w-full max-w-[1180px] px-4 py-6 lg:px-8">{children}</div>
 			</main>
 		</div>
