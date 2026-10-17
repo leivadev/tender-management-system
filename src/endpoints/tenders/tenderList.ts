@@ -3,6 +3,7 @@ import { and, asc, desc, eq, inArray, or, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "../../db/client";
 import { clients, tenderStatusEnum, tenders } from "../../db/schema";
+import { archivedQuery, archiveFilter } from "../../lib/archive";
 import { pageSchema, paginate, paginationQuery, searchFilter, searchQuery } from "../../lib/pagination";
 import type { AppContext } from "../../types";
 
@@ -16,13 +17,17 @@ const SORT_COLUMNS = {
 export class TenderList extends OpenAPIRoute {
 	schema = {
 		tags: ["Tenders"],
-		summary: "List tenders (with client name); `q` matches title or client, `sort`/`dir` reorder",
+		summary:
+			"List tenders (with client name); `q` matches title or client, `sort`/`dir` reorder; admin-only `archived=only|include`",
 		request: {
-			query: paginationQuery.extend(searchQuery.shape).extend({
-				status: z.enum(tenderStatusEnum).optional(),
-				sort: z.enum(["created", "deadline", "budget", "title"]).default("created"),
-				dir: z.enum(["asc", "desc"]).default("desc"),
-			}),
+			query: paginationQuery
+				.extend(searchQuery.shape)
+				.extend(archivedQuery.shape)
+				.extend({
+					status: z.enum(tenderStatusEnum).optional(),
+					sort: z.enum(["created", "deadline", "budget", "title"]).default("created"),
+					dir: z.enum(["asc", "desc"]).default("desc"),
+				}),
 		},
 		responses: {
 			"200": {
@@ -44,7 +49,11 @@ export class TenderList extends OpenAPIRoute {
 					inArray(tenders.clientId, db.select({ id: clients.id }).from(clients).where(clientMatch)),
 				)
 			: undefined;
-		const where = and(status ? eq(tenders.status, status) : undefined, search);
+		const where = and(
+			status ? eq(tenders.status, status) : undefined,
+			search,
+			archiveFilter(tenders.archivedAt, data.query.archived, c.var.user.role),
+		);
 		const page = await paginate(db, tenders, data.query, where, [
 			(dir === "asc" ? asc : desc)(SORT_COLUMNS[sort]),
 		]);

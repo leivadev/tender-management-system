@@ -57,6 +57,13 @@
       "when": 1792194684607,
       "tag": "0007_flowery_luminals",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792195121631,
+      "tag": "0008_mature_dakota_north",
+      "breakpoints": true
     }
   ]
 }

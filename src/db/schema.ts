@@ -118,6 +118,10 @@ export const tenders = pgTable(
 		invoiceAmount: numeric("invoice_amount", { precision: 12, scale: 2 }),
 		reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
 
+		// DAT-11: archive marker and who set it; restoring clears both. Status and history are untouched.
+		archivedAt: timestamp("archived_at", { withTimezone: true }),
+		archivedBy: uuid("archived_by").references(() => profiles.id),
+
 		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 		createdBy: uuid("created_by").references(() => profiles.id),

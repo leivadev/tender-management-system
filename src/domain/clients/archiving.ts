@@ -1,11 +1,11 @@
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, count, eq, inArray, isNull } from "drizzle-orm";
 import type { Database } from "../../db/client";
 import { clients, tenders } from "../../db/schema";
 import { AppError } from "../../lib/errors";
 
 export type Client = typeof clients.$inferSelect;
 
-// FR-48: a client with work in any of these statuses cannot be archived.
+// FR-48: a client with work in any of these statuses cannot be archived. Archived tenders are shelved, not open work.
 const OPEN_STATUSES = ["draft", "active", "finalized", "for_collection"] as const;
 
 /**
@@ -40,7 +40,13 @@ export async function archiveClient(db: Database, clientId: string, userId: stri
 		const [open] = await database
 			.select({ n: count() })
 			.from(tenders)
-			.where(and(eq(tenders.clientId, clientId), inArray(tenders.status, [...OPEN_STATUSES])));
+			.where(
+				and(
+					eq(tenders.clientId, clientId),
+					inArray(tenders.status, [...OPEN_STATUSES]),
+					isNull(tenders.archivedAt),
+				),
+			);
 		if (open && open.n > 0) {
 			throw new AppError(
 				"CONFLICT",

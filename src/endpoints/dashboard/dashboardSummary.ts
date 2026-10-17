@@ -1,10 +1,15 @@
 import { OpenAPIRoute } from "chanfana";
-import { and, asc, eq, gt, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gt, isNull, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "../../db/client";
 import { clients, tenderStatusEnum, tenders } from "../../db/schema";
 import { hoursFromNow } from "../../lib/date";
 import type { AppContext } from "../../types";
+
+// FR-31: the "due soon" window, in hours.
+const MIN_WITHIN_HOURS = 1;
+const MAX_WITHIN_HOURS = 720;
+const DEFAULT_WITHIN_HOURS = 72;
 
 /**
  * Extra feature requested by the assignment: "Simple dashboard of tenders
@@ -13,13 +18,15 @@ import type { AppContext } from "../../types";
 export class DashboardSummary extends OpenAPIRoute {
 	schema = {
 		tags: ["Dashboard"],
-		summary: "Tender counts by status + active tenders with a nearby deadline",
+		summary:
+			"Counts by status + active tenders due within `withinHours` (1-720, default 72); archived excluded",
 		request: {
 			query: z.object({
 				withinHours: z.coerce
 					.number()
-					.positive()
-					.default(72)
+					.min(MIN_WITHIN_HOURS)
+					.max(MAX_WITHIN_HOURS)
+					.default(DEFAULT_WITHIN_HOURS)
 					.describe("Window (in hours) to consider a deadline 'upcoming'"),
 			}),
 		},
@@ -47,6 +54,7 @@ export class DashboardSummary extends OpenAPIRoute {
 		const countRows = await db
 			.select({ status: tenders.status, count: sql<string>`count(*)` })
 			.from(tenders)
+			.where(isNull(tenders.archivedAt))
 			.groupBy(tenders.status);
 
 		const counts = Object.fromEntries(tenderStatusEnum.map((s) => [s, 0])) as Record<
@@ -72,7 +80,12 @@ export class DashboardSummary extends OpenAPIRoute {
 			.from(tenders)
 			.innerJoin(clients, eq(tenders.clientId, clients.id))
 			.where(
-				and(eq(tenders.status, "active"), gt(tenders.deadline, new Date()), lte(tenders.deadline, cutoff)),
+				and(
+					isNull(tenders.archivedAt),
+					eq(tenders.status, "active"),
+					gt(tenders.deadline, new Date()),
+					lte(tenders.deadline, cutoff),
+				),
 			)
 			.orderBy(asc(tenders.deadline));
 

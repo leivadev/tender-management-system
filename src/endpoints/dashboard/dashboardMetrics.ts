@@ -18,6 +18,7 @@ type Status = (typeof tenderStatusEnum)[number];
  * - collected = payments by `paid_at`
  * - overdue = `for_collection` tenders invoiced more than OVERDUE_AFTER_DAYS days ago
  *   (the tender deadline is the bid deadline, so it says nothing about payment)
+ * - the pipeline by status leaves out archived tenders; the series and activity are history and keep them
  * Months are bucketed in UTC.
  */
 export class DashboardMetrics extends OpenAPIRoute {
@@ -76,6 +77,7 @@ export class DashboardMetrics extends OpenAPIRoute {
 				select t.status, count(*) as count, coalesce(sum(lt.total), 0) as value
 				from tenders t
 				left join ${lineTotals} lt on lt.tender_id = t.id
+				where t.archived_at is null
 				group by t.status
 			`),
 			db.execute(sql`

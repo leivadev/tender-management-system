@@ -12,17 +12,24 @@ export type Tender = typeof tenders.$inferSelect;
  * requests and the scheduled job queue up on the lock, so each one validates
  * against the state the previous one committed.
  *
+ * An archived tender is read-only (FR-47): the lock rejects it with 409 before `fn` runs, unless
+ * the caller is the restore operation and passes `allowArchived`.
+ *
  * `fn` must do every read-validate-write through the `tx` it receives.
  */
 export async function withLockedTender<T>(
 	db: Database,
 	tenderId: string,
 	fn: (tx: Database, tender: Tender) => Promise<T>,
+	{ allowArchived = false }: { allowArchived?: boolean } = {},
 ): Promise<T> {
 	return db.transaction(async (tx) => {
 		const [tender] = await tx.select().from(tenders).where(eq(tenders.id, tenderId)).for("update");
 		if (!tender) {
 			throw new AppError("NOT_FOUND", `Tender ${tenderId} not found.`);
+		}
+		if (tender.archivedAt && !allowArchived) {
+			throw new AppError("CONFLICT", "Tender is archived and read-only; restore it first.");
 		}
 		return fn(tx as unknown as Database, tender);
 	});
