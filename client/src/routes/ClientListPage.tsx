@@ -1,13 +1,13 @@
 import { Plus, SearchX, Users } from "lucide-react";
 import { useState } from "react";
+import { fieldErrors } from "../api/errors";
 import type { ArchivedFilter, Client } from "../api/types";
 import { Badge } from "../components/Badge";
 import { Button } from "../components/Button";
 import { Card, CardHeader } from "../components/Card";
-import { DisabledAction } from "../components/DisabledAction";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorMessage } from "../components/ErrorMessage";
-import { Field, FieldButtonSlot } from "../components/Field";
+import { Field, FieldButtonSlot, InlineFieldError } from "../components/Field";
 import { PageHeader } from "../components/PageHeader";
 import { Pagination } from "../components/Pagination";
 import { SearchInput } from "../components/SearchInput";
@@ -23,7 +23,7 @@ import {
 import { useListParams } from "../hooks/useListParams";
 import { useAuth } from "../lib/AuthContext";
 import { confirmAction } from "../lib/confirm";
-import { inputClass } from "../lib/formStyles";
+import { fieldClass, inputClass } from "../lib/formStyles";
 import { pushToast } from "../lib/toast";
 
 function ClientRow({ client, onEdit }: { client: Client; onEdit: () => void }) {
@@ -89,6 +89,7 @@ function ClientEditRow({ client, onDone }: { client: Client; onDone: () => void 
 	const [name, setName] = useState(client.name);
 	const [companyName, setCompanyName] = useState(client.companyName);
 	const [email, setEmail] = useState(client.email);
+	const errs = fieldErrors(updateClient.error);
 
 	function handleSave() {
 		updateClient.mutate(
@@ -109,20 +110,26 @@ function ClientEditRow({ client, onDone }: { client: Client; onDone: () => void 
 					aria-label="Name"
 					value={name}
 					onChange={(e) => setName(e.target.value)}
-					className={inputClass}
+					className={fieldClass(Boolean(errs.name))}
+					aria-invalid={Boolean(errs.name)}
+					aria-describedby={errs.name ? "edit-name-error" : undefined}
 					minLength={2}
 					required
 				/>
+				<InlineFieldError id="edit-name-error" message={errs.name} />
 			</TD>
 			<TD>
 				<input
 					aria-label="Company"
 					value={companyName}
 					onChange={(e) => setCompanyName(e.target.value)}
-					className={inputClass}
+					className={fieldClass(Boolean(errs.companyName))}
+					aria-invalid={Boolean(errs.companyName)}
+					aria-describedby={errs.companyName ? "edit-company-error" : undefined}
 					minLength={2}
 					required
 				/>
+				<InlineFieldError id="edit-company-error" message={errs.companyName} />
 			</TD>
 			<TD>
 				<input
@@ -130,9 +137,12 @@ function ClientEditRow({ client, onDone }: { client: Client; onDone: () => void 
 					type="email"
 					value={email}
 					onChange={(e) => setEmail(e.target.value)}
-					className={inputClass}
+					className={fieldClass(Boolean(errs.email))}
+					aria-invalid={Boolean(errs.email)}
+					aria-describedby={errs.email ? "edit-email-error" : undefined}
 					required
 				/>
+				<InlineFieldError id="edit-email-error" message={errs.email} />
 			</TD>
 			<TD>
 				<div className="flex justify-end gap-2">
@@ -153,6 +163,7 @@ function CreateClientForm({ onDone }: { onDone: () => void }) {
 	const [name, setName] = useState("");
 	const [companyName, setCompanyName] = useState("");
 	const [email, setEmail] = useState("");
+	const errs = fieldErrors(createClient.error);
 
 	function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
 		e.preventDefault();
@@ -171,34 +182,34 @@ function CreateClientForm({ onDone }: { onDone: () => void }) {
 		<Card className="mb-4">
 			<CardHeader title="New client" />
 			<form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3 p-4">
-				<Field label="Name" htmlFor="name">
+				<Field label="Name" htmlFor="name" error={errs.name}>
 					<input
 						id="name"
 						required
 						minLength={2}
 						value={name}
 						onChange={(e) => setName(e.target.value)}
-						className={inputClass}
+						className={fieldClass(Boolean(errs.name))}
 					/>
 				</Field>
-				<Field label="Company" htmlFor="companyName">
+				<Field label="Company" htmlFor="companyName" error={errs.companyName}>
 					<input
 						id="companyName"
 						required
 						minLength={2}
 						value={companyName}
 						onChange={(e) => setCompanyName(e.target.value)}
-						className={inputClass}
+						className={fieldClass(Boolean(errs.companyName))}
 					/>
 				</Field>
-				<Field label="Email" htmlFor="email">
+				<Field label="Email" htmlFor="email" error={errs.email}>
 					<input
 						id="email"
 						type="email"
 						required
 						value={email}
 						onChange={(e) => setEmail(e.target.value)}
-						className={inputClass}
+						className={fieldClass(Boolean(errs.email))}
 					/>
 				</Field>
 				<FieldButtonSlot>
@@ -229,14 +240,11 @@ export function ClientListPage() {
 				title="Clients"
 				description="Companies you send tenders to."
 				actions={
-					canWrite ? (
-						!creating && (
-							<Button onClick={() => setCreating(true)}>
-								<Plus className="size-3.5" aria-hidden="true" /> New client
-							</Button>
-						)
-					) : (
-						<DisabledAction reason="Read-only accounts cannot create clients">New client</DisabledAction>
+					canWrite &&
+					!creating && (
+						<Button onClick={() => setCreating(true)}>
+							<Plus className="size-3.5" aria-hidden="true" /> New client
+						</Button>
 					)
 				}
 			/>

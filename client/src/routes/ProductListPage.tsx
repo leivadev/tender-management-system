@@ -1,13 +1,13 @@
 import { Package, Plus, SearchX } from "lucide-react";
 import { useState } from "react";
+import { fieldErrors } from "../api/errors";
 import type { Product } from "../api/types";
 import { Badge } from "../components/Badge";
 import { Button } from "../components/Button";
 import { Card, CardHeader } from "../components/Card";
-import { DisabledAction } from "../components/DisabledAction";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorMessage } from "../components/ErrorMessage";
-import { Field, FieldButtonSlot } from "../components/Field";
+import { Field, FieldButtonSlot, InlineFieldError } from "../components/Field";
 import { PageHeader } from "../components/PageHeader";
 import { Pagination } from "../components/Pagination";
 import { SearchInput } from "../components/SearchInput";
@@ -17,7 +17,7 @@ import { useListParams } from "../hooks/useListParams";
 import { useCreateProduct, useProducts, useUpdateProduct } from "../hooks/useProducts";
 import { useAuth } from "../lib/AuthContext";
 import { formatCurrency } from "../lib/format";
-import { inputClass } from "../lib/formStyles";
+import { fieldClass } from "../lib/formStyles";
 import { pushToast } from "../lib/toast";
 
 function ProductRow({ product, onEdit }: { product: Product; onEdit: () => void }) {
@@ -51,6 +51,7 @@ function ProductEditRow({ product, onDone }: { product: Product; onDone: () => v
 	const [description, setDescription] = useState(product.description ?? "");
 	const [unitPrice, setUnitPrice] = useState(product.unitPrice);
 	const [active, setActive] = useState(product.active);
+	const errs = fieldErrors(updateProduct.error);
 
 	function handleSave() {
 		updateProduct.mutate(
@@ -79,18 +80,24 @@ function ProductEditRow({ product, onDone }: { product: Product; onDone: () => v
 					aria-label="Name"
 					value={name}
 					onChange={(e) => setName(e.target.value)}
-					className={inputClass}
+					className={fieldClass(Boolean(errs.name))}
+					aria-invalid={Boolean(errs.name)}
+					aria-describedby={errs.name ? "edit-name-error" : undefined}
 					minLength={2}
 					required
 				/>
+				<InlineFieldError id="edit-name-error" message={errs.name} />
 			</TD>
 			<TD>
 				<input
 					aria-label="Description"
 					value={description}
 					onChange={(e) => setDescription(e.target.value)}
-					className={inputClass}
+					className={fieldClass(Boolean(errs.description))}
+					aria-invalid={Boolean(errs.description)}
+					aria-describedby={errs.description ? "edit-description-error" : undefined}
 				/>
+				<InlineFieldError id="edit-description-error" message={errs.description} />
 			</TD>
 			<TD numeric>
 				<input
@@ -100,9 +107,12 @@ function ProductEditRow({ product, onDone }: { product: Product; onDone: () => v
 					step="0.01"
 					value={unitPrice}
 					onChange={(e) => setUnitPrice(e.target.value)}
-					className={`ml-auto w-28 ${inputClass}`}
+					className={`ml-auto w-28 ${fieldClass(Boolean(errs.unitPrice))}`}
+					aria-invalid={Boolean(errs.unitPrice)}
+					aria-describedby={errs.unitPrice ? "edit-price-error" : undefined}
 					required
 				/>
+				<InlineFieldError id="edit-price-error" message={errs.unitPrice} />
 			</TD>
 			<TD>
 				<label className="flex items-center gap-2">
@@ -129,6 +139,7 @@ function CreateProductForm({ onDone }: { onDone: () => void }) {
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
 	const [unitPrice, setUnitPrice] = useState("");
+	const errs = fieldErrors(createProduct.error);
 
 	function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
 		e.preventDefault();
@@ -147,25 +158,25 @@ function CreateProductForm({ onDone }: { onDone: () => void }) {
 		<Card className="mb-4">
 			<CardHeader title="New product" />
 			<form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3 p-4">
-				<Field label="Name" htmlFor="name">
+				<Field label="Name" htmlFor="name" error={errs.name}>
 					<input
 						id="name"
 						required
 						minLength={2}
 						value={name}
 						onChange={(e) => setName(e.target.value)}
-						className={inputClass}
+						className={fieldClass(Boolean(errs.name))}
 					/>
 				</Field>
-				<Field label="Description" htmlFor="description">
+				<Field label="Description" htmlFor="description" error={errs.description}>
 					<input
 						id="description"
 						value={description}
 						onChange={(e) => setDescription(e.target.value)}
-						className={inputClass}
+						className={fieldClass(Boolean(errs.description))}
 					/>
 				</Field>
-				<Field label="Unit price" htmlFor="unitPrice">
+				<Field label="Unit price" htmlFor="unitPrice" error={errs.unitPrice}>
 					<input
 						id="unitPrice"
 						type="number"
@@ -174,7 +185,7 @@ function CreateProductForm({ onDone }: { onDone: () => void }) {
 						required
 						value={unitPrice}
 						onChange={(e) => setUnitPrice(e.target.value)}
-						className={`w-32 ${inputClass}`}
+						className={`w-32 ${fieldClass(Boolean(errs.unitPrice))}`}
 					/>
 				</Field>
 				<FieldButtonSlot>
@@ -205,14 +216,11 @@ export function ProductListPage() {
 				title="Products"
 				description="Catalogue priced into tender lines."
 				actions={
-					isAdmin ? (
-						!creating && (
-							<Button onClick={() => setCreating(true)}>
-								<Plus className="size-3.5" aria-hidden="true" /> New product
-							</Button>
-						)
-					) : (
-						<DisabledAction reason="Only administrators can create products">New product</DisabledAction>
+					isAdmin &&
+					!creating && (
+						<Button onClick={() => setCreating(true)}>
+							<Plus className="size-3.5" aria-hidden="true" /> New product
+						</Button>
 					)
 				}
 			/>

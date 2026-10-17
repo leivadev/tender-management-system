@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { fieldErrors } from "../../api/errors";
 import { BudgetBar } from "../../components/BudgetBar";
 import { Button } from "../../components/Button";
 import { Card, CardHeader } from "../../components/Card";
@@ -13,7 +14,7 @@ import { useAuth } from "../../lib/AuthContext";
 import { confirmAction } from "../../lib/confirm";
 import { toLocalInputValue } from "../../lib/datetime";
 import { formatCurrency, formatDate } from "../../lib/format";
-import { fieldClass, inputClass } from "../../lib/formStyles";
+import { fieldClass } from "../../lib/formStyles";
 import { pushToast } from "../../lib/toast";
 import { useTenderContext } from "./context";
 
@@ -26,6 +27,7 @@ function EditTenderForm({ onDone, usedBudget }: { onDone: () => void; usedBudget
 	const [initialDeadline] = useState(() => toLocalInputValue(new Date(tender.deadline)));
 	const [deadline, setDeadline] = useState(initialDeadline);
 	const [deadlineError, setDeadlineError] = useState<string | null>(null);
+	const errs = fieldErrors(updateTender.error);
 	// Budget and deadline are frozen once the tender leaves draft (BR-10).
 	const isDraft = tender.status === "draft";
 
@@ -60,22 +62,22 @@ function EditTenderForm({ onDone, usedBudget }: { onDone: () => void; usedBudget
 
 	return (
 		<form onSubmit={handleSubmit} className="space-y-3 p-4">
-			<Field label="Title" htmlFor="editTitle">
+			<Field label="Title" htmlFor="editTitle" error={errs.title}>
 				<input
 					id="editTitle"
 					required
 					minLength={3}
 					value={title}
 					onChange={(e) => setTitle(e.target.value)}
-					className={inputClass}
+					className={fieldClass(Boolean(errs.title))}
 				/>
 			</Field>
-			<Field label="Description" htmlFor="editDescription">
+			<Field label="Description" htmlFor="editDescription" error={errs.description}>
 				<textarea
 					id="editDescription"
 					value={description}
 					onChange={(e) => setDescription(e.target.value)}
-					className={inputClass}
+					className={fieldClass(Boolean(errs.description))}
 				/>
 			</Field>
 			{isDraft && (
@@ -84,6 +86,7 @@ function EditTenderForm({ onDone, usedBudget }: { onDone: () => void; usedBudget
 						label="Maximum budget"
 						htmlFor="editMaxBudget"
 						hint={`USD, not below the products total (${formatCurrency(usedBudget)})`}
+						error={errs.maxBudget}
 					>
 						<input
 							id="editMaxBudget"
@@ -93,10 +96,10 @@ function EditTenderForm({ onDone, usedBudget }: { onDone: () => void; usedBudget
 							required
 							value={maxBudget}
 							onChange={(e) => setMaxBudget(e.target.value)}
-							className={inputClass}
+							className={fieldClass(Boolean(errs.maxBudget))}
 						/>
 					</Field>
-					<Field label="Deadline" htmlFor="editDeadline" error={deadlineError ?? undefined}>
+					<Field label="Deadline" htmlFor="editDeadline" error={deadlineError ?? errs.deadline}>
 						<input
 							id="editDeadline"
 							type="datetime-local"
@@ -107,7 +110,7 @@ function EditTenderForm({ onDone, usedBudget }: { onDone: () => void; usedBudget
 								setDeadline(e.target.value);
 								setDeadlineError(null);
 							}}
-							className={fieldClass(Boolean(deadlineError))}
+							className={fieldClass(Boolean(deadlineError ?? errs.deadline))}
 						/>
 					</Field>
 				</div>
@@ -132,6 +135,8 @@ export function OverviewTab() {
 	const [invoiceAmount, setInvoiceAmount] = useState("");
 	const [correctedAmount, setCorrectedAmount] = useState("");
 	const [isEditing, setIsEditing] = useState(false);
+	const invoiceErrs = fieldErrors(invoiceTender.error);
+	const correctErrs = fieldErrors(correctInvoice.error);
 
 	const usedBudget = tender.products.reduce((sum, p) => sum + Number(p.subtotal), 0);
 	const { canWrite, isAdmin } = useAuth();
@@ -221,6 +226,7 @@ export function OverviewTab() {
 								label="Amount to invoice"
 								htmlFor="invoiceAmount"
 								hint="Prefilled from the product total"
+								error={invoiceErrs.invoiceAmount}
 							>
 								<input
 									id="invoiceAmount"
@@ -230,7 +236,7 @@ export function OverviewTab() {
 									required
 									value={amountToInvoice}
 									onChange={(e) => setInvoiceAmount(e.target.value)}
-									className={inputClass}
+									className={fieldClass(Boolean(invoiceErrs.invoiceAmount))}
 								/>
 							</Field>
 							<FieldButtonSlot>
@@ -250,6 +256,7 @@ export function OverviewTab() {
 								label="Invoiced amount"
 								htmlFor="correctedInvoiceAmount"
 								hint="Editable until the first payment is recorded"
+								error={correctErrs.invoiceAmount}
 							>
 								<input
 									id="correctedInvoiceAmount"
@@ -259,7 +266,7 @@ export function OverviewTab() {
 									required
 									value={amountToCorrect}
 									onChange={(e) => setCorrectedAmount(e.target.value)}
-									className={inputClass}
+									className={fieldClass(Boolean(correctErrs.invoiceAmount))}
 								/>
 							</Field>
 							<FieldButtonSlot>

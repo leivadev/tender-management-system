@@ -1,11 +1,12 @@
 import { Plus } from "lucide-react";
 import { useState } from "react";
+import { fieldErrors } from "../api/errors";
 import type { ArchivedFilter, Role, User } from "../api/types";
 import { Badge, type Tone } from "../components/Badge";
 import { Button } from "../components/Button";
 import { Card, CardHeader } from "../components/Card";
 import { ErrorMessage } from "../components/ErrorMessage";
-import { Field, FieldButtonSlot } from "../components/Field";
+import { Field, FieldButtonSlot, InlineFieldError } from "../components/Field";
 import { PageHeader } from "../components/PageHeader";
 import { Pagination } from "../components/Pagination";
 import { TableSkeleton } from "../components/Skeleton";
@@ -14,7 +15,7 @@ import { useListParams } from "../hooks/useListParams";
 import { useArchiveUser, useCreateUser, useRestoreUser, useUpdateUser, useUsers } from "../hooks/useUsers";
 import { useAuth } from "../lib/AuthContext";
 import { confirmAction } from "../lib/confirm";
-import { inputClass } from "../lib/formStyles";
+import { fieldClass, inputClass } from "../lib/formStyles";
 import { pushToast } from "../lib/toast";
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -103,6 +104,7 @@ function UserRow({
 function UserEditRow({ user, onDone }: { user: User; onDone: () => void }) {
 	const updateUser = useUpdateUser();
 	const [role, setRole] = useState<Role>(user.role);
+	const errs = fieldErrors(updateUser.error);
 
 	async function handleSave() {
 		if (
@@ -135,12 +137,15 @@ function UserEditRow({ user, onDone }: { user: User; onDone: () => void }) {
 					aria-label="Role"
 					value={role}
 					onChange={(e) => setRole(e.target.value as Role)}
-					className={`${inputClass} w-44`}
+					className={`${fieldClass(Boolean(errs.role))} w-44`}
+					aria-invalid={Boolean(errs.role)}
+					aria-describedby={errs.role ? "edit-role-error" : undefined}
 				>
 					<option value="user">User</option>
 					<option value="viewer">Read-only</option>
 					<option value="admin">Administrator</option>
 				</select>
+				<InlineFieldError id="edit-role-error" message={errs.role} />
 			</TD>
 			<TD>
 				<div className="flex justify-end gap-2">
@@ -161,6 +166,7 @@ function CreateUserForm({ onDone }: { onDone: () => void }) {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [role, setRole] = useState<Role>("user");
+	const errs = fieldErrors(createUser.error);
 
 	function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
 		e.preventDefault();
@@ -179,17 +185,17 @@ function CreateUserForm({ onDone }: { onDone: () => void }) {
 		<Card className="mb-4">
 			<CardHeader title="New user" />
 			<form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3 p-4">
-				<Field label="Email" htmlFor="email">
+				<Field label="Email" htmlFor="email" error={errs.email}>
 					<input
 						id="email"
 						type="email"
 						required
 						value={email}
 						onChange={(e) => setEmail(e.target.value)}
-						className={inputClass}
+						className={fieldClass(Boolean(errs.email))}
 					/>
 				</Field>
-				<Field label="Password" htmlFor="password" hint="Minimum 8 characters">
+				<Field label="Password" htmlFor="password" hint="Minimum 8 characters" error={errs.password}>
 					<input
 						id="password"
 						type="password"
@@ -197,15 +203,15 @@ function CreateUserForm({ onDone }: { onDone: () => void }) {
 						minLength={8}
 						value={password}
 						onChange={(e) => setPassword(e.target.value)}
-						className={inputClass}
+						className={fieldClass(Boolean(errs.password))}
 					/>
 				</Field>
-				<Field label="Role" htmlFor="role">
+				<Field label="Role" htmlFor="role" error={errs.role}>
 					<select
 						id="role"
 						value={role}
 						onChange={(e) => setRole(e.target.value as Role)}
-						className={inputClass}
+						className={fieldClass(Boolean(errs.role))}
 					>
 						<option value="user">User</option>
 						<option value="viewer">Read-only</option>

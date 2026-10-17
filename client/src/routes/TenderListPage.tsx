@@ -4,7 +4,6 @@ import type { TenderSort } from "../api/tenders";
 import { type ArchivedFilter, TENDER_STATUSES, type TenderStatus } from "../api/types";
 import { Badge } from "../components/Badge";
 import { buttonClasses } from "../components/Button";
-import { DisabledAction } from "../components/DisabledAction";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorMessage } from "../components/ErrorMessage";
 import { PageHeader } from "../components/PageHeader";
@@ -89,12 +88,10 @@ export function TenderListPage() {
 				title="Tenders"
 				description="Draft, send and follow every tender through to collection."
 				actions={
-					canWrite ? (
+					canWrite && (
 						<Link to="/tenders/new" className={buttonClasses()}>
 							<Plus className="size-3.5" aria-hidden="true" /> New tender
 						</Link>
-					) : (
-						<DisabledAction reason="Read-only accounts cannot create tenders">New tender</DisabledAction>
 					)
 				}
 			/>

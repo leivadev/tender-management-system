@@ -1,5 +1,6 @@
 import { Package } from "lucide-react";
 import { useState } from "react";
+import { fieldErrors } from "../../api/errors";
 import { Button } from "../../components/Button";
 import { EmptyState } from "../../components/EmptyState";
 import { Field, FieldButtonSlot } from "../../components/Field";
@@ -9,7 +10,7 @@ import { useAddTenderProduct, useRemoveTenderProduct } from "../../hooks/useTend
 import { useAuth } from "../../lib/AuthContext";
 import { confirmAction } from "../../lib/confirm";
 import { formatCurrency } from "../../lib/format";
-import { fieldClass, inputClass } from "../../lib/formStyles";
+import { fieldClass } from "../../lib/formStyles";
 import { pushToast } from "../../lib/toast";
 import { useTenderContext } from "./context";
 
@@ -24,6 +25,7 @@ export function ProductsTab() {
 	const [productId, setProductId] = useState("");
 	const [quantity, setQuantity] = useState("1");
 	const [budgetError, setBudgetError] = useState<string | null>(null);
+	const errs = fieldErrors(addProduct.error);
 
 	const { canWrite } = useAuth();
 	const statusEditable = EDITABLE_STATUSES.has(tender.status) && !tender.archivedAt;
@@ -125,7 +127,7 @@ export function ProductsTab() {
 					onSubmit={handleAdd}
 					className="flex flex-wrap items-end gap-3 rounded-card border border-border bg-card p-4 shadow-card"
 				>
-					<Field label="Product" htmlFor="product">
+					<Field label="Product" htmlFor="product" error={errs.productId}>
 						<select
 							id="product"
 							required
@@ -134,7 +136,7 @@ export function ProductsTab() {
 								setProductId(e.target.value);
 								setBudgetError(null);
 							}}
-							className={inputClass}
+							className={fieldClass(Boolean(errs.productId))}
 						>
 							<option value="" disabled>
 								Select
@@ -146,7 +148,7 @@ export function ProductsTab() {
 							))}
 						</select>
 					</Field>
-					<Field label="Quantity" htmlFor="quantity" error={budgetError ?? undefined}>
+					<Field label="Quantity" htmlFor="quantity" error={budgetError ?? errs.quantity}>
 						<input
 							id="quantity"
 							type="number"
@@ -158,7 +160,7 @@ export function ProductsTab() {
 								setQuantity(e.target.value);
 								setBudgetError(null);
 							}}
-							className={`w-24 ${fieldClass(Boolean(budgetError))}`}
+							className={`w-24 ${fieldClass(Boolean(budgetError ?? errs.quantity))}`}
 						/>
 					</Field>
 					<FieldButtonSlot>

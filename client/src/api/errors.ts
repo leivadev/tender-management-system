@@ -11,14 +11,21 @@ export type ErrorCode =
 	| "EMAIL_DELIVERY_FAILED"
 	| "INTERNAL_ERROR";
 
+export interface FieldIssue {
+	field: string;
+	message: string;
+}
+
 export class ApiError extends Error {
 	code: ErrorCode;
 	status: number;
+	fields: FieldIssue[];
 
-	constructor(code: ErrorCode, message: string, status: number) {
+	constructor(code: ErrorCode, message: string, status: number, fields: FieldIssue[] = []) {
 		super(message);
 		this.code = code;
 		this.status = status;
+		this.fields = fields;
 	}
 }
 
@@ -37,15 +44,15 @@ const MESSAGES: Record<ErrorCode, string> = {
 	INTERNAL_ERROR: "An unexpected error occurred.",
 };
 
-// Codes whose server message says what to fix (field, balance, budget...).
-const SERVER_MESSAGE_CODES = new Set<ErrorCode>([
-	"VALIDATION_ERROR",
-	"BUSINESS_RULE_VIOLATION",
-	"TENDER_BUDGET_EXCEEDED",
-	"CONFLICT",
-]);
-
+/** UI-01: the server's own message is what the user sees; the table above only covers replies without one. */
 export function mapErrorToMessage(error: ApiError): string {
-	if (SERVER_MESSAGE_CODES.has(error.code) && error.message) return error.message;
-	return MESSAGES[error.code] ?? error.message;
+	return error.message || MESSAGES[error.code] || MESSAGES.INTERNAL_ERROR;
+}
+
+/** UI-02: first message per failing field, keyed by the request field name. Empty for any other error. */
+export function fieldErrors(error: unknown): Record<string, string> {
+	const out: Record<string, string> = {};
+	if (!(error instanceof ApiError)) return out;
+	for (const { field, message } of error.fields) out[field] ??= message;
+	return out;
 }

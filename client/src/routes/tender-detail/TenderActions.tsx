@@ -1,7 +1,6 @@
 import { Archive, ArchiveRestore, CircleCheck, Send, XCircle } from "lucide-react";
 import type { TenderDetail, TenderStatus } from "../../api/types";
 import { Button } from "../../components/Button";
-import { DisabledAction } from "../../components/DisabledAction";
 import {
 	useArchiveTender,
 	useFinalizeTender,
@@ -87,35 +86,26 @@ export function TenderActions({ tender }: { tender: TenderDetail }) {
 
 	return (
 		<>
-			{isDraft &&
-				(canWrite ? (
-					<Button
-						loading={sendTender.isPending}
-						disabled={!tender.proposalKey}
-						title={!tender.proposalKey ? "Upload the proposal before sending" : undefined}
-						onClick={handleSend}
-					>
-						<Send className="size-3.5" /> Send
-					</Button>
-				) : (
-					<DisabledAction reason="Read-only accounts cannot send tenders">Send</DisabledAction>
-				))}
-			{isActive &&
-				(canWrite ? (
-					<Button variant="info" loading={finalizeTender.isPending} onClick={handleFinalize}>
-						<CircleCheck className="size-3.5" /> Finalize
-					</Button>
-				) : (
-					<DisabledAction reason="Read-only accounts cannot finalize tenders">Finalize</DisabledAction>
-				))}
-			{isActive &&
-				(isAdmin ? (
-					<Button variant="danger" loading={loseTender.isPending} onClick={handleLose}>
-						<XCircle className="size-3.5" /> Mark as lost
-					</Button>
-				) : (
-					<DisabledAction reason="Only administrators can mark a tender as lost">Mark as lost</DisabledAction>
-				))}
+			{isDraft && canWrite && (
+				<Button
+					loading={sendTender.isPending}
+					disabled={!tender.proposalKey}
+					title={!tender.proposalKey ? "Upload the proposal before sending" : undefined}
+					onClick={handleSend}
+				>
+					<Send className="size-3.5" /> Send
+				</Button>
+			)}
+			{isActive && canWrite && (
+				<Button variant="info" loading={finalizeTender.isPending} onClick={handleFinalize}>
+					<CircleCheck className="size-3.5" /> Finalize
+				</Button>
+			)}
+			{isActive && isAdmin && (
+				<Button variant="danger" loading={loseTender.isPending} onClick={handleLose}>
+					<XCircle className="size-3.5" /> Mark as lost
+				</Button>
+			)}
 			{canArchive && (
 				<Button variant="ghost" loading={archiveTender.isPending} onClick={handleArchive}>
 					<Archive className="size-3.5" /> Archive

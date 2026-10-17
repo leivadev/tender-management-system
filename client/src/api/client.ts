@@ -1,9 +1,9 @@
-import { clearSession, getToken } from "../lib/auth";
-import { ApiError, type ErrorCode } from "./errors";
+import { endSession, getToken } from "../lib/auth";
+import { ApiError, type ErrorCode, type FieldIssue } from "./errors";
 import type { Page } from "./types";
 
 interface ErrorBody {
-	error: { code: ErrorCode; message: string };
+	error?: { code: ErrorCode; message: string; fields?: FieldIssue[] };
 }
 
 let onUnauthenticated: (() => void) | null = null;
@@ -19,7 +19,7 @@ function buildHeaders(extra?: HeadersInit): Headers {
 	return headers;
 }
 
-async function handleErrorResponse(res: Response): Promise<never> {
+async function handleErrorResponse(res: Response, hadToken: boolean): Promise<never> {
 	let body: ErrorBody | null = null;
 	try {
 		body = await res.json();
@@ -27,15 +27,18 @@ async function handleErrorResponse(res: Response): Promise<never> {
 		// non-JSON error body, fall through to generic error
 	}
 
-	const code = body?.error.code ?? "INTERNAL_ERROR";
-	const message = body?.error.message ?? res.statusText;
+	const code = body?.error?.code ?? "INTERNAL_ERROR";
+	// Replies without a server message (proxy pages, network layers) fall back to the generic text.
+	const message = body?.error?.message ?? "";
 
-	if (res.status === 401) {
-		clearSession();
+	// UI-10: a 401 on an authenticated request means the session is gone. The login call itself
+	// (no token yet) also answers 401 for bad credentials, which is not a session ending.
+	if (res.status === 401 && hadToken) {
+		endSession();
 		onUnauthenticated?.();
 	}
 
-	throw new ApiError(code, message, res.status);
+	throw new ApiError(code, message, res.status, body?.error?.fields);
 }
 
 export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
@@ -45,7 +48,7 @@ export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T>
 	}
 
 	const res = await fetch(path, { ...init, headers });
-	if (!res.ok) return handleErrorResponse(res);
+	if (!res.ok) return handleErrorResponse(res, headers.has("Authorization"));
 	return res.json() as Promise<T>;
 }
 
@@ -68,7 +71,8 @@ export async function fetchAllPages<T>(path: string): Promise<T[]> {
 }
 
 export async function fetchBlob(path: string): Promise<Blob> {
-	const res = await fetch(path, { headers: buildHeaders() });
-	if (!res.ok) return handleErrorResponse(res);
+	const headers = buildHeaders();
+	const res = await fetch(path, { headers });
+	if (!res.ok) return handleErrorResponse(res, headers.has("Authorization"));
 	return res.blob();
 }

@@ -24,6 +24,16 @@ export function Field({ label, htmlFor, error, hint, children }: FieldProps) {
 	);
 }
 
+/** UI-02: server validation message under an input that lives in a table cell instead of a <Field>. */
+export function InlineFieldError({ id, message }: { id: string; message?: string }) {
+	if (!message) return null;
+	return (
+		<p id={id} className="mt-1 text-xs text-destructive">
+			{message}
+		</p>
+	);
+}
+
 /** Keeps a lone button vertically aligned with sibling <Field>s in an items-end flex row. */
 export function FieldButtonSlot({ children }: { children: ReactNode }) {
 	return (

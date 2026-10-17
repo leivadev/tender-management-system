@@ -1,5 +1,6 @@
 import { Download, FileText, Upload } from "lucide-react";
 import { useRef, useState } from "react";
+import { ApiError, mapErrorToMessage } from "../../api/errors";
 import { downloadTenderProposal } from "../../api/tenders";
 import { Button } from "../../components/Button";
 import { Card, CardHeader } from "../../components/Card";
@@ -48,6 +49,11 @@ export function ProposalTab() {
 		setDownloading(true);
 		try {
 			await downloadTenderProposal(tender.id, tender.proposalFilename);
+		} catch (err) {
+			// UI-01: not a mutation, so the global toast does not see it. A 401 already ends the session.
+			if (!(err instanceof ApiError && err.status === 401)) {
+				pushToast(err instanceof ApiError ? mapErrorToMessage(err) : "The download failed.", "error");
+			}
 		} finally {
 			setDownloading(false);
 		}

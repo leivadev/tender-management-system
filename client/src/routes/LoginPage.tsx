@@ -11,7 +11,7 @@ const DEMO_EMAIL = "demo@leivadev.com";
 const DEMO_PASSWORD = "Demo-Tenders-2026";
 
 export function LoginPage() {
-	const { isAuthenticated, login } = useAuth();
+	const { isAuthenticated, sessionEnded, login } = useAuth();
 	const navigate = useNavigate();
 	const location = useLocation();
 	const [email, setEmail] = useState("");
@@ -63,6 +63,14 @@ export function LoginPage() {
 				</div>
 
 				<div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
+					{sessionEnded && !error && (
+						<p
+							role="alert"
+							className="mb-4 rounded-ctl bg-[color:var(--tone-warning-bg)] px-3 py-2 text-sm text-[color:var(--tone-warning-fg)]"
+						>
+							Your session has ended. Log in again to continue.
+						</p>
+					)}
 					<h1 className="text-2xl font-semibold tracking-tight">See it running</h1>
 					<p className="mt-1.5 text-sm text-muted-foreground">
 						Full-stack app to draft, send, track, resolve and collect on commercial tenders. Browse it with

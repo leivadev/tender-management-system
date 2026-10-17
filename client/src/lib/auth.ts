@@ -26,6 +26,9 @@ function read(): Session | null {
 	}
 }
 
+// UI-10: set when the server (or the token's own expiry) ends a session, shown once on the login screen.
+let sessionEnded = false;
+
 function write(session: Session | null) {
 	if (session) {
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
@@ -44,6 +47,7 @@ export function getToken(): string | null {
 	const session = read();
 	if (!session) return null;
 	if (session.expiresAt * 1000 <= Date.now()) {
+		sessionEnded = true;
 		write(null);
 		return null;
 	}
@@ -55,9 +59,22 @@ export function isAuthenticated(): boolean {
 }
 
 export function setSession(token: string, expiresAt: number) {
+	sessionEnded = false;
 	write({ token, expiresAt });
 }
 
+/** Deliberate sign-out: no "session ended" notice. */
 export function clearSession() {
+	sessionEnded = false;
 	write(null);
+}
+
+/** The session died without the user asking (401, expired token). */
+export function endSession() {
+	sessionEnded = true;
+	write(null);
+}
+
+export function hasSessionEnded(): boolean {
+	return sessionEnded;
 }

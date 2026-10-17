@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { fieldErrors } from "../api/errors";
 import { Button, buttonClasses } from "../components/Button";
 import { Card } from "../components/Card";
 import { Field } from "../components/Field";
@@ -7,7 +8,7 @@ import { PageHeader } from "../components/PageHeader";
 import { useAllClients } from "../hooks/useClients";
 import { useCreateTender } from "../hooks/useTenders";
 import { toLocalInputValue } from "../lib/datetime";
-import { fieldClass, inputClass } from "../lib/formStyles";
+import { fieldClass } from "../lib/formStyles";
 import { pushToast } from "../lib/toast";
 
 export function TenderCreatePage() {
@@ -21,6 +22,7 @@ export function TenderCreatePage() {
 	const [maxBudget, setMaxBudget] = useState("");
 	const [deadline, setDeadline] = useState("");
 	const [deadlineError, setDeadlineError] = useState<string | null>(null);
+	const errs = fieldErrors(createTender.error);
 
 	const minDeadline = toLocalInputValue(new Date());
 	const hasClients = (clientsQuery.data?.length ?? 0) > 0;
@@ -66,13 +68,13 @@ export function TenderCreatePage() {
 					)}
 
 					<div className="grid gap-x-4 sm:grid-cols-2">
-						<Field label="Client" htmlFor="client">
+						<Field label="Client" htmlFor="client" error={errs.clientId}>
 							<select
 								id="client"
 								required
 								value={clientId}
 								onChange={(e) => setClientId(e.target.value)}
-								className={inputClass}
+								className={fieldClass(Boolean(errs.clientId))}
 							>
 								<option value="" disabled>
 									Select a client
@@ -85,30 +87,35 @@ export function TenderCreatePage() {
 							</select>
 						</Field>
 
-						<Field label="Title" htmlFor="title">
+						<Field label="Title" htmlFor="title" error={errs.title}>
 							<input
 								id="title"
 								required
 								minLength={3}
 								value={title}
 								onChange={(e) => setTitle(e.target.value)}
-								className={inputClass}
+								className={fieldClass(Boolean(errs.title))}
 							/>
 						</Field>
 					</div>
 
-					<Field label="Description" htmlFor="description" hint="Optional">
+					<Field label="Description" htmlFor="description" hint="Optional" error={errs.description}>
 						<textarea
 							id="description"
 							rows={3}
 							value={description}
 							onChange={(e) => setDescription(e.target.value)}
-							className={`${inputClass} h-auto py-1.5`}
+							className={`${fieldClass(Boolean(errs.description))} h-auto py-1.5`}
 						/>
 					</Field>
 
 					<div className="grid gap-x-4 sm:grid-cols-2">
-						<Field label="Maximum budget" htmlFor="maxBudget" hint="USD, the cap for all product lines">
+						<Field
+							label="Maximum budget"
+							htmlFor="maxBudget"
+							hint="USD, the cap for all product lines"
+							error={errs.maxBudget}
+						>
 							<input
 								id="maxBudget"
 								type="number"
@@ -117,11 +124,11 @@ export function TenderCreatePage() {
 								required
 								value={maxBudget}
 								onChange={(e) => setMaxBudget(e.target.value)}
-								className={inputClass}
+								className={fieldClass(Boolean(errs.maxBudget))}
 							/>
 						</Field>
 
-						<Field label="Deadline" htmlFor="deadline" error={deadlineError ?? undefined}>
+						<Field label="Deadline" htmlFor="deadline" error={deadlineError ?? errs.deadline}>
 							<input
 								id="deadline"
 								type="datetime-local"
@@ -132,7 +139,7 @@ export function TenderCreatePage() {
 									setDeadline(e.target.value);
 									setDeadlineError(null);
 								}}
-								className={fieldClass(Boolean(deadlineError))}
+								className={fieldClass(Boolean(deadlineError ?? errs.deadline))}
 							/>
 						</Field>
 					</div>

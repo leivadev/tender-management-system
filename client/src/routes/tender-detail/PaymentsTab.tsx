@@ -1,14 +1,16 @@
 import { Wallet } from "lucide-react";
 import { useState } from "react";
+import { fieldErrors } from "../../api/errors";
 import { BudgetBar } from "../../components/BudgetBar";
 import { Button } from "../../components/Button";
 import { EmptyState } from "../../components/EmptyState";
+import { ErrorMessage } from "../../components/ErrorMessage";
 import { Field, FieldButtonSlot } from "../../components/Field";
 import { Table, TBody, TD, TH, THead, TR } from "../../components/Table";
 import { useCreateTenderPayment, useTenderPayments } from "../../hooks/useTenders";
 import { useAuth } from "../../lib/AuthContext";
 import { formatCurrency, formatDate } from "../../lib/format";
-import { inputClass } from "../../lib/formStyles";
+import { fieldClass } from "../../lib/formStyles";
 import { pushToast } from "../../lib/toast";
 import { useTenderContext } from "./context";
 
@@ -19,6 +21,7 @@ export function PaymentsTab() {
 	const [amount, setAmount] = useState("");
 	const [reference, setReference] = useState("");
 	const [notes, setNotes] = useState("");
+	const errs = fieldErrors(createPayment.error);
 
 	const invoiceAmount = Number(tender.invoiceAmount ?? 0);
 	const paid = (paymentsQuery.data ?? []).reduce((sum, p) => sum + Number(p.amount), 0);
@@ -46,6 +49,7 @@ export function PaymentsTab() {
 
 	return (
 		<div className="space-y-4">
+			{paymentsQuery.error && <ErrorMessage error={paymentsQuery.error} />}
 			{tender.invoiceAmount && <BudgetBar used={paid} max={invoiceAmount} label="Collected" />}
 
 			{paymentsQuery.data?.length === 0 ? (
@@ -82,7 +86,11 @@ export function PaymentsTab() {
 					onSubmit={handleSubmit}
 					className="flex flex-wrap items-end gap-3 rounded-card border border-border bg-card p-4 shadow-card"
 				>
-					<Field label={`Amount (balance: ${formatCurrency(pendingBalance)})`} htmlFor="amount">
+					<Field
+						label={`Amount (balance: ${formatCurrency(pendingBalance)})`}
+						htmlFor="amount"
+						error={errs.amount}
+					>
 						<input
 							id="amount"
 							type="number"
@@ -92,23 +100,23 @@ export function PaymentsTab() {
 							required
 							value={amount}
 							onChange={(e) => setAmount(e.target.value)}
-							className={`w-40 ${inputClass}`}
+							className={`w-40 ${fieldClass(Boolean(errs.amount))}`}
 						/>
 					</Field>
-					<Field label="Reference" htmlFor="reference">
+					<Field label="Reference" htmlFor="reference" error={errs.reference}>
 						<input
 							id="reference"
 							value={reference}
 							onChange={(e) => setReference(e.target.value)}
-							className={inputClass}
+							className={fieldClass(Boolean(errs.reference))}
 						/>
 					</Field>
-					<Field label="Notes" htmlFor="notes">
+					<Field label="Notes" htmlFor="notes" error={errs.notes}>
 						<input
 							id="notes"
 							value={notes}
 							onChange={(e) => setNotes(e.target.value)}
-							className={inputClass}
+							className={fieldClass(Boolean(errs.notes))}
 						/>
 					</Field>
 					<FieldButtonSlot>

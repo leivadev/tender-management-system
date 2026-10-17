@@ -46,8 +46,8 @@ function Brand() {
 }
 
 function SidebarContent({ onNavigate, onSearch }: { onNavigate?: () => void; onSearch: () => void }) {
-	const { email, logout, isAdmin, canWrite } = useAuth();
-	const role = isAdmin ? "Administrator" : canWrite ? "Writer" : "Read-only viewer";
+	const { email, logout, isAdmin, role: userRole } = useAuth();
+	const role = userRole && { admin: "Administrator", user: "Writer", viewer: "Read-only viewer" }[userRole];
 	const items = NAV_ITEMS.filter((item) => isAdmin || !item.adminOnly);
 
 	return (

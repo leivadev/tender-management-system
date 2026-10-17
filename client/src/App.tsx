@@ -3,7 +3,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 import { ConfirmHost } from "./components/ConfirmHost";
 import { Layout } from "./components/Layout";
-import { RequireAdmin, RequireAuth } from "./components/RequireAuth";
+import { RequireAdmin, RequireAuth, RequireWriter } from "./components/RequireAuth";
 import { TooltipProvider } from "./components/Tooltip";
 import { LoginPage } from "./routes/LoginPage";
 import { NotFoundPage } from "./routes/NotFoundPage";
@@ -62,7 +62,14 @@ export default function App() {
 										<Routes>
 											<Route path="/" element={<DashboardPage />} />
 											<Route path="/tenders" element={<TenderListPage />} />
-											<Route path="/tenders/new" element={<TenderCreatePage />} />
+											<Route
+												path="/tenders/new"
+												element={
+													<RequireWriter>
+														<TenderCreatePage />
+													</RequireWriter>
+												}
+											/>
 											<Route path="/tenders/:id" element={<TenderDetailLayout />}>
 												<Route index element={<OverviewTab />} />
 												<Route path="products" element={<ProductsTab />} />
