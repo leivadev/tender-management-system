@@ -5,7 +5,7 @@
 
 Full-stack app to draft, send, track, resolve and collect on commercial tenders ("licitaciones"). What the system must do (scope, lifecycle, business rules, roles and permissions) is specified in the [Software Requirements Specification](docs/SRS.md).
 
-- **Backend:** Hono + chanfana (OpenAPI/Swagger at `/api/docs`) on Cloudflare Workers
+- **Backend:** Hono + chanfana (OpenAPI spec at `/openapi.json`, session required) on Cloudflare Workers
 - **Data:** Supabase (Postgres + Auth) via Drizzle ORM and Hyperdrive
 - **Integrations:** Cloudflare R2 (proposal files), Resend (email with attachment), Cron Triggers (expiry + 48h reminder)
 - **Frontend:** Vite + React + TypeScript + Tailwind + TanStack Query, served by the same Worker through the `assets` binding
@@ -16,7 +16,7 @@ Full-stack app to draft, send, track, resolve and collect on commercial tenders 
 | | |
 |---|---|
 | **App** | [tender-management-system.leivadev.com](https://tender-management-system.leivadev.com) |
-| **API docs** | [Swagger UI](https://tender-management-system.leivadev.com/api/docs) |
+| **API docs** | [Swagger UI](https://tender-management-system.leivadev.com/docs) (sign in first) |
 | **Email** | `demo@leivadev.com` |
 | **Password** | `Demo-Tenders-2026` |
 
@@ -132,7 +132,7 @@ Put the returned `id` in `wrangler.jsonc` (`hyperdrive[0].id`). It is an identif
 ### 7. Run locally
 
 ```bash
-npm run dev                                # Worker on :8787, Swagger UI at /api/docs
+npm run dev                                # Worker on :8787, Swagger UI in the SPA at /docs
 cd client && npm install && npm run dev   # SPA on :5173, proxies /api/* to :8787
 ```
 

@@ -19,7 +19,7 @@ Before considering any change in `src/` done, run `npm run typecheck`, `npm run 
 
 ## Code architecture
 
-- `src/endpoints/**` — one file per endpoint, each a chanfana `OpenAPIRoute` class (Zod schema + `handle()`). This is how the Swagger UI at `/api/docs` is generated automatically (`/` serves the SPA from `client/`).
+- `src/endpoints/**` — one file per endpoint, each a chanfana `OpenAPIRoute` class (Zod schema + `handle()`). The spec is served at `/openapi.json` (session required, FR-45); the Worker serves no docs pages — Swagger UI is the SPA route `/docs` (`client/src/routes/DocsPage.tsx`). `/` serves the SPA from `client/`.
 - `client/` — standalone SPA (Vite + React + TypeScript + Tailwind + TanStack Query) with its own `package.json`. It builds to `client/dist/` and the Worker serves it through the `assets` binding in `wrangler.jsonc`. `cd client && npm run dev` runs it locally (port 5173, proxies `/api/*` to `wrangler dev` on 8787).
   - UI conventions: semantic Tailwind tokens from `client/src/styles/index.css` (`bg-card`, `text-muted-foreground`, `bg-primary-soft`, `--tone-*`), never raw gray/blue palette classes. Shared pieces in `components/` (Radix tooltip/dialog, `Table`, `DisabledAction`, `CommandPalette` with Cmd/Ctrl+K and `g`+key shortcuts). Pages are lazy-loaded in `App.tsx`. List filters live in URL params (`useListParams`); search is server-side (`q`, plus `sort`/`dir` on tenders).
   - Login: the one-click button is ONLY for the read-only demo account (`demo@leivadev.com`). Admin/writer credentials must never appear in `client/`.
