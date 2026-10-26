@@ -3,6 +3,13 @@
   "plugins": ["react", "typescript", "oxc"],
   "rules": {
     "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+    "typescript/no-explicit-any": "error",
+    // React Compiler-style heuristics. The SPA does not use the compiler and these flag deliberate
+    // patterns (Date in render for a `min` attribute, prop-to-state sync in SearchInput/CommandPalette).
+    "react/purity": "off",
+    "react/refs": "off",
+    "react/set-state-in-effect": "off",
+    // Only affects dev-server fast refresh (hooks/helpers colocated with their component).
+    "react/only-export-components": "off"
   }
 }

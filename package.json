@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "check": "biome check .",
     "check:fix": "biome check --write .",
+    "lint:client": "npm --prefix client run lint",
     "test": "vitest run",
     "test:client": "npm --prefix client test"
   },
