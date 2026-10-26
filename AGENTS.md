@@ -13,6 +13,7 @@ API on Cloudflare Workers (Hono + chanfana/OpenAPI) to draft, send, track, resol
 | `npm run db:generate` | Generate a Drizzle migration from `src/db/schema.ts` |
 | `npm run db:migrate` | Apply migrations (uses `DATABASE_URL` from `.env`, not Hyperdrive) |
 | `npm run test` | `vitest run` — E2E suite against a real local Supabase (see `tests/`) |
+| `npm run lint:client` | SPA linter (oxlint, `--deny-warnings`), also in CI |
 | `npm run test:client` | SPA component tests (Vitest + Testing Library + jsdom, `client/src/**/*.test.tsx`) — run when touching `client/` |
 | `npm run deploy` | Build `client/` + `wrangler deploy` to production |
 
