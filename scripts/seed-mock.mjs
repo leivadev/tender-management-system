@@ -335,14 +335,14 @@ try {
 			if (t.status === "for_collection" && t.paid && Number(t.paid) > 0) {
 				await tx`
 					insert into payments (tender_id, amount, reference, notes, created_by)
-					values (${tenderId}, ${t.paid}, ${"TRF-" + tenderId.slice(0, 8)}, ${"Partial payment"}, ${actorId})
+					values (${tenderId}, ${t.paid}, ${`TRF-${tenderId.slice(0, 8)}`}, ${"Partial payment"}, ${actorId})
 				`;
 			}
 
 			if (t.status === "collected") {
 				await tx`
 					insert into payments (tender_id, amount, reference, notes, created_by)
-					values (${tenderId}, ${t.invoiceAmount}, ${"TRF-" + tenderId.slice(0, 8)}, ${"Full payment"}, ${actorId})
+					values (${tenderId}, ${t.invoiceAmount}, ${`TRF-${tenderId.slice(0, 8)}`}, ${"Full payment"}, ${actorId})
 				`;
 			}
 		}
