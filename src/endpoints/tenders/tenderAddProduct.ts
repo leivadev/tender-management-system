@@ -28,7 +28,7 @@ export class TenderAddProduct extends OpenAPIRoute {
 			"201": {
 				description: "Product added",
 				content: {
-					"application/json": { schema: z.object({ success: z.boolean(), tenderProduct: z.any() }) },
+					"application/json": { schema: z.object({ success: z.boolean(), tenderProduct: z.unknown() }) },
 				},
 			},
 		},

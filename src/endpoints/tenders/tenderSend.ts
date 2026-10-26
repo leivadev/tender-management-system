@@ -30,7 +30,7 @@ export class TenderSend extends OpenAPIRoute {
 		responses: {
 			"200": {
 				description: "Tender sent",
-				content: { "application/json": { schema: z.object({ success: z.boolean(), tender: z.any() }) } },
+				content: { "application/json": { schema: z.object({ success: z.boolean(), tender: z.unknown() }) } },
 			},
 			"502": {
 				description:

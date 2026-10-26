@@ -15,7 +15,7 @@ export class ClientList extends OpenAPIRoute {
 		responses: {
 			"200": {
 				description: "Returns a page of clients, newest first",
-				content: { "application/json": { schema: pageSchema(z.any()) } },
+				content: { "application/json": { schema: pageSchema(z.unknown()) } },
 			},
 		},
 	};

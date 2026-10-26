@@ -20,7 +20,7 @@ export class UserUpdate extends OpenAPIRoute {
 		responses: {
 			"200": {
 				description: "User updated",
-				content: { "application/json": { schema: z.object({ success: z.boolean(), user: z.any() }) } },
+				content: { "application/json": { schema: z.object({ success: z.boolean(), user: z.unknown() }) } },
 			},
 		},
 	};

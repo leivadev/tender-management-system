@@ -32,7 +32,7 @@ export class TenderList extends OpenAPIRoute {
 		responses: {
 			"200": {
 				description: "Returns a page of tenders, newest first unless `sort`/`dir` say otherwise",
-				content: { "application/json": { schema: pageSchema(z.any()) } },
+				content: { "application/json": { schema: pageSchema(z.unknown()) } },
 			},
 		},
 	};

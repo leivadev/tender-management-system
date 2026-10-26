@@ -22,7 +22,7 @@ export class ClientCreate extends OpenAPIRoute {
 		responses: {
 			"201": {
 				description: "Client created",
-				content: { "application/json": { schema: z.object({ success: z.boolean(), client: z.any() }) } },
+				content: { "application/json": { schema: z.object({ success: z.boolean(), client: z.unknown() }) } },
 			},
 		},
 	};

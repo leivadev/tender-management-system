@@ -28,7 +28,7 @@ export class ProductUpdate extends OpenAPIRoute {
 		responses: {
 			"200": {
 				description: "Product updated",
-				content: { "application/json": { schema: z.object({ success: z.boolean(), product: z.any() }) } },
+				content: { "application/json": { schema: z.object({ success: z.boolean(), product: z.unknown() }) } },
 			},
 		},
 	};

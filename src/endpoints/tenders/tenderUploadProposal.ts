@@ -18,7 +18,7 @@ export class TenderUploadProposal extends OpenAPIRoute {
 			body: {
 				content: {
 					"multipart/form-data": {
-						schema: z.object({ file: z.any().openapi({ type: "string", format: "binary" }) }),
+						schema: z.object({ file: z.unknown().openapi({ type: "string", format: "binary" }) }),
 					},
 				},
 			},
@@ -26,7 +26,7 @@ export class TenderUploadProposal extends OpenAPIRoute {
 		responses: {
 			"200": {
 				description: "Proposal uploaded",
-				content: { "application/json": { schema: z.object({ success: z.boolean(), tender: z.any() }) } },
+				content: { "application/json": { schema: z.object({ success: z.boolean(), tender: z.unknown() }) } },
 			},
 		},
 	};

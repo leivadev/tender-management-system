@@ -15,7 +15,7 @@ export class TenderLost extends OpenAPIRoute {
 		responses: {
 			"200": {
 				description: "Tender marked as lost",
-				content: { "application/json": { schema: z.object({ success: z.boolean(), tender: z.any() }) } },
+				content: { "application/json": { schema: z.object({ success: z.boolean(), tender: z.unknown() }) } },
 			},
 		},
 	};

@@ -16,7 +16,7 @@ export class TenderDetail extends OpenAPIRoute {
 		responses: {
 			"200": {
 				description: "Returns the tender detail",
-				content: { "application/json": { schema: z.object({ success: z.boolean(), tender: z.any() }) } },
+				content: { "application/json": { schema: z.object({ success: z.boolean(), tender: z.unknown() }) } },
 			},
 		},
 	};

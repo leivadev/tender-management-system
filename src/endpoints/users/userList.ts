@@ -14,7 +14,7 @@ export class UserList extends OpenAPIRoute {
 		responses: {
 			"200": {
 				description: "Returns a page of users, newest first",
-				content: { "application/json": { schema: pageSchema(z.any()) } },
+				content: { "application/json": { schema: pageSchema(z.unknown()) } },
 			},
 		},
 	};

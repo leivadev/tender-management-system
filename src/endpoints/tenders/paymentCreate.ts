@@ -25,7 +25,7 @@ export class PaymentCreate extends OpenAPIRoute {
 				description: "Payment registered",
 				content: {
 					"application/json": {
-						schema: z.object({ success: z.boolean(), payment: z.any(), pendingBalance: z.number() }),
+						schema: z.object({ success: z.boolean(), payment: z.unknown(), pendingBalance: z.number() }),
 					},
 				},
 			},

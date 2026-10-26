@@ -9,7 +9,7 @@ export class Me extends OpenAPIRoute {
 		responses: {
 			"200": {
 				description: "Returns the current user",
-				content: { "application/json": { schema: z.object({ success: z.boolean(), user: z.any() }) } },
+				content: { "application/json": { schema: z.object({ success: z.boolean(), user: z.unknown() }) } },
 			},
 		},
 	};

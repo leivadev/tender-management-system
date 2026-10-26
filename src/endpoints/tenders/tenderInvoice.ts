@@ -32,7 +32,7 @@ export class TenderInvoice extends OpenAPIRoute {
 		responses: {
 			"200": {
 				description: "Tender invoiced",
-				content: { "application/json": { schema: z.object({ success: z.boolean(), tender: z.any() }) } },
+				content: { "application/json": { schema: z.object({ success: z.boolean(), tender: z.unknown() }) } },
 			},
 		},
 	};

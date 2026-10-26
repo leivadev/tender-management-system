@@ -15,7 +15,7 @@ export class TenderHistory extends OpenAPIRoute {
 		responses: {
 			"200": {
 				description: "Returns the status history",
-				content: { "application/json": { schema: z.object({ success: z.boolean(), history: z.any() }) } },
+				content: { "application/json": { schema: z.object({ success: z.boolean(), history: z.unknown() }) } },
 			},
 		},
 	};

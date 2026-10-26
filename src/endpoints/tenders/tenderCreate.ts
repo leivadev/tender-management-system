@@ -25,7 +25,7 @@ export class TenderCreate extends OpenAPIRoute {
 		responses: {
 			"201": {
 				description: "Tender created",
-				content: { "application/json": { schema: z.object({ success: z.boolean(), tender: z.any() }) } },
+				content: { "application/json": { schema: z.object({ success: z.boolean(), tender: z.unknown() }) } },
 			},
 		},
 	};

@@ -32,10 +32,10 @@ export class DashboardMetrics extends OpenAPIRoute {
 					"application/json": {
 						schema: z.object({
 							success: z.boolean(),
-							kpis: z.any(),
-							monthly: z.any(),
-							pipeline: z.any(),
-							activity: z.any(),
+							kpis: z.unknown(),
+							monthly: z.unknown(),
+							pipeline: z.unknown(),
+							activity: z.unknown(),
 						}),
 					},
 				},

@@ -14,7 +14,7 @@ export class TenderRestore extends OpenAPIRoute {
 		responses: {
 			"200": {
 				description: "Tender restored",
-				content: { "application/json": { schema: z.object({ success: z.boolean(), tender: z.any() }) } },
+				content: { "application/json": { schema: z.object({ success: z.boolean(), tender: z.unknown() }) } },
 			},
 		},
 	};

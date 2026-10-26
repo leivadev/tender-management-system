@@ -15,7 +15,9 @@ export class PaymentList extends OpenAPIRoute {
 		responses: {
 			"200": {
 				description: "Returns the payments",
-				content: { "application/json": { schema: z.object({ success: z.boolean(), payments: z.any() }) } },
+				content: {
+					"application/json": { schema: z.object({ success: z.boolean(), payments: z.unknown() }) },
+				},
 			},
 		},
 	};

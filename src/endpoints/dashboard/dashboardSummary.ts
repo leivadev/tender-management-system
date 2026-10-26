@@ -39,7 +39,7 @@ export class DashboardSummary extends OpenAPIRoute {
 							success: z.boolean(),
 							counts: z.record(z.enum(tenderStatusEnum), z.number()),
 							total: z.number(),
-							upcoming: z.any(),
+							upcoming: z.unknown(),
 						}),
 					},
 				},

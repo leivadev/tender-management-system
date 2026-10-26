@@ -13,7 +13,7 @@ export class ProductList extends OpenAPIRoute {
 		responses: {
 			"200": {
 				description: "Returns a page of products, newest first",
-				content: { "application/json": { schema: pageSchema(z.any()) } },
+				content: { "application/json": { schema: pageSchema(z.unknown()) } },
 			},
 		},
 	};

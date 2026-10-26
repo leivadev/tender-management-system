@@ -14,7 +14,7 @@ export class ClientRestore extends OpenAPIRoute {
 		responses: {
 			"200": {
 				description: "Client restored",
-				content: { "application/json": { schema: z.object({ success: z.boolean(), client: z.any() }) } },
+				content: { "application/json": { schema: z.object({ success: z.boolean(), client: z.unknown() }) } },
 			},
 		},
 	};

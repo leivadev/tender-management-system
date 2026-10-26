@@ -23,7 +23,7 @@ export class ProductCreate extends OpenAPIRoute {
 		responses: {
 			"201": {
 				description: "Product created",
-				content: { "application/json": { schema: z.object({ success: z.boolean(), product: z.any() }) } },
+				content: { "application/json": { schema: z.object({ success: z.boolean(), product: z.unknown() }) } },
 			},
 		},
 	};
