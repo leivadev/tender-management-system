@@ -163,7 +163,7 @@ npm run check      # Biome lint + format
 npm run test       # needs local Supabase running
 ```
 
-The suite uses `@cloudflare/vitest-pool-workers`, so tests run inside the real Workers runtime with the bindings from `wrangler.jsonc`. What they must cover is defined in the SRS (see Appendix B). Outgoing Resend requests are stubbed in `tests/setup.ts`, so tests never send real email and any non-empty `RESEND_API_KEY` works.
+The suite uses `@cloudflare/vitest-pool-workers`, so tests run inside the real Workers runtime with the bindings from `wrangler.jsonc`. 504 cases. What they must cover is defined in the SRS (see Appendix B): every requirement verified by test (`T`) is cited by ID in a test name, and `tests/traceability.test.ts` fails if one is not (NFR-03, NFR-23). Documentation lives in [`/docs`](docs/): the SRS, `deployment.md` and the screenshots. Outgoing Resend requests are stubbed in `tests/setup.ts`, so tests never send real email and any non-empty `RESEND_API_KEY` works.
 
 CI (`.github/workflows/ci.yml`) runs typecheck, Biome and the full suite on every push and pull request.
 
