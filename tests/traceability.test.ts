@@ -23,8 +23,8 @@ const rows = [...srs.matchAll(/^\| ((?:BR|FR|NFR|SEC|UI|DAT|IF)-\d+) \|.*\| ([TI
 	methods: m[2],
 }));
 
-describe("requirements traceability (NFR-03, NFR-23)", () => {
-	it("the SRS requirement table was parsed (NFR-03)", () => {
+describe("requirements traceability", () => {
+	it("the SRS requirement table was parsed", () => {
 		expect(rows.length).toBeGreaterThan(100);
 	});
 

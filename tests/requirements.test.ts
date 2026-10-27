@@ -87,7 +87,7 @@ describe("timestamps are UTC (NFR-21)", () => {
 		const stamps = [
 			body.tender.createdAt,
 			body.tender.deadline,
-			...body.history.map((h: { createdAt: string }) => h.createdAt),
+			...body.tender.history.map((h: { createdAt: string }) => h.createdAt),
 		];
 		for (const s of stamps) expect(s).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/);
 	});
