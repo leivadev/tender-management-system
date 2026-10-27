@@ -400,7 +400,7 @@ describe("JWT verification fails closed (SEC-02)", () => {
 		await expectDenied(`${h}.${b64url(JSON.stringify(claims))}.${s}`);
 	});
 
-	it("SEC-02: an unsigned token (alg none) is denied", async () => {
+	it("SEC-02, IF-02: an unsigned token (alg none) is denied", async () => {
 		const header = b64url(JSON.stringify({ alg: "none", typ: "JWT" }));
 		const payload = b64url(JSON.stringify(claimsOf(tokens.admin)));
 

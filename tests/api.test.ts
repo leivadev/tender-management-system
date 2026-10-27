@@ -50,7 +50,7 @@ describe("auth", () => {
 		expect(r.body.error.code).toBe("UNAUTHENTICATED");
 	});
 
-	it("invalid login -> 401", async () => {
+	it("invalid login -> 401 (FR-01)", async () => {
 		const r = await api("/api/auth/login", {
 			method: "POST",
 			body: JSON.stringify({ email: "admin@example.com", password: "wrong" }),
@@ -58,7 +58,7 @@ describe("auth", () => {
 		expect(r.status).toBe(401);
 	});
 
-	it("/me returns admin role", async () => {
+	it("/me returns admin role (FR-01)", async () => {
 		const r = await api("/api/auth/me", {}, admin);
 		expect(r.status).toBe(200);
 		expect(r.body.user.role).toBe("admin");
@@ -232,7 +232,7 @@ describe("clients & products", () => {
 		expect(Array.isArray(r.body.data)).toBe(true);
 	});
 
-	it("create and list products", async () => {
+	it("create and list products (FR-08)", async () => {
 		const r = await api("/api/products", {}, admin);
 		expect(r.status).toBe(200);
 		expect(Array.isArray(r.body.data)).toBe(true);
@@ -308,7 +308,7 @@ describe("clients & products", () => {
 describe("tenders: creation, detail, budget", () => {
 	let tenderId: string;
 
-	it("create tender -> draft", async () => {
+	it("create tender -> draft (FR-10)", async () => {
 		const deadline = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
 		const r = await api(
 			"/api/tenders",
@@ -323,7 +323,7 @@ describe("tenders: creation, detail, budget", () => {
 		tenderId = r.body.tender.id;
 	});
 
-	it("detail includes products[] and history[]", async () => {
+	it("detail includes products[] and history[] (FR-12)", async () => {
 		const r = await api(`/api/tenders/${tenderId}`, {}, admin);
 		expect(r.status).toBe(200);
 		expect(Array.isArray(r.body.tender.products)).toBe(true);
@@ -363,7 +363,7 @@ describe("tenders: creation, detail, budget", () => {
 		expect(exceeded.body.error.code).toBe("TENDER_BUDGET_EXCEEDED");
 	});
 
-	it("remove product while editable -> 200", async () => {
+	it("remove product while editable -> 200 (FR-14)", async () => {
 		const r = await api(`/api/tenders/${tenderId}/products/${productId}`, { method: "DELETE" }, admin);
 		expect(r.status).toBe(200);
 	});
@@ -472,7 +472,7 @@ describe("proposal upload", () => {
 		expect([400, 422]).toContain(res.status);
 	});
 
-	it("upload valid PDF -> 200, byte-exact download", async () => {
+	it("upload valid PDF -> 200, byte-exact download (FR-15)", async () => {
 		const uploaded = await uploadPdf(tenderId, admin);
 		expect(uploaded.status).toBe(200);
 		expect(uploaded.body.tender.proposalKey).toBeTruthy();
@@ -519,7 +519,7 @@ describe("full lifecycle: send -> finalize -> invoice -> payments -> collected",
 		expect(r.status).toBe(422);
 	});
 
-	it("history records draft->active", async () => {
+	it("history records draft->active (FR-21, BR-07)", async () => {
 		const r = await api(`/api/tenders/${tenderId}/history`, {}, admin);
 		expect(r.body.history.some((h: any) => h.fromStatus === "draft" && h.toStatus === "active")).toBe(true);
 	});
@@ -547,7 +547,7 @@ describe("full lifecycle: send -> finalize -> invoice -> payments -> collected",
 		expect(r.status).toBe(422);
 	});
 
-	it("active -> finalized -> 200", async () => {
+	it("active -> finalized -> 200 (FR-18)", async () => {
 		const r = await api(`/api/tenders/${tenderId}/finalize`, { method: "POST" }, admin);
 		expect(r.status).toBe(200);
 		expect(r.body.tender.status).toBe("finalized");
@@ -573,7 +573,7 @@ describe("full lifecycle: send -> finalize -> invoice -> payments -> collected",
 		expect([400, 422]).toContain(r.status);
 	});
 
-	it("finalized -> for_collection via invoice -> 200", async () => {
+	it("finalized -> for_collection via invoice -> 200 (FR-20)", async () => {
 		const r = await api(
 			`/api/tenders/${tenderId}/invoice`,
 			{ method: "POST", body: JSON.stringify({ invoiceAmount: 500 }) },
@@ -590,7 +590,7 @@ describe("full lifecycle: send -> finalize -> invoice -> payments -> collected",
 		expect(r.body.error.code).toBe("INVALID_TENDER_TRANSITION");
 	});
 
-	it("negative payment -> rejected", async () => {
+	it("negative payment -> rejected (BR-11)", async () => {
 		const r = await api(
 			`/api/tenders/${tenderId}/payments`,
 			{ method: "POST", body: JSON.stringify({ amount: -10 }) },
@@ -599,7 +599,7 @@ describe("full lifecycle: send -> finalize -> invoice -> payments -> collected",
 		expect([400, 422]).toContain(r.status);
 	});
 
-	it("partial payment -> 201, correct balance", async () => {
+	it("partial payment -> 201, correct balance (FR-22, BR-05)", async () => {
 		const r = await api(
 			`/api/tenders/${tenderId}/payments`,
 			{ method: "POST", body: JSON.stringify({ amount: 300 }) },
@@ -609,7 +609,7 @@ describe("full lifecycle: send -> finalize -> invoice -> payments -> collected",
 		expect(r.body.pendingBalance).toBe(200);
 	});
 
-	it("overpayment -> 422", async () => {
+	it("overpayment -> 422 (BR-12)", async () => {
 		const r = await api(
 			`/api/tenders/${tenderId}/payments`,
 			{ method: "POST", body: JSON.stringify({ amount: 300 }) },
@@ -619,7 +619,7 @@ describe("full lifecycle: send -> finalize -> invoice -> payments -> collected",
 		expect(r.body.error.code).toBe("BUSINESS_RULE_VIOLATION");
 	});
 
-	it("final payment -> automatic collected", async () => {
+	it("final payment -> automatic collected (FR-24)", async () => {
 		const r = await api(
 			`/api/tenders/${tenderId}/payments`,
 			{ method: "POST", body: JSON.stringify({ amount: 200 }) },
@@ -641,7 +641,7 @@ describe("full lifecycle: send -> finalize -> invoice -> payments -> collected",
 		expect(r.status).toBe(422);
 	});
 
-	it("list payments -> 2 payments", async () => {
+	it("list payments -> 2 payments (FR-23)", async () => {
 		const r = await api(`/api/tenders/${tenderId}/payments`, {}, admin);
 		expect(r.status).toBe(200);
 		expect(r.body.payments.length).toBe(2);
@@ -656,7 +656,7 @@ describe("full lifecycle: send -> finalize -> invoice -> payments -> collected",
 		expect(r.status).toBe(422);
 	});
 
-	it("full history has 4 transitions", async () => {
+	it("full history has 4 transitions (FR-21, BR-07)", async () => {
 		const r = await api(`/api/tenders/${tenderId}/history`, {}, admin);
 		expect(r.body.history.length).toBe(4);
 	});
@@ -734,7 +734,7 @@ describe("lost tender", () => {
 		tenderId = await createSentTender(clientId, admin, deadline);
 	});
 
-	it("active -> lost (manual) -> 200", async () => {
+	it("active -> lost (manual) -> 200 (FR-19)", async () => {
 		const r = await api(`/api/tenders/${tenderId}/lost`, { method: "POST" }, admin);
 		expect(r.status).toBe(200);
 		expect(r.body.tender.status).toBe("lost");
@@ -826,7 +826,7 @@ describe("input validation", () => {
 		expect(missing.body.error.message).toMatch(/not found/i);
 	});
 
-	it("zero payment -> VALIDATION_ERROR", async () => {
+	it("zero payment -> VALIDATION_ERROR (BR-11)", async () => {
 		const r = await api(
 			`/api/tenders/${crypto.randomUUID()}/payments`,
 			{ method: "POST", body: JSON.stringify({ amount: 0 }) },

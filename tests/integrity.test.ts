@@ -285,7 +285,7 @@ describe("exact money arithmetic (BR-06, NFR-02, A-1)", () => {
 	});
 });
 
-describe("the database rejects impossible data on its own (DAT-01..05, DAT-07..12)", () => {
+describe("the database rejects impossible data on its own (DAT-05, DAT-01..04, DAT-07..12)", () => {
 	async function withSql<T>(fn: (sql: postgres.Sql) => Promise<T>) {
 		const sql = postgres(env.HYPERDRIVE.connectionString);
 		try {
