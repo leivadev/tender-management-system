@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import wranglerConfig from "../wrangler.jsonc?raw";
-import { api, login, uniqueName, uploadPdf } from "./helpers";
+import { api, login, uniqueName, uploadPdf, worker } from "./helpers";
 
 let admin: string;
 let clientId: string;
@@ -19,7 +19,7 @@ beforeAll(async () => {
 	clientId = client.body.client.id;
 	const product = await api(
 		"/api/products",
-		{ method: "POST", body: JSON.stringify({ name: uniqueName("Req Product"), price: 1234.56 }) },
+		{ method: "POST", body: JSON.stringify({ name: uniqueName("Req Product"), unitPrice: 1234.56 }) },
 		admin,
 	);
 	productId = product.body.product.id;
@@ -84,10 +84,11 @@ describe("timestamps are UTC (NFR-21)", () => {
 	it("API timestamps are ISO 8601 in UTC so the client renders them in local time (NFR-21)", async () => {
 		const id = await collectionTender(555.55);
 		const { body } = await api(`/api/tenders/${id}`, {}, admin);
+		const history = await api(`/api/tenders/${id}/history`, {}, admin);
 		const stamps = [
 			body.tender.createdAt,
 			body.tender.deadline,
-			...body.tender.history.map((h: { createdAt: string }) => h.createdAt),
+			...history.body.history.map((h: { changedAt: string }) => h.changedAt),
 		];
 		for (const s of stamps) expect(s).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/);
 	});
@@ -96,9 +97,12 @@ describe("timestamps are UTC (NFR-21)", () => {
 describe("proposal storage is private (IF-03)", () => {
 	it("the proposal is only served through the authenticated endpoint (IF-03)", async () => {
 		const id = await collectionTender(100.01);
-		const anon = await api(`/api/tenders/${id}/proposal/download`, {});
+		const anon = await worker.fetch(`http://localhost/api/tenders/${id}/proposal/download`);
 		expect(anon.status).toBe(401);
-		const authed = await api(`/api/tenders/${id}/proposal/download`, {}, admin);
+		const authed = await worker.fetch(`http://localhost/api/tenders/${id}/proposal/download`, {
+			headers: { Authorization: `Bearer ${admin}` },
+		});
 		expect(authed.status).toBe(200);
+		await authed.arrayBuffer();
 	});
 });
